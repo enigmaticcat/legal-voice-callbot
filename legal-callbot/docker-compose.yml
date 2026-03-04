@@ -1,0 +1,117 @@
+services:
+  # ─── API Gateway (FastAPI) ─────────────────────────────
+  gateway:
+    build: ./gateway
+    container_name: callbot-gateway
+    ports:
+      - "${GATEWAY_PORT:-8000}:8000"
+    environment:
+      - DEBUG=${DEBUG:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - ASR_HOST=asr
+      - ASR_PORT=50051
+      - BRAIN_HOST=brain
+      - BRAIN_PORT=50052
+      - TTS_HOST=tts
+      - TTS_PORT=50053
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - callbot-net
+    restart: unless-stopped
+
+  # ─── ASR Worker ────────────────────────────────────────
+  asr:
+    build: ./asr
+    container_name: callbot-asr
+    ports:
+      - "${ASR_PORT:-50051}:50051"
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    networks:
+      - callbot-net
+    restart: unless-stopped
+
+  # ─── Brain Worker (LLM + RAG) ─────────────────────────
+  brain:
+    build: ./brain
+    container_name: callbot-brain
+    ports:
+      - "${BRAIN_PORT:-50052}:50052"
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - QDRANT_HOST=qdrant
+      - REDIS_HOST=redis
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - callbot-net
+    restart: unless-stopped
+
+  # ─── TTS Worker ────────────────────────────────────────
+  tts:
+    build: ./tts
+    container_name: callbot-tts
+    ports:
+      - "${TTS_PORT:-50053}:50053"
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    networks:
+      - callbot-net
+    restart: unless-stopped
+
+  # ─── Vector Database (RAG) ────────────────────────────
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: callbot-qdrant
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://0.0.0.0:6333/ || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - callbot-net
+    restart: unless-stopped
+
+  # ─── Redis (Cache) ────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: callbot-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli ping | grep PONG" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - callbot-net
+    restart: unless-stopped
+
+  # ─── Web Frontend (React + Vite) ──────────────────────
+  web:
+    build: ./web
+    container_name: callbot-web
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    environment:
+      - VITE_GATEWAY_URL=http://localhost:${GATEWAY_PORT:-8000}
+    networks:
+      - callbot-net
+    restart: unless-stopped
+
+networks:
+  callbot-net:
+    driver: bridge
+
+volumes:
+  qdrant_data:

@@ -1,0 +1,2 @@
+# ASR dependencies (dummy phase — no AI models yet)
+# Step 3 will add: faster-whisper, silero-vad, grpcio
