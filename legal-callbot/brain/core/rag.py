@@ -32,7 +32,10 @@ class RAGPipeline:
         self.collection = collection
         
         logger.info(f"Initializing QdrantClient: {qdrant_url[:30]}...")
-        self.qdrant = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
+        if qdrant_api_key:
+            self.qdrant = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
+        else:
+            self.qdrant = QdrantClient(url=qdrant_url)
         
         logger.info("Initializing BGE-M3 Model for queries...")
         self.model = BGEM3FlagModel('BAAI/bge-m3', use_fp16=False)
