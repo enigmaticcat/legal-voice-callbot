@@ -59,20 +59,30 @@ class LLMClient:
             config.system_instruction = system_instruction
 
         try:
-            # Gọi Gemini sync streaming trong thread pool
-            collected, ttfc_ms = await asyncio.to_thread(
-                self._sync_stream, prompt, config
+            # True async streaming — yield ngay khi Gemini trả chunk
+            response = await self.client.aio.models.generate_content_stream(
+                model=self.model,
+                contents=prompt,
+                config=config,
             )
 
-            for text in collected:
-                chunk = {"text": text, "is_final": False}
-                if first_token:
-                    ttft = (time.time() - start_time) * 1000
-                    chunk["ttft_ms"] = ttft
-                    chunk["ttfc_ms"] = ttfc_ms  # Time to first LLM chunk
-                    logger.info(f"LLM TTFT: {ttft:.0f}ms | TTFC: {ttfc_ms:.0f}ms")
-                    first_token = False
-                yield chunk
+            ttfc_ms = None
+            t0 = time.time()
+
+            async for chunk in response:
+                if chunk.text:
+                    if ttfc_ms is None:
+                        ttfc_ms = (time.time() - t0) * 1000
+                        logger.info(f"LLM TTFC (first chunk from Gemini): {ttfc_ms:.0f}ms")
+
+                    result = {"text": chunk.text, "is_final": False}
+                    if first_token:
+                        ttft = (time.time() - start_time) * 1000
+                        result["ttft_ms"] = ttft
+                        result["ttfc_ms"] = ttfc_ms
+                        logger.info(f"LLM TTFT: {ttft:.0f}ms | TTFC: {ttfc_ms:.0f}ms")
+                        first_token = False
+                    yield result
 
         except Exception as e:
             logger.error(f"Gemini API error: {e}")
@@ -81,33 +91,6 @@ class LLMClient:
                 "is_final": True,
                 "error": True,
             }
-
-    def _sync_stream(
-        self, prompt: str, config: types.GenerateContentConfig
-    ) -> tuple:
-        """
-        Gọi Gemini API sync (chạy trong thread pool).
-        Trả (list of text strings, ttfc_ms).
-        """
-        collected = []
-        ttfc_ms = None
-        t0 = time.time()
-        try:
-            response = self.client.models.generate_content_stream(
-                model=self.model,
-                contents=prompt,
-                config=config,
-            )
-            for chunk in response:
-                if chunk.text:
-                    if ttfc_ms is None:
-                        ttfc_ms = (time.time() - t0) * 1000
-                        logger.info(f"LLM TTFC (first chunk from Gemini): {ttfc_ms:.0f}ms")
-                    collected.append(chunk.text)
-        except Exception as e:
-            logger.error(f"Sync stream error: {e}")
-            raise
-        return collected, ttfc_ms or 0
 
     async def generate(
         self,
