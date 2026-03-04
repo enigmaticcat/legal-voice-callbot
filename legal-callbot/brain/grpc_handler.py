@@ -68,24 +68,33 @@ class BrainServiceHandler:
         # ── Step 4: LLM streaming with word-safe chunking ────
         t_llm = time.time()
         first_chunk = True
-        ttfc_ms = 0  # Time to First LLM Chunk
+        llm_ttft_ms = 0  # Time to First Token from Gemini
 
         llm_stream = self.llm.generate_stream(
             prompt=prompt,
             system_instruction=LEGAL_SYSTEM_PROMPT,
         )
 
+        # Wrap LLM stream to capture TTFT before chunking
+        async def _llm_with_ttft():
+            nonlocal llm_ttft_ms
+            async for chunk in llm_stream:
+                if llm_ttft_ms == 0 and chunk.get("ttfc_ms"):
+                    llm_ttft_ms = chunk["ttfc_ms"]
+                yield chunk
+
         # Word-safe chunking (Async)
-        async for chunk_text in chunk_llm_stream(llm_stream):
+        async for chunk_text in chunk_llm_stream(_llm_with_ttft()):
             result = {"text": chunk_text, "is_final": False}
 
             if first_chunk:
                 first_chunk_total_ms = (time.time() - start_time) * 1000
-                llm_ms = (time.time() - t_llm) * 1000
+                llm_full_ms = (time.time() - t_llm) * 1000
                 result["timing"] = {
                     "expand_ms": round(expand_ms, 1),
                     "rag_ms": round(rag_ms, 1),
-                    "llm_full_ms": round(llm_ms, 1),
+                    "llm_ttft_ms": round(llm_ttft_ms, 1),
+                    "llm_full_ms": round(llm_full_ms, 1),
                     "first_chunk_total_ms": round(first_chunk_total_ms, 1),
                 }
                 first_chunk = False
