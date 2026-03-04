@@ -69,5 +69,5 @@ class HTTPHandler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     server = HTTPServer(("0.0.0.0", config.port), HTTPHandler)
-    logger.info(f"🗣️ TTS Worker running on port {config.port}")
+    logger.info(f"TTS Worker running on port {config.port}")
     server.serve_forever()

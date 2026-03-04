@@ -17,7 +17,7 @@ function Transcript({ messages }) {
     <div className="transcript">
       {messages.map((msg, i) => (
         <div key={i} className={`message ${msg.role}`}>
-          <span className="role-icon">{msg.role === 'user' ? '👤' : '⚖️'}</span>
+          <span className="role-icon">{msg.role === 'user' ? '' : ''}</span>
           <p>{msg.text}</p>
         </div>
       ))}

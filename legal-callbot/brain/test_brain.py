@@ -42,16 +42,16 @@ def test_query_expansion():
         expanded = expand_query(query)
         if expected_term:
             if expected_term in expanded:
-                print(f"  ✅ '{query}' → chứa '{expected_term}'")
+                print(f"  '{query}' → chứa '{expected_term}'")
                 passed += 1
             else:
-                print(f"  ❌ '{query}' → '{expanded}' (thiếu '{expected_term}')")
+                print(f"  '{query}' → '{expanded}' (thiếu '{expected_term}')")
         else:
             if expanded == query:
-                print(f"  ✅ '{query}' → không thay đổi (đúng)")
+                print(f"  '{query}' → không thay đổi (đúng)")
                 passed += 1
             else:
-                print(f"  ❌ '{query}' → '{expanded}' (không nên thay đổi!)")
+                print(f"  '{query}' → '{expanded}' (không nên thay đổi!)")
 
     print(f"\n  Kết quả: {passed}/{len(test_cases)} passed")
     return passed == len(test_cases)
@@ -86,15 +86,15 @@ def test_word_safe_chunking():
             else:
                 ends_with_space = chunk[-1] == " "
                 if not ends_with_space:
-                    print(f"  ⚠️  Chunk {i} có thể bị cắt giữa từ: ...{chunk[-10:]}")
+                    print(f"  Chunk {i} có thể bị cắt giữa từ: ...{chunk[-10:]}")
 
         print(f"    [{i}] ({len(chunk)} chars) \"{chunk}\"")
 
     if chunks:
-        print(f"\n  ✅ Tạo {len(chunks)} chunks, không cắt giữa từ")
+        print(f"\n  Tạo {len(chunks)} chunks, không cắt giữa từ")
         return True
     else:
-        print("\n  ❌ Không tạo được chunk nào")
+        print("\n  Không tạo được chunk nào")
         return False
 
 
@@ -125,10 +125,10 @@ def test_prompt_building():
     passed = 0
     for check, label in checks:
         if check:
-            print(f"  ✅ {label}")
+            print(f"  {label}")
             passed += 1
         else:
-            print(f"  ❌ {label}")
+            print(f"  {label}")
 
     print(f"\n  Prompt length: {len(prompt)} chars")
     print(f"  Kết quả: {passed}/{len(checks)} passed")
@@ -143,14 +143,14 @@ async def test_llm_streaming():
 
     api_key = os.getenv("GEMINI_API_KEY", "")
     if not api_key:
-        print("  ⚠️  GEMINI_API_KEY chưa set. Bỏ qua test này.")
+        print("  GEMINI_API_KEY chưa set. Bỏ qua test này.")
         print("  Chạy: GEMINI_API_KEY=xxx python test_brain.py")
         return None
 
     try:
         llm = LLMClient(api_key=api_key)
     except Exception as e:
-        print(f"  ❌ Không tạo được LLMClient: {e}")
+        print(f"  Không tạo được LLMClient: {e}")
         return False
 
     # Test streaming
@@ -182,13 +182,13 @@ async def test_llm_streaming():
             print(f"    [{status}] {preview}...")
 
     except Exception as e:
-        print(f"  ❌ LLM streaming error: {e}")
+        print(f"  LLM streaming error: {e}")
         return False
 
     total_ms = (time.time() - start) * 1000
     response = "".join(full_text)
 
-    print(f"\n  📊 Metrics:")
+    print(f"\n  Metrics:")
     print(f"    Chunks: {chunks_received}")
     print(f"    TTFT: {ttft:.0f}ms" if ttft else "    TTFT: N/A")
     print(f"    Total: {total_ms:.0f}ms")
@@ -204,10 +204,10 @@ async def test_llm_streaming():
     passed = 0
     for check, label in checks:
         if check:
-            print(f"    ✅ {label}")
+            print(f"    {label}")
             passed += 1
         else:
-            print(f"    ❌ {label}")
+            print(f"    {label}")
 
     print(f"\n  Full response:")
     print(f"  {response[:300]}...")
@@ -217,7 +217,7 @@ async def test_llm_streaming():
 
 # ─── Main ───────────────────────────────────────────────
 async def main():
-    print("🧠 Legal CallBot — Brain Service Test")
+    print("Legal CallBot — Brain Service Test")
     print("Giai đoạn 1, Bước 1: LLM Streaming\n")
 
     results = {}
@@ -232,22 +232,22 @@ async def main():
 
     # ─── Summary ─────────────────────────────────────────
     print("\n" + "=" * 60)
-    print("📋 TỔNG KẾT")
+    print("TỔNG KẾT")
     print("=" * 60)
 
     for name, result in results.items():
         if result is True:
-            print(f"  ✅ {name}")
+            print(f"  {name}")
         elif result is False:
-            print(f"  ❌ {name}")
+            print(f"  {name}")
         else:
-            print(f"  ⚠️  {name} (skipped)")
+            print(f"  {name} (skipped)")
 
     all_passed = all(r is True for r in results.values() if r is not None)
     if all_passed:
-        print("\n  🎉 Checkpoint Bước 1 PASSED!")
+        print("\n  Checkpoint Bước 1 PASSED!")
     else:
-        print("\n  ⚠️  Một số test chưa pass.")
+        print("\n  Một số test chưa pass.")
 
 
 if __name__ == "__main__":

@@ -83,7 +83,7 @@ def test_short_entry(chunker, data):
 
     children = [c for c in chunks if c["type"] == "child"]
     assert len(children) == 1, f"Expected 1 child for short text, got {len(children)}"
-    print("  ✅ PASSED: Short entry produces exactly 1 child chunk")
+    print("  PASSED: Short entry produces exactly 1 child chunk")
     return True
 
 
@@ -118,7 +118,7 @@ def test_medium_entry(chunker, data):
     for c in children:
         assert c.get("parent_id"), f"Child {c['id']} missing parent_id"
 
-    print(f"  ✅ PASSED: Medium entry produces {len(children)} child chunks with parent_id")
+    print(f"  PASSED: Medium entry produces {len(children)} child chunks with parent_id")
     return True
 
 
@@ -158,7 +158,7 @@ def test_long_entry(chunker, data):
     print(f"    Under 40 words:  {under_min}/{len(children)}")
     print(f"    Over 600 words:  {over_max}/{len(children)}")
 
-    print(f"  ✅ PASSED: Long entry produces {len(children)} child chunks")
+    print(f"  PASSED: Long entry produces {len(children)} child chunks")
     return True
 
 
@@ -215,7 +215,7 @@ def test_batch_stats(chunker, data, n=1000):
         print(f"    80-500 words:   {in_range:5d} ({in_range/total*100:.1f}%)")
         print(f"    > 500 words:    {over_500:5d} ({over_500/total*100:.1f}%)")
 
-    print(f"\n  ✅ PASSED: Batch processing completed successfully")
+    print(f"\n  PASSED: Batch processing completed successfully")
     return True
 
 
@@ -236,7 +236,7 @@ if __name__ == "__main__":
     print()
     print("=" * 70)
     if all_passed:
-        print("ALL TESTS PASSED ✅")
+        print("ALL TESTS PASSED ")
     else:
-        print("SOME TESTS FAILED ❌")
+        print("SOME TESTS FAILED ")
     print("=" * 70)

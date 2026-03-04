@@ -46,7 +46,7 @@ drive.mount('/content/drive')
 # CELL 3: CONFIG — Điền thông tin Qdrant Cloud ở đây
 # ==============================================================
 
-# 🔑 THAY ĐỔI 2 DÒNG NÀY:
+# THAY ĐỔI 2 DÒNG NÀY:
 QDRANT_URL = "https://YOUR-CLUSTER-URL.aws.cloud.qdrant.io"  # ← Paste URL cluster
 QDRANT_API_KEY = "YOUR-API-KEY"                               # ← Paste API key
 
@@ -235,13 +235,13 @@ class LegalChunker:
 import json
 import time
 
-print("📂 Loading law_data.json từ Google Drive...")
+print("Loading law_data.json từ Google Drive...")
 with open(DATA_PATH, "r", encoding="utf-8") as f:
     raw_data = json.load(f)
 
 total = len(raw_data)
 target = min(MAX_ENTRIES, total) if MAX_ENTRIES else total
-print(f"✅ Loaded {total} entries. Sẽ xử lý {target} entries.\n")
+print(f"Loaded {total} entries. Sẽ xử lý {target} entries.\n")
 
 chunker = LegalChunker(min_words=MIN_WORDS, max_words=MAX_WORDS, overlap_words=OVERLAP_WORDS)
 
@@ -275,7 +275,7 @@ for i, record in enumerate(raw_data[:target]):
         print(f"  Chunked {i+1}/{target}...")
 
 chunk_time = time.time() - t0
-print(f"\n✅ Chunking xong trong {chunk_time:.1f}s")
+print(f"\nChunking xong trong {chunk_time:.1f}s")
 print(f"   Parents:  {len(parents):,}")
 print(f"   Children: {len(children):,}")
 print(f"   Tổng texts cần embed: {len(parents) + len(children):,}")
@@ -286,9 +286,9 @@ print(f"   Tổng texts cần embed: {len(parents) + len(children):,}")
 # ==============================================================
 from FlagEmbedding import BGEM3FlagModel
 
-print("🔄 Downloading & loading BAAI/bge-m3... (lần đầu ~3 phút)")
+print("Downloading & loading BAAI/bge-m3... (lần đầu ~3 phút)")
 model = BGEM3FlagModel('BAAI/bge-m3', use_fp16=True)
-print("✅ Model loaded!")
+print("Model loaded!")
 
 # Quick test
 test_emb = model.encode(["Xin chào"], return_dense=True, return_sparse=True, return_colbert_vecs=False)
@@ -304,12 +304,12 @@ from qdrant_client.http import models
 import hashlib
 import uuid
 
-print(f"🔗 Kết nối Qdrant Cloud: {QDRANT_URL[:40]}...")
+print(f"Kết nối Qdrant Cloud: {QDRANT_URL[:40]}...")
 qdrant = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY, timeout=60)
 
 # Test connection
 collections = qdrant.get_collections()
-print(f"✅ Kết nối thành công! Collections hiện có: {[c.name for c in collections.collections]}")
+print(f"Kết nối thành công! Collections hiện có: {[c.name for c in collections.collections]}")
 
 # Tạo 2 collections
 COLL_PARENT = "phap_dien_dieu"
@@ -318,7 +318,7 @@ COLL_CHILD = "phap_dien_khoan"
 for coll in [COLL_PARENT, COLL_CHILD]:
     if qdrant.collection_exists(coll):
         qdrant.delete_collection(coll)
-        print(f"  🗑️  Đã xóa collection cũ: {coll}")
+        print(f"  Đã xóa collection cũ: {coll}")
 
     qdrant.create_collection(
         collection_name=coll,
@@ -329,7 +329,7 @@ for coll in [COLL_PARENT, COLL_CHILD]:
     qdrant.create_payload_index(coll, "chude", field_schema="keyword")
     qdrant.create_payload_index(coll, "chuong", field_schema="keyword")
     qdrant.create_payload_index(coll, "ten_dieu", field_schema="keyword")
-    print(f"  ✅ Tạo collection: {coll}")
+    print(f"  Tạo collection: {coll}")
 
 
 # ==============================================================
@@ -405,29 +405,29 @@ def embed_and_upload(chunks_list, collection_name, batch_size=EMBED_BATCH_SIZE):
                   f"ETA: {eta/60:.1f} phút")
 
     total_time = time.time() - t_start
-    print(f"  ✅ {collection_name}: {uploaded:,} points uploaded in {total_time/60:.1f} phút\n")
+    print(f"  {collection_name}: {uploaded:,} points uploaded in {total_time/60:.1f} phút\n")
 
 
 # ─── Chạy embedding + upload ─────────────────────────────────
 print("=" * 60)
-print("🚀 BẮT ĐẦU EMBEDDING + UPLOAD")
+print("BẮT ĐẦU EMBEDDING + UPLOAD")
 print("=" * 60)
 
-print(f"\n📦 Collection 1: {COLL_CHILD} ({len(children):,} child chunks)")
+print(f"\nCollection 1: {COLL_CHILD} ({len(children):,} child chunks)")
 embed_and_upload(children, COLL_CHILD)
 
-print(f"📦 Collection 2: {COLL_PARENT} ({len(parents):,} parent chunks)")
+print(f"Collection 2: {COLL_PARENT} ({len(parents):,} parent chunks)")
 embed_and_upload(parents, COLL_PARENT)
 
 print("=" * 60)
-print("🎉 HOÀN THÀNH! Tất cả vectors đã được upload lên Qdrant Cloud.")
+print("HOÀN THÀNH! Tất cả vectors đã được upload lên Qdrant Cloud.")
 print("=" * 60)
 
 
 # ==============================================================
 # CELL 9: Verify — Test search thử
 # ==============================================================
-print("\n🔍 Test search thử...")
+print("\nTest search thử...")
 
 # Embed câu query test
 test_query = "Quyền hạn của bảo vệ dân phố là gì?"
@@ -459,8 +459,8 @@ if results.points:
         )
         if parent_points:
             p = parent_points[0]
-            print(f"📄 Parent (Điều gốc): {p.payload['ten_dieu']}")
+            print(f"Parent (Điều gốc): {p.payload['ten_dieu']}")
             print(f"   Toàn văn ({len(p.payload['text'].split())} từ):")
             print(f"   {p.payload['text'][:300]}...")
 
-print("\n✅ Pipeline hoàn tất! Qdrant Cloud đã sẵn sàng cho Legal CallBot.")
+print("\nPipeline hoàn tất! Qdrant Cloud đã sẵn sàng cho Legal CallBot.")

@@ -5,10 +5,10 @@
 
 function StatusBar({ status, isConnected }) {
   const statusMap = {
-    idle: { text: 'Sẵn sàng', icon: '💤', color: '#a0a0b8' },
-    listening: { text: 'Đang nghe...', icon: '🎤', color: '#4ade80' },
-    thinking: { text: 'Đang suy nghĩ...', icon: '🧠', color: '#fbbf24' },
-    speaking: { text: 'Đang trả lời...', icon: '🗣️', color: '#6c63ff' },
+    idle: { text: 'Sẵn sàng', icon: '', color: '#a0a0b8' },
+    listening: { text: 'Đang nghe...', icon: '', color: '#4ade80' },
+    thinking: { text: 'Đang suy nghĩ...', icon: '', color: '#fbbf24' },
+    speaking: { text: 'Đang trả lời...', icon: '', color: '#6c63ff' },
   }
 
   const current = statusMap[status] || statusMap.idle

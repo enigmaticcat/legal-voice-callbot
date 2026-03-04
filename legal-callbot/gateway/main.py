@@ -49,7 +49,7 @@ async def root():
 # ─── Startup / Shutdown ─────────────────────────────────
 @app.on_event("startup")
 async def startup():
-    logger.info("🚀 Gateway starting up...")
+    logger.info("Gateway starting up...")
     logger.info(f"   ASR  → {settings.asr_address}")
     logger.info(f"   Brain → {settings.brain_address}")
     logger.info(f"   TTS  → {settings.tts_address}")
@@ -57,4 +57,4 @@ async def startup():
 
 @app.on_event("shutdown")
 async def shutdown():
-    logger.info("👋 Gateway shutting down...")
+    logger.info("Gateway shutting down...")

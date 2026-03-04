@@ -1,8 +1,8 @@
-# 🏛️ Legal CallBot
+# Legal CallBot
 
 > Hệ thống tư vấn pháp luật Việt Nam bằng giọng nói AI
 
-## 📐 Kiến Trúc
+## Kiến Trúc
 
 ```
 Client (Web) → WebSocket → Gateway (FastAPI) → gRPC → ASR / Brain / TTS
@@ -16,7 +16,7 @@ Client (Web) → WebSocket → Gateway (FastAPI) → gRPC → ASR / Brain / TTS
 | **TTS** | 50053 | Tổng hợp giọng nói (VieNeu-TTS) |
 | **Web** | 3000 | Giao diện cuộc gọi (React) |
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # 1. Copy env
@@ -34,7 +34,7 @@ curl localhost:8000   # → {"status": "ok"}
 make down
 ```
 
-## 📁 Cấu Trúc Thư Mục
+## Cấu Trúc Thư Mục
 
 ```
 legal-callbot/
@@ -59,7 +59,7 @@ legal-callbot/
 └── scripts/             # Build & deploy tools
 ```
 
-## 🔧 Makefile Commands
+## Makefile Commands
 
 | Command | Mô tả |
 |:--------|:-------|

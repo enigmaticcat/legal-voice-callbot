@@ -24,16 +24,16 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 async def main():
     if not QDRANT_URL or not QDRANT_API_KEY:
-        print("❌ Thiếu QDRANT_URL hoặc QDRANT_API_KEY trong file .env!")
+        print("Thiếu QDRANT_URL hoặc QDRANT_API_KEY trong file .env!")
         print("Vui lòng thêm vào file legal-callbot/.env:")
         print("QDRANT_URL=https://...")
         print("QDRANT_API_KEY=...")
         return
         
-    print("1️⃣ Khởi tạo Qdrant Client...")
+    print("1⃣ Khởi tạo Qdrant Client...")
     qdrant = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY, timeout=10)
     
-    print("2️⃣ Load mô hình BGE-M3 (để nhúng câu hỏi)...")
+    print("2⃣ Load mô hình BGE-M3 (để nhúng câu hỏi)...")
     # --- PATCH for modern transformers library ---
     import transformers.utils.import_utils
     if not hasattr(transformers.utils.import_utils, 'is_torch_fx_available'):
@@ -42,18 +42,18 @@ async def main():
     from FlagEmbedding import BGEM3FlagModel
     model = BGEM3FlagModel('BAAI/bge-m3', use_fp16=False) # Local Mac dùng FP32 hoặc CPU
     
-    print("3️⃣ Khởi tạo Gemini LLM...")
+    print("3⃣ Khởi tạo Gemini LLM...")
     llm = LLMClient(api_key=GEMINI_API_KEY, model="gemini-2.5-flash")
     
     # --- TEST RAG ---
     query = "Tôi lỡ vượt đèn đỏ khi đi xe máy thì bị phạt bao nhiêu tiền?"
-    print(f"\n❓ Câu hỏi: {query}")
+    print(f"\nCâu hỏi: {query}")
     
-    print("\n🔍 Đang tìm kiếm trên Qdrant Cloud...")
+    print("\nĐang tìm kiếm trên Qdrant Cloud...")
     # 1. Embed câu hỏi
     expanded_query = expand_query(query)
     if expanded_query != query:
-        print(f"✨ Query mở rộng: {expanded_query}")
+        print(f"Query mở rộng: {expanded_query}")
     
     q_emb = model.encode([expanded_query], return_dense=True, return_sparse=True, return_colbert_vecs=False)
     
@@ -81,10 +81,10 @@ async def main():
     )
     
     if not results.points:
-        print("❌ Không tìm thấy kết quả nào trong Qdrant.")
+        print("Không tìm thấy kết quả nào trong Qdrant.")
         return
         
-    print(f"✅ Tìm thấy {len(results.points)} căn cứ pháp lý:\n")
+    print(f"Tìm thấy {len(results.points)} căn cứ pháp lý:\n")
     legal_context = []
     for i, point in enumerate(results.points):
         score = point.score
@@ -98,7 +98,7 @@ async def main():
     context_str = "\n".join(legal_context)
     prompt = build_prompt(query=query, legal_context=context_str)
     
-    print("\n🧠 Đang gọi Gemini suy luận...")
+    print("\nĐang gọi Gemini suy luận...")
     print("-" * 50)
     
     # 4. Stream câu trả lời từ Gemini
@@ -107,7 +107,7 @@ async def main():
             print(chunk["text"], end="", flush=True)
             
     print("\n" + "-" * 50)
-    print("✅ Hoàn tất!")
+    print("Hoàn tất!")
 
 if __name__ == "__main__":
     asyncio.run(main())
