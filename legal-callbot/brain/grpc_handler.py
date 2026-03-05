@@ -1,8 +1,3 @@
-"""
-gRPC Handler — Think() implementation
-Hiện tại dùng HTTP server. Bước 2 sẽ chuyển sang gRPC thật.
-Pipeline: Query Expansion → RAG → Build Prompt → LLM Streaming → Word-Safe Chunks
-"""
 import logging
 import time
 from typing import AsyncGenerator
@@ -17,16 +12,6 @@ logger = logging.getLogger("brain.grpc_handler")
 
 
 class BrainServiceHandler:
-    """
-    Handler cho Brain gRPC Service.
-
-    Think():
-      1. Nhận query từ Gateway
-      2. Expand query (từ điển pháp lý)
-      3. RAG search → top 3 Điều luật (dummy ở Step 1)
-      4. Build prompt (system + context + query)
-      5. LLM generate streaming → word-safe chunks
-    """
 
     def __init__(self, llm: LLMClient, rag: RAGPipeline):
         self.llm = llm
@@ -38,26 +23,16 @@ class BrainServiceHandler:
         session_id: str,
         conversation_history: list = None,
     ) -> AsyncGenerator[dict, None]:
-        """
-        Xử lý câu hỏi pháp luật — streaming response.
-
-        Yields:
-            {"text": str, "is_final": bool, "timing": dict}
-        """
         start_time = time.time()
         logger.info(f"[{session_id}] Think: {query[:80]}...")
 
-        # ── Step 1: Expand query ──────────────────────────────
         t0 = time.time()
         expanded = expand_query(query)
         expand_ms = (time.time() - t0) * 1000
 
-        # ── Step 2: RAG search (dummy ở Step 1, real ở Step 3) ──
         t0 = time.time()
         legal_docs = await self.rag.search(expanded)
         rag_ms = (time.time() - t0) * 1000
-
-        # ── Step 3: Build prompt ──────────────────────────────
         context = "\n".join([d.get("content", "") for d in legal_docs])
         prompt = build_prompt(
             query=expanded,
@@ -65,17 +40,15 @@ class BrainServiceHandler:
             conversation_history=conversation_history,
         )
 
-        # ── Step 4: LLM streaming with word-safe chunking ────
         t_llm = time.time()
         first_chunk = True
-        llm_ttft_ms = 0  # Time to First Token from Gemini
+        llm_ttft_ms = 0  
 
         llm_stream = self.llm.generate_stream(
             prompt=prompt,
             system_instruction=LEGAL_SYSTEM_PROMPT,
         )
 
-        # Wrap LLM stream to capture TTFT before chunking
         async def _llm_with_ttft():
             nonlocal llm_ttft_ms
             async for chunk in llm_stream:
@@ -83,7 +56,6 @@ class BrainServiceHandler:
                     llm_ttft_ms = chunk["ttfc_ms"]
                 yield chunk
 
-        # Word-safe chunking (Async)
         async for chunk_text in chunk_llm_stream(_llm_with_ttft()):
             result = {"text": chunk_text, "is_final": False}
 
@@ -100,7 +72,6 @@ class BrainServiceHandler:
                 first_chunk = False
             yield result
 
-        # Final signal
         total_ms = (time.time() - start_time) * 1000
         logger.info(
             f"[{session_id}] Done in {total_ms:.0f}ms "

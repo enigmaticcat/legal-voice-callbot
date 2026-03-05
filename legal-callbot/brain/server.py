@@ -1,8 +1,3 @@
-"""
-Legal CallBot — Brain Worker
-HTTP server cho testing (Bước 1). Bước 2 sẽ chuyển sang gRPC.
-FastAPI thay vì BaseHTTPRequestHandler để hỗ trợ async streaming.
-"""
 import json
 import logging
 import asyncio
@@ -16,14 +11,12 @@ from core.llm import LLMClient
 from core.rag import RAGPipeline
 from grpc_handler import BrainServiceHandler
 
-# ─── Logging ─────────────────────────────────────────────
 logging.basicConfig(
     level=config.log_level,
     format="%(asctime)s | %(name)s | %(levelname)s | %(message)s",
 )
 logger = logging.getLogger("brain")
 
-# ─── Initialize Components ──────────────────────────────
 llm = LLMClient(api_key=config.gemini_api_key, model=config.gemini_model)
 rag = RAGPipeline(
     qdrant_url=config.qdrant_url,
@@ -32,7 +25,6 @@ rag = RAGPipeline(
 )
 handler = BrainServiceHandler(llm=llm, rag=rag)
 
-# ─── FastAPI App ─────────────────────────────────────────
 app = FastAPI(title="Brain Worker", version="0.2.0")
 
 
@@ -53,10 +45,6 @@ async def root():
 
 @app.post("/think")
 async def think(request: Request):
-    """
-    Non-streaming endpoint — trả full response.
-    Dùng cho test đơn giản.
-    """
     body = await request.json()
     query = body.get("query", "")
     session_id = body.get("session_id", "test-session")
@@ -78,10 +66,6 @@ async def think(request: Request):
 
 @app.post("/think/stream")
 async def think_stream(request: Request):
-    """
-    Streaming endpoint — trả từng chunk qua SSE.
-    Dùng cho production pipeline.
-    """
     body = await request.json()
     query = body.get("query", "")
     session_id = body.get("session_id", "test-session")
@@ -98,5 +82,5 @@ async def think_stream(request: Request):
 
 
 if __name__ == "__main__":
-    logger.info(f"🧠 Brain Worker starting on port {config.port}")
+    logger.info(f"Brain Worker starting on port {config.port}")
     uvicorn.run(app, host="0.0.0.0", port=config.port)

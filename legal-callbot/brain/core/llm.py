@@ -15,14 +15,6 @@ logger = logging.getLogger("brain.core.llm")
 
 
 class LLMClient:
-    """
-    Wrapper cho Gemini API streaming.
-
-    Config:
-      - model: gemini-2.0-flash (nhanh, rẻ, đủ chính xác cho tư vấn pháp lý)
-      - temperature: 0.3 (thấp cho pháp lý, giảm hallucination)
-      - streaming: True
-    """
 
     def __init__(self, api_key: str, model: str = "gemini-2.5-flash"):
         if not api_key:
@@ -39,12 +31,6 @@ class LLMClient:
         temperature: float = 0.3,
         max_output_tokens: int = 4096,
     ) -> AsyncGenerator[dict, None]:
-        """
-        Sinh text streaming từ Gemini API.
-
-        Yields:
-            {"text": str, "is_final": bool, "ttft_ms": float (chỉ chunk đầu)}
-        """
         start_time = time.time()
         first_token = True
 
@@ -59,7 +45,6 @@ class LLMClient:
             config.system_instruction = system_instruction
 
         try:
-            # True async streaming — yield ngay khi Gemini trả chunk
             response = await self.client.aio.models.generate_content_stream(
                 model=self.model,
                 contents=prompt,
