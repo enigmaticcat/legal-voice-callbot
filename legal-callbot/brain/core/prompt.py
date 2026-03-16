@@ -1,9 +1,3 @@
-"""
-System Prompt & Few-Shot Templates
-Các prompt template cho LLM chuyên tư vấn pháp luật.
-Giữ system prompt < 500 tokens cho voice AI (tốc độ).
-"""
-
 LEGAL_SYSTEM_PROMPT = """Bạn là trợ lý tư vấn pháp luật Việt Nam qua giọng nói. Tuân thủ:
 
 1. **Trích dẫn căn cứ**: Nêu số Điều, Khoản, tên văn bản trước khi phân tích.
@@ -59,23 +53,13 @@ def build_prompt(
     legal_context: str = "",
     conversation_history: list = None,
 ) -> str:
-    """
-    Tạo prompt đầy đủ cho LLM.
-
-    Args:
-        query: Câu hỏi của người dùng (đã qua query expansion).
-        legal_context: Các Điều luật liên quan (từ RAG).
-        conversation_history: List of {"role": "user"|"assistant", "text": str}.
-    """
     parts = []
 
-    # Few-shot examples (ngắn gọn cho voice)
     parts.append("Ví dụ tư vấn:")
-    for ex in FEW_SHOT_EXAMPLES[:3]:  # Chỉ dùng 3 ví dụ để giữ prompt ngắn
+    for ex in FEW_SHOT_EXAMPLES[:3]:  
         parts.append(f"Hỏi: {ex['question']}")
         parts.append(f"Đáp: {ex['answer']}\n")
 
-    # RAG context (Điều luật liên quan)
     if legal_context:
         parts.append("---")
         parts.append("Căn cứ pháp lý liên quan:")
@@ -85,10 +69,9 @@ def build_prompt(
     else:
         parts.append("(Chưa có dữ liệu RAG — trả lời từ kiến thức chung của bạn.)")
 
-    # Conversation history
     if conversation_history:
         parts.append("\nLịch sử hội thoại:")
-        for turn in conversation_history[-6:]:  # Max 6 lượt gần nhất
+        for turn in conversation_history[-6:]:  
             role = "Người dùng" if turn["role"] == "user" else "Bot"
             text = turn["text"]
             if turn.get("interrupted"):

@@ -10,13 +10,15 @@ class ASRConfig:
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
     port: int = int(os.getenv("ASR_PORT", "50051"))
 
-    # Whisper settings (Bước 3)
-    whisper_model: str = os.getenv("WHISPER_MODEL", "large-v3")
-    whisper_language: str = "vi"
-    whisper_beam_size: int = 1
+    # Sherpa-Onnx Settings
+    encoder_path: str = os.path.join(os.path.dirname(__file__), "data", "encoder-epoch-31-avg-11-chunk-16-left-128.fp16.onnx")
+    decoder_path: str = os.path.join(os.path.dirname(__file__), "data", "decoder-epoch-31-avg-11-chunk-16-left-128.fp16.onnx")
+    joiner_path: str = os.path.join(os.path.dirname(__file__), "data", "joiner-epoch-31-avg-11-chunk-16-left-128.fp16.onnx")
 
-    # VAD settings (Bước 3)
-    vad_silence_threshold_ms: int = 300
+    tokens_path: str = os.path.join(os.path.dirname(__file__), "data", "config.json")
+    
+    sample_rate: int = 16000
 
 
 config = ASRConfig()
+

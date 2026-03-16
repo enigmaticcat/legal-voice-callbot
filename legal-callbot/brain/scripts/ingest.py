@@ -116,7 +116,10 @@ class QdrantIngester:
                  "demuc": record.get("demuc", "Unknown"),
                  "chuong": record.get("chuong", "Unknown"),
                  "vbqppl": record.get("vbqppl", "Unknown"),
-                 "stt": record.get("stt", 0)
+                 "stt": record.get("stt", 0),
+                 "dieu_lienquan": record.get("dieu_lienquan", []),
+                 "llm_context_header": record.get("llm_context_header", ""),
+                 "llm_context_footer": record.get("llm_context_footer", "")
              }
              
              chunks = chunker.extract_chunks(mapc, ten_dieu, noidung, metadata)
@@ -177,6 +180,9 @@ class QdrantIngester:
               else:
                   sparse_indices = [0]
                   sparse_values = [0.1]
+              # Extract full label from text or breadcrumb
+              breadcrumb = chunk.get("breadcrumb", [])
+              display_label = " - ".join(breadcrumb) if breadcrumb else chunk.get("ten_entry", "")
               
               point = models.PointStruct(
                    # Use generated predictable chunk id, converting to UUID format using internal helper or directly passing string Id when supported.
@@ -193,7 +199,7 @@ class QdrantIngester:
                    payload={
                         "type": chunk["type"],
                         "mapc": chunk["mapc"],
-                        "ten_dieu": chunk["ten_dieu"],
+                        "display_label": display_label,
                         "text": chunk["text"],
                         "parent_id": chunk.get("parent_id", ""), # Missing explicitly for type=parent 
                         **chunk["metadata"] 
@@ -217,7 +223,7 @@ class QdrantIngester:
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Ingest law data JSON into Qdrant using BGE-M3 vector bindings")
-    parser.add_argument("--data", type=str, default="/Users/nguyenthithutam/Desktop/Callbot/legal-callbot/brain/data/law_data.json", help="Path to json export")
+    parser.add_argument("--data", type=str, default="/Users/nguyenthithutam/Desktop/Callbot/legal-callbot/brain/data/law_data_clean.json", help="Path to json export")
     parser.add_argument("--reset", action="store_true", help="Delete and recreate collections")
     parser.add_argument("--use-model", action="store_true", help="Download and initialize BGEM3 - otherwise runs as dry run")
     parser.add_argument("--max-items", type=int, default=None, help="Limit numbers parsed (for testing)")

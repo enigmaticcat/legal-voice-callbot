@@ -42,7 +42,10 @@ class HTTPHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if self.path == "/transcribe":
-            result = handler.transcriber.transcribe(b"")
+            content_length = int(self.headers.get('Content-Length', 0))
+            audio_pcm = self.rfile.read(content_length) if content_length > 0 else b""
+            
+            result = handler.transcriber.transcribe(audio_pcm)
             self._respond(200, {
                 "text": result["text"],
                 "is_final": True,
@@ -50,6 +53,7 @@ class HTTPHandler(BaseHTTPRequestHandler):
             })
         else:
             self._respond(404, {"error": "not found"})
+
 
     def _respond(self, status_code: int, data: dict):
         self.send_response(status_code)

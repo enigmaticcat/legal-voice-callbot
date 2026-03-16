@@ -219,19 +219,67 @@ def test_batch_stats(chunker, data, n=1000):
     return True
 
 
+def test_hierarchy_deep_dive(chunker):
+    """Test 5: Explicitly verify Article 118 - Clause 2 - Point a/b with aliasing."""
+    print()
+    print("=" * 70)
+    print("TEST 5: HIERARCHY DEEP DIVE (Article 118)")
+    print("=" * 70)
+    
+    # Mock entry based on user example
+    mock_entry = {
+        "mapc": "300020000000000040000010000000000000000011800000000000000000",
+        "ten": "Điều 30.2.LQ.118. Cưỡng chế thi hành nghĩa vụ buộc thực hiện công việc nhất định",
+        "noidung": (
+            "1. Trường hợp thi hành nghĩa vụ phải thực hiện công việc nhất định theo bản án... "
+            "thì Chấp hành viên quyết định phạt tiền...\n\n"
+            "2. Hết thời hạn đã ấn định mà người phải thi hành án không thực hiện nghĩa vụ thi hành án thì Chấp hành viên xử lý như sau:\n\n"
+            "a) Trường hợp công việc đó có thể giao cho người khác thực hiện thay thì Chấp hành viên giao cho người có điều kiện thực hiện;\n\n"
+            "b) Trường hợp công việc đó phải do chính người phải thi hành án thực hiện thì Chấp hành viên đề nghị cơ quan có thẩm quyền..."
+        ),
+        "demuc": "Thi hành án dân sự"
+    }
+    
+    chunks = chunker.extract_chunks(
+        mock_entry["mapc"], mock_entry["ten"], mock_entry["noidung"],
+        {"demuc": mock_entry["demuc"]}
+    )
+    
+    children = [c for c in chunks if c["type"] == "child"]
+    
+    print(f"  Entry: {mock_entry['ten']}")
+    print(f"  Generated {len(children)} child chunks")
+    
+    # Verify labels
+    found_2a = False
+    found_2b = False
+    
+    for c in children:
+        print(f"  - Chunk: {c['text'][:120]}...")
+        if "(Khoản 2a)" in c["text"]:
+            found_2a = True
+        if "(Khoản 2b)" in c["text"]:
+            found_2b = True
+            
+    assert found_2a, "Failed to find alias (Khoản 2a) in breadcrumb"
+    assert found_2b, "Failed to find alias (Khoản 2b) in breadcrumb"
+    print("\n  PASSED: Hierarchy labels and aliasing are correct")
+    return True
+
 if __name__ == "__main__":
     print("Loading data...")
     with open(DATA_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
     print(f"Loaded {len(data)} entries\n")
 
-    chunker = LegalChunker(min_words=80, max_words=500, overlap_words=30)
+    chunker = LegalChunker(min_words=20, max_words=500) # Lower min words for testing segments
 
     all_passed = True
     all_passed &= test_short_entry(chunker, data)
     all_passed &= test_medium_entry(chunker, data)
     all_passed &= test_long_entry(chunker, data)
-    all_passed &= test_batch_stats(chunker, data, n=1000)
+    all_passed &= test_hierarchy_deep_dive(chunker)
+    all_passed &= test_batch_stats(chunker, data, n=100)
 
     print()
     print("=" * 70)

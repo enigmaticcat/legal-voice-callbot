@@ -1,48 +1,81 @@
 """
-Transcriber — Faster-Whisper Inference Wrapper
-Nhận audio PCM → trả text tiếng Việt.
-Bước 3 sẽ tích hợp faster-whisper thật.
+Transcriber — Sherpa-Onnx Online Transducer Inference Wrapper
+Nhận audio PCM qua stream → trả text tiếng Việt thời gian thực.
 """
 import logging
+import os
+import numpy as np
+import sherpa_onnx
 
 logger = logging.getLogger("asr.core.transcriber")
 
 
 class Transcriber:
     """
-    Faster-Whisper ASR engine.
-
-    Config tối ưu latency:
-      - beam_size = 1 (Greedy decoding)
-      - language = "vi" (skip language detection)
-      - vad_filter = False (dùng Silero VAD riêng)
+    Sherpa-Onnx Streaming ASR engine.
+    Hỗ trợ Online (Streaming) Transducer với encoder, decoder, joiner.
     """
 
-    def __init__(self, model_name: str = "large-v3", language: str = "vi"):
-        self.model_name = model_name
-        self.language = language
-        self._model = None  # Lazy load
-        logger.info(f"Transcriber initialized (model: {model_name}, lang: {language})")
+    def __init__(self):
+        from config import config
+        
+        logger.info("Initializing Sherpa-Onnx OnlineRecognizer...")
+        try:
+            # load online transducer via factory method
+            self.recognizer = sherpa_onnx.OnlineRecognizer.from_transducer(
+                tokens=config.tokens_path,
+                encoder=config.encoder_path,
+                decoder=config.decoder_path,
+                joiner=config.joiner_path,
+                num_threads=4,
+                sample_rate=config.sample_rate,
+                feature_dim=80,
+                enable_endpoint_detection=True, # Hỗ trợ dứt lời ngay trong Sherpa
+            )
+            logger.info("✅ Sherpa-Onnx OnlineRecognizer loaded successfully!")
+        except Exception as e:
+            logger.error(f"❌ Failed to load Sherpa-Onnx Recognizer: {e}")
+            raise e
 
-    def load_model(self):
+    def create_stream(self):
         """
-        Load Whisper model vào GPU.
-        TODO: Implement ở Bước 3.
+        Khởi tạo một online stream cho một session/cuộc gọi mới.
         """
-        logger.info(f"Loading Whisper model: {self.model_name}...")
-        # Placeholder
+        return self.recognizer.create_stream()
+
+    def accept_wave(self, stream, audio_pcm: bytes, sample_rate: int = 16000) -> str:
+        """
+        Đẩy chunk audio PCM (16-bit, 16kHz mono) vào stream và giải mã.
+        
+        Returns:
+            Văn bản đã nhận diện được cho stream tới thời điểm hiện tại.
+        """
+        if not audio_pcm:
+            return ""
+            
+        # Convert bytes to float32 numpy array
+        samples = np.frombuffer(audio_pcm, dtype=np.int16).astype(np.float32) / 32768.0
+        stream.accept_waveform(sample_rate, samples)
+        
+        while self.recognizer.is_ready(stream):
+            self.recognizer.decode_stream(stream)
+            
+        return self.recognizer.get_result(stream)
+
+
+    def is_endpoint(self, stream) -> bool:
+        """
+        Kiểm tra đã dứt lời (Endpoint) chưa.
+        """
+        return self.recognizer.is_endpoint(stream)
 
     def transcribe(self, audio_pcm: bytes, sample_rate: int = 16000) -> dict:
         """
-        Transcribe audio PCM → text.
-        TODO: Implement ở Bước 3.
-
-        Returns:
-            {"text": str, "confidence": float}
+        Hàm fallback cho chế độ Batch (được gọi từ server.py dummy).
         """
-        logger.debug(f"Transcribing {len(audio_pcm)} bytes audio")
-        # Dummy response
+        stream = self.create_stream()
+        text = self.accept_wave(stream, audio_pcm, sample_rate)
         return {
-            "text": "xin chào",
+            "text": text,
             "confidence": 0.95,
         }
