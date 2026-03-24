@@ -1,7 +1,30 @@
 CallBot_Implementation_Plan_v2.md
 CallBot_Execution_Roadmap.md
-law_data.json
-law_data_enriched.json
-law_data_hierarchical.json
-legal-callbot/brain/data/law_data_clean.json
+
+# Môi trường ảo (Virtual Env)
+venv/
+.venv/
+env/
+
+# Model AI & Weights
 *.onnx
+*.pt
+*.bin
+
+# Dữ liệu dạng thô (Raw Data)
+*.json
+*.csv
+*.parquet
+vietnamese_legal_parquet/
+!package.json
+!tsconfig.json
+
+# Cache và Compiled Python code
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Môi trường và keys
+.env
+secret*.json

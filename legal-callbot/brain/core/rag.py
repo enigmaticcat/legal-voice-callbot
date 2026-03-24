@@ -27,7 +27,7 @@ class RAGPipeline:
         logger.info("Initializing BGE-M3 Model for queries...")
         self.model = BGEM3FlagModel('BAAI/bge-m3', use_fp16=False)
 
-    async def search(self, expanded_query: str, top_k: int = 10) -> List[Dict]:
+    async def search(self, expanded_query: str, filters: dict = None, top_k: int = 10) -> List[Dict]:
         logger.debug(f"RAG search for: {expanded_query[:50]}...")
         
         q_emb = self.model.encode([expanded_query], return_dense=True, return_sparse=True, return_colbert_vecs=False)
@@ -41,12 +41,20 @@ class RAGPipeline:
             except: pass
         sparse_query = models.SparseVector(indices=si, values=sv)
 
+        # Xây dựng Pre-Filter Object chặn Vector Search
+        qfilter = None
+        if filters:
+            must_conds = []
+            for k, v in filters.items():
+                must_conds.append(models.FieldCondition(key=k, match=models.MatchValue(value=v)))
+            qfilter = models.Filter(must=must_conds)
+
         results = await asyncio.to_thread(
             self.qdrant.query_points,
             collection_name=self.collection,
             prefetch=[
-                models.Prefetch(query=dense_query, using="", limit=20),
-                models.Prefetch(query=sparse_query, using="sparse", limit=20),
+                models.Prefetch(query=dense_query, using="dense", limit=20, filter=qfilter),
+                models.Prefetch(query=sparse_query, using="sparse", limit=20, filter=qfilter),
             ],
             query=models.FusionQuery(fusion=models.Fusion.RRF),
             limit=top_k,

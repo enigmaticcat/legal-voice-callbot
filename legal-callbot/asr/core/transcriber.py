@@ -11,6 +11,37 @@ logger = logging.getLogger("asr.core.transcriber")
 
 
 class Transcriber:
+    def accept_wave_with_ttft(self, stream, audio_pcm: bytes, sample_rate: int = 16000):
+        """
+        Đẩy chunk audio PCM vào stream, đo time to first token (TTFT).
+        Returns:
+            (text, ttft):
+                text: văn bản đã nhận diện được
+                ttft: thời gian (giây) từ lúc bắt đầu đến khi sinh ra token đầu tiên
+        """
+        import time
+        if not audio_pcm:
+            return "", None
+
+        samples = np.frombuffer(audio_pcm, dtype=np.int16).astype(np.float32) / 32768.0
+        stream.accept_waveform(sample_rate, samples)
+
+        ttft = None
+        text = ""
+        start_time = time.time()
+        first_token_emitted = False
+
+        while self.recognizer.is_ready(stream):
+            self.recognizer.decode_stream(stream)
+            current_text = self.recognizer.get_result(stream)
+            if not first_token_emitted and current_text.strip():
+                ttft = time.time() - start_time
+                first_token_emitted = True
+                text = current_text
+        # Nếu không có token nào thì ttft = None
+        if not first_token_emitted:
+            text = self.recognizer.get_result(stream)
+        return text, ttft
     """
     Sherpa-Onnx Streaming ASR engine.
     Hỗ trợ Online (Streaming) Transducer với encoder, decoder, joiner.

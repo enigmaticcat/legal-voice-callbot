@@ -208,11 +208,16 @@ class LegalChunker:
         breadcrumb = piece["breadcrumb"]
         text = piece["text"]
         
-        # Breadcrumb examples:
-        # [Mục 5] -> "[Mục 5]"
-        # [Luật A, Điều 1, Khoản 2, Điểm a] -> "[Luật A - Điều 1 - Khoản 2 - Điểm a]"
-        
+        # Bóc tách metadata Số hiệu pháp lý để chèn vào đầu Prefix Chunk
+        so_hieu = metadata.get("so_hieu", "")
+        if not so_hieu and metadata.get("vbqppl"):
+            import re
+            m = re.search(r'\b(\d{1,4}/\d{4}/[A-ZĐ]+(?:-[A-ZĐ]+)*)\b', metadata.get("vbqppl"))
+            if m: so_hieu = m.group(1)
+            
         main_label = " - ".join(breadcrumb)
+        if so_hieu and so_hieu not in main_label:
+            main_label = f"{so_hieu} - {main_label}"
         
         # Aliasing for Khoản 2a style
         aliased_label = main_label

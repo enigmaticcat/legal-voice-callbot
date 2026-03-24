@@ -59,7 +59,7 @@ class QdrantIngester:
              self.qdrant.create_collection(
                  collection_name=coll,
                  # Vector configuration follows BGE-M3 specifications
-                 vectors_config=models.VectorParams(size=1024, distance=models.Distance.COSINE),
+                 vectors_config={"dense": models.VectorParams(size=1024, distance=models.Distance.COSINE)},
                  # Optional setup sparse support could be added directly via sparse_vectors config.
                  sparse_vectors_config={"sparse": models.SparseVectorParams()}
              )
@@ -189,8 +189,8 @@ class QdrantIngester:
                    # Qdrant supports UUID or integer ID.
                    id=chunk["id"], # <-- NOTE: Ensure this matches Qdrant id constraints (UUID). Let's hash it instead.
                    vector={
-                       # By default, anonymous vector (usually "") handles dense points. Named vector handles sparse.
-                       "": dense_vecs[idx],
+                       # Named vector handles dense points. Named vector handles sparse.
+                       "dense": dense_vecs[idx],
                        "sparse": models.SparseVector(
                             indices=sparse_indices,
                             values=sparse_values
