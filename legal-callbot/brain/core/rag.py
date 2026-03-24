@@ -13,16 +13,21 @@ logger = logging.getLogger("brain.core.rag")
 
 class RAGPipeline:
 
-    def __init__(self, qdrant_url: str, qdrant_api_key: str, collection: str):
+    def __init__(self, qdrant_url: str, collection: str, qdrant_api_key: str = None, qdrant_path: str = None):
+        self.collection = collection
         self.qdrant_url = qdrant_url
         self.qdrant_api_key = qdrant_api_key
-        self.collection = collection
+        self.qdrant_path = qdrant_path
         
-        logger.info(f"Initializing QdrantClient: {qdrant_url[:30]}...")
-        if qdrant_api_key:
-            self.qdrant = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
+        if qdrant_path:
+            logger.info(f"Initializing Local QdrantClient at: {qdrant_path}")
+            self.qdrant = QdrantClient(path=qdrant_path)
         else:
-            self.qdrant = QdrantClient(url=qdrant_url)
+            logger.info(f"Initializing Cloud QdrantClient: {qdrant_url[:30]}...")
+            if qdrant_api_key:
+                self.qdrant = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
+            else:
+                self.qdrant = QdrantClient(url=qdrant_url)
         
         logger.info("Initializing BGE-M3 Model for queries...")
         self.model = BGEM3FlagModel('BAAI/bge-m3', use_fp16=False)

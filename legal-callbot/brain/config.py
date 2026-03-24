@@ -25,6 +25,7 @@ class BrainConfig:
     qdrant_port: int = int(os.getenv("QDRANT_PORT", "6333"))
     qdrant_url: str = os.getenv("QDRANT_URL", "")
     qdrant_api_key: str = os.getenv("QDRANT_API_KEY", "")
+    qdrant_path: str = os.getenv("QDRANT_PATH", "") # Thêm biến đọc từ Path để gọi Qdrant Snapshot Local
     qdrant_collection: str = "phap_dien_khoan" 
     min_chunk_size: int = 40
 

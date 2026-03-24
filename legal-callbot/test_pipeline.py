@@ -29,6 +29,7 @@ async def run_pipeline():
     rag = RAGPipeline(
         qdrant_url=brain_config.qdrant_url,
         qdrant_api_key=brain_config.qdrant_api_key,
+        qdrant_path=brain_config.qdrant_path,
         collection=brain_config.qdrant_collection,
     )
     brain = BrainServiceHandler(llm=llm, rag=rag)

@@ -1,15 +1,10 @@
-"""
-Script test ASR trực tiếp với Microphone thông qua sounddevice
-Yêu cầu cài đặt: 
-  1. pip install sounddevice
-  2. (Trên MacOS) brew install portaudio
-"""
+
 import sys
 import os
 import time
 import argparse
 
-# Thêm thư mục hiện tại (asr/) vào PATH để load core/ và config
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from core.transcriber import Transcriber
@@ -49,14 +44,32 @@ else:
     print("\nDang ket noi Microphone... Hay bat dau noi!")
     print("(In ket qua Real-time. An Ctrl+C de ket thuc)\n")
 
-# Biến lưu trữ đoạn text trước đó để so sánh in đè
+# Biến lưu trữ đoạn text trước đó để chỉ in phần mới (delta)
 current_text = ""
-
 first_token_printed = False
-ttft_value = None
+
+
+def print_transcript_update(new_text: str):
+    global current_text
+    if not new_text:
+        return
+
+    # Trường hợp ASR trả về text mở rộng dần: chỉ in phần mới để tránh spam log
+    if new_text.startswith(current_text):
+        delta = new_text[len(current_text):]
+        if delta:
+            if not current_text:
+                print("Ban noi: ", end="", flush=True)
+            print(delta, end="", flush=True)
+            current_text = new_text
+        return
+
+    # Fallback nếu ASR thay đổi lại toàn bộ hypothesis
+    current_text = new_text
+    print(f"\nBan noi (cap nhat): {new_text}", end="", flush=True)
 
 def audio_callback(indata, frames, time_info, status):
-    global current_text, first_token_printed, ttft_value
+    global first_token_printed
     if status:
         print(f"Status: {status}", file=sys.stderr)
 
@@ -68,16 +81,15 @@ def audio_callback(indata, frames, time_info, status):
     # Giải mã và đo TTFT
     text, ttft = transcriber.accept_wave_with_ttft(stream, pcm_bytes)
 
-    if text and text != current_text:
-        current_text = text
-        print(f"\rBan noi: {text}", end="", flush=True)
+    if text:
+        print_transcript_update(text)
         if not first_token_printed and ttft is not None:
             print(f"\nTime to first token: {ttft:.3f} giay")
             first_token_printed = True
 
 def process_file_input(file_path):
     import wave
-    global current_text, first_token_printed, ttft_value
+    global first_token_printed
     with wave.open(file_path, 'rb') as wf:
         assert wf.getnchannels() == 1, "File phai la mono"
         assert wf.getframerate() == sample_rate, f"File phai co sample rate {sample_rate}"
@@ -85,9 +97,8 @@ def process_file_input(file_path):
         while chunk:
             # chunk dang la bytes int16
             text, ttft = transcriber.accept_wave_with_ttft(stream, chunk)
-            if text and text != current_text:
-                current_text = text
-                print(f"\rBan noi: {text}", end="", flush=True)
+            if text:
+                print_transcript_update(text)
                 if not first_token_printed and ttft is not None:
                     print(f"\nTime to first token: {ttft:.3f} giay")
                     first_token_printed = True
