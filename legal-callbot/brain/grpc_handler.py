@@ -2,11 +2,11 @@ import logging
 import time
 from typing import AsyncGenerator
 
-from core.llm import LLMClient
-from core.rag import RAGPipeline
-from core.query_expander import expand_query
-from core.prompt import build_prompt, LEGAL_SYSTEM_PROMPT
-from core.chunker import chunk_llm_stream
+from .core.llm import LLMClient
+from .core.rag import RAGPipeline
+from .core.query_expander import expand_query
+from .core.prompt import build_prompt, LEGAL_SYSTEM_PROMPT
+from .core.chunker import chunk_llm_stream
 
 logger = logging.getLogger("brain.grpc_handler")
 

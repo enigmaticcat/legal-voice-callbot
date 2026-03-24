@@ -2,6 +2,7 @@ import logging
 import asyncio
 from typing import List, Dict
 from qdrant_client import QdrantClient, models
+from qdrant_client.http.exceptions import UnexpectedResponse
 
 import transformers.utils.import_utils
 if not hasattr(transformers.utils.import_utils, 'is_torch_fx_available'):
@@ -18,6 +19,8 @@ class RAGPipeline:
         self.qdrant_url = qdrant_url
         self.qdrant_api_key = qdrant_api_key
         self.qdrant_path = qdrant_path
+        self.dense_vector_name = "dense"
+        self.sparse_vector_name = "sparse"
         
         if qdrant_path:
             logger.info(f"Initializing Local QdrantClient at: {qdrant_path}")
@@ -31,6 +34,50 @@ class RAGPipeline:
         
         logger.info("Initializing BGE-M3 Model for queries...")
         self.model = BGEM3FlagModel('BAAI/bge-m3', use_fp16=False)
+        self._detect_vector_names()
+
+    def _detect_vector_names(self):
+        """Tự động phát hiện tên vector của collection (dense/sparse)."""
+        try:
+            info = self.qdrant.get_collection(self.collection)
+            params = info.config.params
+
+            vectors_cfg = getattr(params, "vectors", None)
+            if isinstance(vectors_cfg, dict):
+                if "dense" in vectors_cfg:
+                    self.dense_vector_name = "dense"
+                elif len(vectors_cfg) > 0:
+                    self.dense_vector_name = next(iter(vectors_cfg.keys()))
+            else:
+                # Single unnamed dense vector
+                self.dense_vector_name = ""
+
+            sparse_cfg = getattr(params, "sparse_vectors", None)
+            if isinstance(sparse_cfg, dict):
+                if "sparse" in sparse_cfg:
+                    self.sparse_vector_name = "sparse"
+                elif len(sparse_cfg) > 0:
+                    self.sparse_vector_name = next(iter(sparse_cfg.keys()))
+
+            logger.info(
+                f"Detected vector names - dense: '{self.dense_vector_name}', sparse: '{self.sparse_vector_name}'"
+            )
+        except Exception as e:
+            logger.warning(
+                f"Could not auto-detect vector names for collection '{self.collection}': {e}. "
+                "Fallback to dense/sparse defaults."
+            )
+
+    def _build_prefetch(self, dense_query, sparse_query, qfilter):
+        dense_prefetch = models.Prefetch(query=dense_query, limit=20, filter=qfilter)
+        sparse_prefetch = models.Prefetch(query=sparse_query, limit=20, filter=qfilter)
+
+        if self.dense_vector_name is not None:
+            dense_prefetch.using = self.dense_vector_name
+        if self.sparse_vector_name:
+            sparse_prefetch.using = self.sparse_vector_name
+
+        return [dense_prefetch, sparse_prefetch]
 
     async def search(self, expanded_query: str, filters: dict = None, top_k: int = 10) -> List[Dict]:
         logger.debug(f"RAG search for: {expanded_query[:50]}...")
@@ -54,17 +101,31 @@ class RAGPipeline:
                 must_conds.append(models.FieldCondition(key=k, match=models.MatchValue(value=v)))
             qfilter = models.Filter(must=must_conds)
 
-        results = await asyncio.to_thread(
-            self.qdrant.query_points,
-            collection_name=self.collection,
-            prefetch=[
-                models.Prefetch(query=dense_query, using="dense", limit=20, filter=qfilter),
-                models.Prefetch(query=sparse_query, using="sparse", limit=20, filter=qfilter),
-            ],
-            query=models.FusionQuery(fusion=models.Fusion.RRF),
-            limit=top_k,
-            with_payload=True
-        )
+        try:
+            results = await asyncio.to_thread(
+                self.qdrant.query_points,
+                collection_name=self.collection,
+                prefetch=self._build_prefetch(dense_query, sparse_query, qfilter),
+                query=models.FusionQuery(fusion=models.Fusion.RRF),
+                limit=top_k,
+                with_payload=True
+            )
+        except UnexpectedResponse as e:
+            # Fallback cho các snapshot cũ dùng unnamed dense vector (using="")
+            err_msg = str(e)
+            if "Not existing vector name" in err_msg and "dense" in err_msg:
+                logger.warning("Dense vector name mismatch. Retrying with unnamed dense vector ('').")
+                self.dense_vector_name = ""
+                results = await asyncio.to_thread(
+                    self.qdrant.query_points,
+                    collection_name=self.collection,
+                    prefetch=self._build_prefetch(dense_query, sparse_query, qfilter),
+                    query=models.FusionQuery(fusion=models.Fusion.RRF),
+                    limit=top_k,
+                    with_payload=True
+                )
+            else:
+                raise
 
         formatted_results = []
         for p in results.points:
