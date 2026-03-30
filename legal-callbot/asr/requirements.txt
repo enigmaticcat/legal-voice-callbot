@@ -1,5 +1,0 @@
-sherpa-onnx
-grpcio
-grpcio-tools
-numpy
-

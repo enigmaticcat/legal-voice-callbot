@@ -1,2 +1,0 @@
-# TTS dependencies (dummy phase — no AI models yet)
-# Step 4 will add: vieneu-tts, grpcio, torch, torchaudio
