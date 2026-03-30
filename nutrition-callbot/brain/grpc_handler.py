@@ -33,6 +33,7 @@ class BrainServiceHandler:
         t0 = time.time()
         docs = await self.rag.search(expanded)
         rag_ms = (time.time() - t0) * 1000
+        contexts = [d.get("content", "") for d in docs]
         context = "\n\n".join(
             f"[{d.get('source','').upper()} — {d.get('title','')}]\n{d.get('content','')}"
             for d in docs
@@ -83,5 +84,6 @@ class BrainServiceHandler:
         yield {
             "text": "",
             "is_final": True,
+            "contexts": contexts,
             "timing": {"total_ms": round(total_ms, 1)},
         }

@@ -2,6 +2,7 @@ import json
 import logging
 import asyncio
 
+import httpx
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 import uvicorn
@@ -9,6 +10,7 @@ import uvicorn
 from brain.config import config
 from brain.core.llm import LLMClient
 from brain.core.rag import RAGPipeline
+from brain.core.chunker import chunk_llm_stream
 from brain.grpc_handler import BrainServiceHandler
 
 logging.basicConfig(
@@ -78,6 +80,61 @@ async def think_stream(request: Request):
     return StreamingResponse(
         generate(),
         media_type="application/x-ndjson",
+    )
+
+
+@app.post("/pipeline/audio-stream")
+async def pipeline_audio_stream(request: Request):
+    """
+    LLM streaming → sentence chunker → TTS streaming → PCM audio.
+
+    Flow:
+      1. Gọi RAG + LLM như /think/stream
+      2. Mỗi khi chunker tích đủ 1 câu → POST sang TTS /speak/stream ngay
+      3. Yield PCM bytes từ TTS liên tục về client
+      4. Cuối cùng yield NDJSON final chunk (is_final=True) với timing + contexts
+
+    Response:
+      Content-Type: audio/pcm
+      X-Sample-Rate: 24000
+      body: raw PCM int16 chunks xen kẽ, kết thúc bằng final metadata line
+    """
+    body = await request.json()
+    query = body.get("query", "")
+    session_id = body.get("session_id", "pipeline")
+    history = body.get("conversation_history", [])
+
+    async def generate():
+        final_meta = {}
+
+        async def _llm_chunks():
+            nonlocal final_meta
+            async for chunk in handler.think(query, session_id, history):
+                if chunk.get("is_final"):
+                    final_meta = chunk
+                else:
+                    yield chunk
+
+        async with httpx.AsyncClient(timeout=None) as client:
+            async for sentence in chunk_llm_stream(_llm_chunks()):
+                if not sentence.strip():
+                    continue
+                # Stream PCM từ TTS ngay khi có 1 câu hoàn chỉnh
+                async with client.stream(
+                    "POST",
+                    f"{config.tts_url}/speak/stream",
+                    json={"text": sentence},
+                ) as tts_resp:
+                    async for pcm_chunk in tts_resp.aiter_bytes(chunk_size=4800):
+                        yield pcm_chunk
+
+        # Gửi final metadata cuối cùng dưới dạng newline-delimited JSON
+        yield b"\n" + json.dumps(final_meta, ensure_ascii=False).encode() + b"\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="audio/pcm",
+        headers={"X-Sample-Rate": "24000"},
     )
 
 

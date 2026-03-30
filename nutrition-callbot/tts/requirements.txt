@@ -1,2 +1,17 @@
-# TTS dependencies (dummy phase — no AI models yet)
-# Step 4 will add: vieneu-tts, grpcio, torch, torchaudio
+# ── VieNeu-TTS ──
+# Local: pip install -e /Users/nguyenthithutam/VieNeu-TTS
+# Colab:  pip install git+https://github.com/pnnbao97/VieNeu-TTS.git
+neucodec>=0.0.4
+phonemizer>=3.3.0
+librosa>=0.11.0
+torch
+torchaudio
+
+# ── API Server ──
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+
+# ── Utilities ──
+numpy>=1.24.0
+python-dotenv>=1.0.0
+soundfile>=0.12.0

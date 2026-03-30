@@ -1,7 +1,8 @@
 """
-gRPC Handler — Speak() + Cancel() implementation
-Bước 2 sẽ chuyển sang gRPC thật. Hiện tại dùng HTTP dummy.
+TTS Service Handler
+Nhận text → word-safe chunking → synthesize_stream() → yield PCM bytes
 """
+import asyncio
 import logging
 
 from core.synthesizer import Synthesizer
@@ -11,33 +12,25 @@ logger = logging.getLogger("tts.grpc_handler")
 
 
 class TTSServiceHandler:
-    """
-    Handler cho TTS gRPC Service.
-
-    Speak():
-      Nhận stream TextChunk → word-safe chunking → TTS stream → AudioChunk ra.
-
-    Cancel():
-      Dừng inference ngay lập tức, giải phóng GPU.
-    """
 
     def __init__(self, synthesizer: Synthesizer):
         self.synthesizer = synthesizer
 
     async def speak(self, text: str):
         """
-        Text → Audio streaming.
-        TODO: Implement gRPC streaming ở Bước 2-4.
+        Text → PCM int16 bytes streaming.
+        Mỗi text chunk → chạy infer_stream trong thread → yield PCM bytes.
         """
-        logger.info(f"Speak: {text[:50]}...")
-        chunks = chunk_text(text)
+        logger.info(f"Speak: {text[:60]}...")
+        chunks = chunk_text(text, min_size=self.synthesizer.sample_rate // 100)
+
         for chunk in chunks:
-            for audio_frame in self.synthesizer.synthesize_stream(chunk):
-                yield audio_frame
+            # infer_stream là sync iterator → chạy trong thread pool
+            pcm_frames = await asyncio.to_thread(
+                lambda c=chunk: list(self.synthesizer.synthesize_stream(c))
+            )
+            for frame in pcm_frames:
+                yield frame
 
     async def cancel(self, session_id: str):
-        """
-        Cancel TTS cho session.
-        TODO: Implement ở Bước 2.
-        """
         self.synthesizer.cancel(session_id)

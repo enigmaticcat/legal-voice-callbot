@@ -1,73 +1,105 @@
 """
-Legal CallBot — TTS Worker
-HTTP dummy server (Bước 1). Bước 2 sẽ chuyển sang gRPC.
-Bootstrap only — logic nằm trong core/ và grpc_handler.py.
+Nutrition CallBot — TTS Worker (FastAPI)
+Endpoints:
+  GET  /health
+  POST /speak        → WAV bytes + X-TTFB-ms / X-RTF / X-Duration-s headers
+  POST /speak/stream → raw PCM int16 stream (24kHz mono)
 """
-import json
+import io
+import time
+import wave
 import logging
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from datetime import datetime
+import os
+import sys
 
+from fastapi import FastAPI, Request
+from fastapi.responses import StreamingResponse, Response
+import uvicorn
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from config import config
 from core.synthesizer import Synthesizer
-from core.audio_utils import generate_silence_wav
 from grpc_handler import TTSServiceHandler
 
-# ─── Logging ─────────────────────────────────────────────
 logging.basicConfig(
     level=config.log_level,
     format="%(asctime)s | %(name)s | %(levelname)s | %(message)s",
 )
 logger = logging.getLogger("tts")
 
-# ─── Initialize Components ──────────────────────────────
 synthesizer = Synthesizer(
     backbone_repo=config.backbone_repo,
     codec_repo=config.codec_repo,
 )
 handler = TTSServiceHandler(synthesizer=synthesizer)
 
+app = FastAPI(title="TTS Worker", version="0.3.0")
 
-class HTTPHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        if self.path == "/health":
-            self._respond_json(200, {
-                "status": "healthy",
-                "service": "tts",
-                "timestamp": datetime.utcnow().isoformat(),
-            })
-        elif self.path == "/":
-            self._respond_json(200, {
-                "status": "ok",
-                "service": "tts",
-                "version": "0.1.0",
-                "mode": "dummy",
-            })
-        else:
-            self._respond_json(404, {"error": "not found"})
 
-    def do_POST(self):
-        if self.path == "/speak":
-            wav_data = generate_silence_wav(duration_ms=500)
-            self.send_response(200)
-            self.send_header("Content-Type", "audio/wav")
-            self.send_header("Content-Length", str(len(wav_data)))
-            self.end_headers()
-            self.wfile.write(wav_data)
-        else:
-            self._respond_json(404, {"error": "not found"})
+@app.get("/health")
+async def health():
+    return {"status": "healthy", "service": "tts"}
 
-    def _respond_json(self, status_code: int, data: dict):
-        self.send_response(status_code)
-        self.send_header("Content-Type", "application/json")
-        self.end_headers()
-        self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
 
-    def log_message(self, format, *args):
-        logger.info(format % args)
+@app.get("/")
+async def root():
+    return {"status": "ok", "service": "tts", "version": "0.3.0"}
+
+
+@app.post("/speak")
+async def speak(request: Request):
+    """Synthesize text → full WAV. Headers carry TTFB and RTF."""
+    body = await request.json()
+    text = body.get("text", "")
+
+    t0 = time.perf_counter()
+    pcm_chunks = []
+    first_byte_ms = None
+
+    async for chunk in handler.speak(text):
+        if first_byte_ms is None:
+            first_byte_ms = (time.perf_counter() - t0) * 1000
+        pcm_chunks.append(chunk)
+
+    pcm = b"".join(pcm_chunks)
+    synth_s = time.perf_counter() - t0
+    duration_s = len(pcm) / 2 / synthesizer.sample_rate  # int16 = 2 bytes/sample
+
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(synthesizer.sample_rate)
+        w.writeframes(pcm)
+
+    return Response(
+        content=buf.getvalue(),
+        media_type="audio/wav",
+        headers={
+            "X-TTFB-ms":    str(round(first_byte_ms or 0, 1)),
+            "X-RTF":        str(round(synth_s / duration_s, 3) if duration_s > 0 else "0"),
+            "X-Duration-s": str(round(duration_s, 2)),
+        },
+    )
+
+
+@app.post("/speak/stream")
+async def speak_stream(request: Request):
+    """Stream raw PCM int16 chunks as they are synthesized."""
+    body = await request.json()
+    text = body.get("text", "")
+
+    async def generate():
+        async for chunk in handler.speak(text):
+            yield chunk
+
+    return StreamingResponse(
+        generate(),
+        media_type="audio/pcm",
+        headers={"X-Sample-Rate": str(synthesizer.sample_rate)},
+    )
 
 
 if __name__ == "__main__":
-    server = HTTPServer(("0.0.0.0", config.port), HTTPHandler)
-    logger.info(f"TTS Worker running on port {config.port}")
-    server.serve_forever()
+    logger.info(f"TTS Worker starting on port {config.port}")
+    uvicorn.run(app, host="0.0.0.0", port=config.port)

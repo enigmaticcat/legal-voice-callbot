@@ -28,6 +28,7 @@ class BrainConfig:
     qdrant_path: str = os.getenv("QDRANT_PATH", "") # Thêm biến đọc từ Path để gọi Qdrant Snapshot Local
     qdrant_collection: str = "nutrition_articles"
     min_chunk_size: int = 40
+    tts_url: str = os.getenv("TTS_URL", "http://localhost:50053")
 
 
 config = BrainConfig()
