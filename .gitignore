@@ -13,6 +13,7 @@ env/
 
 # Dữ liệu dạng thô (Raw Data)
 *.json
+*.jsonl
 *.csv
 *.parquet
 vietnamese_legal_parquet/

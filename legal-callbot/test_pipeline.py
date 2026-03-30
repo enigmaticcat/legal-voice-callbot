@@ -37,7 +37,6 @@ async def run_pipeline():
     print("\nHệ thống sẵn sàng!")
     print("----------------------------------------")
 
-    # Giả lập 1 đoạn Audio byte đẩy từ Client hoặc lấy từ file wav (nếu có)
     audio_file = os.getenv("TEST_AUDIO_FILE", "")
     
     if audio_file and os.path.exists(audio_file):
@@ -46,14 +45,13 @@ async def run_pipeline():
             audio_data = wf.readframes(wf.getnframes())
     else:
         print("[ASR] Dùng audio giả lập (Dummy)...")
-        audio_data = b'\x00' * 32000  # 1 giây im lặng để test
+        audio_data = b'\x00' * 32000  
 
     print("[ASR] Đang giải mã Audio...")
     start_asr = time.time()
     text = asr.accept_wave(asr_stream, audio_data)
     asr_time = time.time() - start_asr
     
-    # Giả lập có chữ đổ về (Nếu mic test ra chữ)
     if not text:
         text = "Cho tôi hỏi mức phạt vượt đèn đỏ xe máy là bao nhiêu?"
         print(f"[ASR Dummy/Test] Bạn nói: '{text}' (Mất {asr_time:.2f} s)")
