@@ -6,10 +6,10 @@ from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 import uvicorn
 
-from config import config
-from core.llm import LLMClient
-from core.rag import RAGPipeline
-from grpc_handler import BrainServiceHandler
+from brain.config import config
+from brain.core.llm import LLMClient
+from brain.core.rag import RAGPipeline
+from brain.grpc_handler import BrainServiceHandler
 
 logging.basicConfig(
     level=config.log_level,
