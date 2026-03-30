@@ -19,6 +19,8 @@ env/
 vietnamese_legal_parquet/
 !package.json
 !tsconfig.json
+!evaluation/thucuc_qa.json
+!evaluation/thucuc_qa.jsonl
 
 # Cache và Compiled Python code
 __pycache__/
