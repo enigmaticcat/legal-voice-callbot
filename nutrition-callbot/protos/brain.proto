@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package callbot;
+
+// ─────────────────────────────────────────────────────────────
+// Brain Service
+// Client gửi query → server stream câu trả lời từng chunk
+// Khớp với BrainServiceHandler.think()
+// ─────────────────────────────────────────────────────────────
+
+service BrainService {
+  // Server-side streaming: 1 request → nhiều ThinkChunk
+  rpc Think (ThinkRequest) returns (stream ThinkChunk);
+}
+
+// ─── Request ─────────────────────────────────────────────────
+
+message ThinkRequest {
+  string            query      = 1;
+  string            session_id = 2;
+  repeated Message  history    = 3;  // lịch sử hội thoại
+}
+
+message Message {
+  string role    = 1;  // "user" | "assistant"
+  string content = 2;
+}
+
+// ─── Response ────────────────────────────────────────────────
+
+message ThinkChunk {
+  string   text     = 1;
+  bool     is_final = 2;
+
+  // Chỉ có trong chunk đầu tiên (first_chunk=True)
+  // và chunk cuối (is_final=True)
+  TimingInfo timing   = 3;
+
+  // Chỉ có trong chunk cuối: các đoạn RAG context đã dùng
+  repeated string contexts = 4;
+}
+
+message TimingInfo {
+  float expand_ms           = 1;  // query expansion
+  float rag_ms              = 2;  // Qdrant search
+  float llm_ttft_ms         = 3;  // LLM time to first token
+  float llm_full_ms         = 4;  // LLM total stream time (chunk đầu)
+  float first_chunk_total_ms = 5; // tổng từ nhận query đến chunk đầu
+  float total_ms            = 6;  // tổng pipeline (chunk cuối)
+}

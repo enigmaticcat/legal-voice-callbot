@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package callbot;
+
+// ─────────────────────────────────────────────────────────────
+// ASR Service
+// Client stream audio PCM → server stream transcript chunks
+// Khớp với ASRServiceHandler.stream_transcribe()
+// ─────────────────────────────────────────────────────────────
+
+service ASRService {
+  // Bidirectional streaming: client gửi audio → nhận transcript liên tục
+  rpc StreamTranscribe (stream AudioChunk) returns (stream TranscriptChunk);
+}
+
+// ─── Request ─────────────────────────────────────────────────
+
+message AudioChunk {
+  // PCM 16-bit signed little-endian, mono, 16000 Hz
+  bytes  data       = 1;
+  string session_id = 2;
+}
+
+// ─── Response ────────────────────────────────────────────────
+
+message TranscriptChunk {
+  string text       = 1;
+  bool   is_final   = 2;  // true khi detect endpoint (câu kết thúc)
+  float  confidence = 3;
+}

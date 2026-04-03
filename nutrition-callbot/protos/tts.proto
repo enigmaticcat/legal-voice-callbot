@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package callbot;
+
+// ─────────────────────────────────────────────────────────────
+// TTS Service
+// Client gửi text → server stream PCM audio
+// Khớp với TTSServiceHandler.speak() và cancel()
+// ─────────────────────────────────────────────────────────────
+
+service TTSService {
+  // Server-side streaming: 1 SpeakRequest → stream PCM frames
+  rpc Speak  (SpeakRequest)  returns (stream AudioFrame);
+
+  // Unary: huỷ synthesis đang chạy của session
+  rpc Cancel (CancelRequest) returns (CancelResponse);
+}
+
+// ─── Request ─────────────────────────────────────────────────
+
+message SpeakRequest {
+  string text       = 1;
+  string session_id = 2;
+}
+
+message CancelRequest {
+  string session_id = 1;
+}
+
+// ─── Response ────────────────────────────────────────────────
+
+message AudioFrame {
+  // PCM int16 little-endian, mono, 24000 Hz
+  bytes data     = 1;
+  bool  is_final = 2;
+}
+
+message CancelResponse {
+  bool ok = 1;
+}

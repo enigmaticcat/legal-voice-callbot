@@ -1,9 +1,8 @@
-# ── VieNeu-TTS ──
-# Local: pip install -e /Users/nguyenthithutam/VieNeu-TTS
-# Colab:  pip install git+https://github.com/pnnbao97/VieNeu-TTS.git
+# ── VieNeu-TTS (bundled in tts/vieneu + tts/vieneu_utils) ──
 neucodec>=0.0.4
 phonemizer>=3.3.0
 librosa>=0.11.0
+huggingface_hub>=0.20.0
 torch
 torchaudio
 
