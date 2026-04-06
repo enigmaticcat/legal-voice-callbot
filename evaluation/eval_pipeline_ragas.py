@@ -10,7 +10,7 @@ Mục đích chính:
   4. Latency      — asr_ms + rag_ms + llm_ttft_ms = e2e từ audio → câu trả lời
 
 Input:
-  wav_16k/eval_{N}/  — audio 16kHz mono 16-bit PCM
+  wav/eval_{N}/        — audio gốc (Sherpa-Onnx tự resample về 16kHz)
   eval_split_{N}.jsonl — câu hỏi gốc + reference answer
 
 Cách dùng:
@@ -44,7 +44,7 @@ BRAIN_DIR = REPO_ROOT / "nutrition-callbot" / "brain"
 ASR_DIR = REPO_ROOT / "nutrition-callbot" / "asr"
 CALLBOT_DIR = REPO_ROOT / "nutrition-callbot"
 EVAL_DIR = Path(__file__).resolve().parent
-WAV_16K_DIR = REPO_ROOT / "wav_16k"
+WAV_DIR = REPO_ROOT / "wav"
 
 sys.path.insert(0, str(BRAIN_DIR))
 sys.path.insert(0, str(ASR_DIR))
@@ -219,7 +219,7 @@ async def main():
 
     for split_n in args.splits:
         jsonl_path = EVAL_DIR / f"eval_split_{split_n}.jsonl"
-        wav_dir = WAV_16K_DIR / f"eval_{split_n}"
+        wav_dir = WAV_DIR / f"eval_{split_n}"
 
         if not jsonl_path.exists():
             print(f"SKIP: {jsonl_path} not found")
