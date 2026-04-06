@@ -1,0 +1,19 @@
+# Evaluation dependencies
+# Install: pip install -r requirements_eval.txt
+
+# RAGAS evaluation framework (v0.2+)
+ragas>=0.2.0
+
+# LangChain + Google Gemini (RAGAS judge LLM + embeddings)
+langchain>=0.3.0
+langchain-google-genai>=2.0.0
+
+# Already in brain/requirements.txt (listed here for standalone venv setup):
+google-genai>=1.0.0
+sentence-transformers>=3.0.0
+qdrant-client>=1.7.0
+python-dotenv>=1.0.0
+
+# ASR (for eval_pipeline_ragas.py)
+sherpa-onnx>=1.10.0
+numpy>=1.24.0
