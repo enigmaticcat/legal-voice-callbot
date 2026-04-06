@@ -14,6 +14,7 @@ Dùng file này để:
 Chạy:
   python evaluation/prefetch_contexts.py
   python evaluation/prefetch_contexts.py --splits 1 2 --top-k 5
+  python evaluation/prefetch_contexts.py --input evaluation/eval_split_5.jsonl
   python evaluation/prefetch_contexts.py --resume   # tiếp tục nếu bị gián đoạn
 """
 
@@ -39,7 +40,10 @@ from eval_utils import load_eval_split, load_results
 
 async def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--splits", nargs="+", type=int, default=[1, 2, 3, 4, 5])
+    parser.add_argument("--splits", nargs="+", type=int, default=[1, 2, 3, 4, 5],
+                        help="Splits cần fetch (mặc định: tất cả 1-5)")
+    parser.add_argument("--input", default=None, metavar="FILE",
+                        help="Chỉ định file JSONL cụ thể thay vì dùng --splits")
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--out", default="results/eval_with_contexts.jsonl")
     parser.add_argument("--resume", action="store_true")
@@ -74,16 +78,21 @@ async def main():
 
     total_written = 0
 
+    # Xác định danh sách file input
+    if args.input:
+        input_files = [Path(args.input)]
+    else:
+        input_files = [EVAL_DIR / f"eval_split_{n}.jsonl" for n in args.splits]
+
     with open(out_path, "a", encoding="utf-8") as fout:
-        for split_n in args.splits:
-            jsonl_path = EVAL_DIR / f"eval_split_{split_n}.jsonl"
+        for jsonl_path in input_files:
             if not jsonl_path.exists():
                 print(f"SKIP: {jsonl_path.name} không tồn tại")
                 continue
 
             samples = load_eval_split(jsonl_path)
             pending = [s for s in samples if s["id"] not in done_ids]
-            print(f"=== Split {split_n}: {len(pending)}/{len(samples)} câu cần fetch ===")
+            print(f"=== {jsonl_path.name}: {len(pending)}/{len(samples)} câu cần fetch ===")
 
             for i, sample in enumerate(pending):
                 print(f"  [{i+1}/{len(pending)}] {sample['id']} ...", end="", flush=True)
