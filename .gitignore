@@ -16,6 +16,7 @@ env/
 *.jsonl
 *.csv
 *.parquet
+*.wav
 vietnamese_legal_parquet/
 !package.json
 !tsconfig.json
@@ -31,3 +32,4 @@ __pycache__/
 # Môi trường và keys
 .env
 secret*.json
+
