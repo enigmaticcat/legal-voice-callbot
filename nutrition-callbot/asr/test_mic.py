@@ -103,7 +103,24 @@ def process_file_input(file_path):
                     print(f"\nTime to first token: {ttft:.3f} giay")
                     first_token_printed = True
             chunk = wf.readframes(chunk_size)
-    print("\nHoan thanh nhan dien file.")
+    print("\n\nHoan thanh nhan dien file (ASR Goc).")
+    
+    try:
+        print("\n[VFastPunct] Đang tải mô hình khôi phục dấu câu (có thể tốn vài giây)...")
+        # Fix cho PyTorch 2.6+ (vfastpunct cũ load pickle nên bị chặn)
+        import torch
+        import functools
+        torch.load = functools.partial(torch.load, weights_only=False)
+        from vfastpunct import VFastPunct
+        vfp = VFastPunct("mBertPunctCap")
+        # Chuyển về chữ thường để VFastPunct hoạt động đúng
+        normalized_text = current_text.lower()
+        restored = vfp(normalized_text)
+        print(f"\n[VFastPunct] Kết quả cuối cùng:\n{restored}\n")
+    except Exception as e:
+        import traceback
+        print(f"\n[Lỗi VFastPunct] Không thể khôi phục dấu câu: {e}")
+        traceback.print_exc()
 
 if args.file:
     try:

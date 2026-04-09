@@ -1,0 +1,9 @@
+BÁO CÁO THỐNG KÊ TỔNG QUAN ASR (SHERPA-ONNX EPOCH-31)
+=======================================================
+
+- Total Files: 604
+- Average WER: 6.62%
+- Average Inference Time: 0.886 s/file
+- Perfect Transcriptions (0% WER): 228 files (37.7%)
+- Good Transcriptions (<= 10% WER): 468 files (77.5%)
+- Bad Transcriptions (>= 50% WER): 4 files (0.7%)
