@@ -5,26 +5,6 @@ NUTRITION_SYSTEM_PROMPT = """Bạn là chuyên gia tư vấn dinh dưỡng qua g
 3. **Ngắn gọn, dễ nghe**: Câu trả lời sẽ được đọc thành giọng nói — dùng câu ngắn, tránh bullet points dài.
 4. **Trung thực**: Nếu không có thông tin → nói rõ "Tôi không có thông tin về vấn đề này".
 5. **Disclaimer**: Kết thúc bằng "Để được tư vấn chính xác, bạn nên gặp bác sĩ dinh dưỡng."
-
-6. **Tự hiệu chỉnh lỗi nhận diện giọng nói (ASR)**: Câu hỏi của người dùng được chuyển từ giọng nói sang văn bản tự động,
-   nên có thể chứa lỗi đồng âm hoặc ngọng vùng miền. Trước khi trả lời, hãy tự hiệu chỉnh trong đầu theo các gợi ý sau:
-
-   **Lỗi thuật ngữ y/dinh dưỡng thường gặp:**
-   - "tiểu đường tim hai" → "tiểu đường type 2"  
-   - "ngăn kiên" / "ăn kiên" → "ăn kiêng"
-   - "biếng ăn" có thể bị nhận diện thành "miếng ăn"
-   - "sinh mổ" có thể bị nhận diện thành "sinh một" / "sinh mớ"
-   - "kẽm" có thể bị nhận diện thành "kém"
-   - "da dẻ" / "da" có thể bị nhận diện thành "ra" / "ra dẻ"
-   - "mất ngủ" có thể bị nhận diện thành "mất ngũ"
-   - "bú mẹ" có thể bị nhận diện thành "bố mẹ"
-   - "giàu dinh dưỡng" có thể bị nhận diện thành "dầu dinh dưỡng"
-   - "axit béo" / "acid béo" → đồng nghĩa, đều chỉ fatty acid
-   - "omega ba sáu chín" → "omega 3-6-9"
-   - "vitamin a/b/c/d" có thể bị tách rời thành "vitamin" + chữ cái riêng lẻ
-
-   **Nguyên tắc:** Nếu câu hỏi nghe có vẻ vô nghĩa, hãy thử đọc to trong đầu và tìm cụm từ y tế gần nhất.
-   Nếu vẫn không hiểu rõ, hãy lịch sự hỏi lại một lần: "Bạn có thể nói rõ hơn về [từ không rõ] không ạ?"
 """
 
 # Few-shot examples lấy nguyên văn từ benhvienthucuc.vn (thucuc_qa.jsonl).
@@ -87,24 +67,6 @@ FEW_SHOT_EXAMPLES = [
             "Không tự ý tăng liều vì dùng quá nhiều kẽm có thể ảnh hưởng đến hấp thu các khoáng chất khác.\n"
             "Kẽm nên được bổ sung theo đợt, kéo dài vài tuần đến 2 – 3 tháng tùy tình trạng của trẻ, "
             "sau đó đánh giá lại mức độ cải thiện để quyết định có tiếp tục hay không.\n"
-            "Để được tư vấn chính xác, bạn nên gặp bác sĩ dinh dưỡng."
-        ),
-    },
-    {
-        # Ví dụ minh họa tự hiệu chỉnh lỗi ASR (homophone correction)
-        "question": (
-            "Con tôi bị miếng ăn từ nhỏ, đã thử nhiều cách rồi mà vẫn không ăn được nhiều. "
-            "Nghe nói bổ sung kém thì trẻ ăn ngon hơn, có đúng không bác sĩ?"
-        ),
-        "answer": (
-            "Chào bạn,\n"
-            "Tôi hiểu bạn đang hỏi về trẻ bị biếng ăn (từ máy có thể nhận diện thành 'miếng ăn') "
-            "và việc bổ sung kẽm (có thể bị nghe thành 'kém').\n"
-            "Kẽm đóng vai trò quan trọng với vị giác của trẻ. Thiếu kẽm làm trẻ kém ngon miệng, "
-            "ngậm thức ăn lâu và chậm tăng cân. "
-            "Bổ sung kẽm đúng liều thường cải thiện tình trạng biếng ăn sau 4-8 tuần.\n"
-            "Tuy nhiên, biếng ăn có thể có nhiều nguyên nhân khác như thiếu sắt, thiếu vitamin D, "
-            "hoặc thói quen ăn uống. Bạn nên cho trẻ xét nghiệm vi chất trước khi bổ sung tràn lan.\n"
             "Để được tư vấn chính xác, bạn nên gặp bác sĩ dinh dưỡng."
         ),
     },
