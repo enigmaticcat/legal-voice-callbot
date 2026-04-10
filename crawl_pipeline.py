@@ -20,10 +20,10 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 # ----------------------------------------------------------
 
 GROQ_MODEL          = "llama-3.1-8b-instant"   # free tier, nhanh
-GAP_QUESTIONS_PATH  = "gap_questions.jsonl"
-OUTPUT_JSONL        = "new_corpus_chunks.jsonl"
+GAP_QUESTIONS_PATH  = "gap_questions_remaining.jsonl"   # 304 câu chưa crawl
+OUTPUT_JSONL        = "new_corpus_chunks.jsonl"           # append vào file cũ
 FAILED_LOG          = "crawl_failed.txt"
-CHECKPOINT_DIR      = "checkpoints"
+CHECKPOINT_DIR      = "checkpoints_remaining"
 
 MAX_URLS_PER_QUESTION = 10
 SIMILARITY_THRESHOLD  = 0      # cross-encoder logit: > 0 = relevant
@@ -31,9 +31,8 @@ TOP_K_CHUNKS          = 5
 CHECKPOINT_EVERY      = 20
 SEARCH_PAUSE_SEC      = 1.5
 
-# "zero" → chỉ 112 câu recall=0 (khuyên dùng trước)
-# "all"  → toàn bộ 411 câu gap
-TARGET_GROUP = "zero"
+# File gap_questions_remaining.jsonl đã chứa đúng tập cần crawl
+# không cần filter thêm
 
 # ==============================================================
 # IMPORTS
@@ -73,19 +72,9 @@ with open(GAP_QUESTIONS_PATH, encoding="utf-8") as f:
         if line:
             gap_questions.append(json.loads(line))
 
-def get_recall(q):
-    try:
-        return float(q.get("context_recall", 1.0))
-    except:
-        return 1.0
+to_process = gap_questions
 
-if TARGET_GROUP == "zero":
-    to_process = [q for q in gap_questions if get_recall(q) == 0.0]
-else:
-    to_process = [q for q in gap_questions if get_recall(q) < 1.0]
-
-print(f"📋 Tổng gap questions : {len(gap_questions)}")
-print(f"🎯 Sẽ xử lý ({TARGET_GROUP}): {len(to_process)} câu\n")
+print(f"🎯 Sẽ xử lý: {len(to_process)} câu\n")
 
 # ==============================================================
 # CÁC HÀM
