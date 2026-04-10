@@ -1,0 +1,41 @@
+=== CORPUS CRAWL SUMMARY ===
+
+[QUESTIONS — 604 tổng]
+  Recall = 1.0 (corpus đủ từ đầu)     : 5 câu
+  Recall 0.75-1.0 (gần đủ từ đầu)    : 15 câu
+  Recall < 1, đã crawl được docs      : 400 câu
+    → best_score >= 0.9 (chất lượng cao) : 365 (91.2%)
+    → best_score 0.7-0.9              : 24 câu
+    → best_score 0.5-0.7              : 3 câu
+    → best_score < 0.5                : 8 câu
+  Chưa có docs (cần crawl thêm)       : 204 câu
+
+[CORPUS — new_corpus_chunks_clean.jsonl]
+  Tổng docs                 : 1194
+  Unique questions covered  : 398
+  Unique domains            : 382
+  Avg text length           : 6,756 chars
+  Avg relevance score       : 0.927
+  Score >= 0.9              : 995 docs (83.3%)
+
+[TOP DOMAINS]
+  114  www.vinmec.com
+  109  nhathuoclongchau.com.vn
+   51  tamanhhospital.vn
+   42  vnexpress.net
+   42  hellobacsi.com
+   38  benhvienthucuc.vn
+   36  www.pharmacity.vn
+   25  nutrihome.vn
+   23  alobacsi.com
+   20  medlatec.vn
+   20  suckhoedoisong.vn
+   17  eva.vn
+   16  dantri.com.vn
+   14  diag.vn
+   13  vi.wikipedia.org
+   13  vietnamnet.vn
+   12  tiemchunglongchau.com.vn
+   11  akioway.com
+   11  thanhnien.vn
+   10  phunutoday.vn
