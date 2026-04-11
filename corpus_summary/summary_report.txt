@@ -1,41 +1,48 @@
-=== CORPUS CRAWL SUMMARY ===
 
-[QUESTIONS — 604 tổng]
-  Recall = 1.0 (corpus đủ từ đầu)     : 5 câu
-  Recall 0.75-1.0 (gần đủ từ đầu)    : 15 câu
-  Recall < 1, đã crawl được docs      : 400 câu
-    → best_score >= 0.9 (chất lượng cao) : 365 (91.2%)
-    → best_score 0.7-0.9              : 24 câu
-    → best_score 0.5-0.7              : 3 câu
-    → best_score < 0.5                : 8 câu
-  Chưa có docs (cần crawl thêm)       : 204 câu
+============================================================
+CORPUS SUMMARY REPORT (sau khi merge new_corpus_chunks (2).jsonl)
+============================================================
 
-[CORPUS — new_corpus_chunks_clean.jsonl]
-  Tổng docs                 : 1194
-  Unique questions covered  : 398
-  Unique domains            : 382
-  Avg text length           : 6,756 chars
-  Avg relevance score       : 0.927
-  Score >= 0.9              : 995 docs (83.3%)
+CORPUS (new_corpus_chunks_clean.jsonl)
+  Tổng docs      : 1862
+  Câu hỏi phủ   : 590
+  Score trung bình: 0.913
+  Score min/max  : 0.101 / 1.000
+  Text avg length: 6,781 chars
 
-[TOP DOMAINS]
-  114  www.vinmec.com
-  109  nhathuoclongchau.com.vn
-   51  tamanhhospital.vn
-   42  vnexpress.net
-   42  hellobacsi.com
-   38  benhvienthucuc.vn
-   36  www.pharmacity.vn
-   25  nutrihome.vn
-   23  alobacsi.com
-   20  medlatec.vn
-   20  suckhoedoisong.vn
-   17  eva.vn
-   16  dantri.com.vn
-   14  diag.vn
-   13  vi.wikipedia.org
-   13  vietnamnet.vn
-   12  tiemchunglongchau.com.vn
-   11  akioway.com
-   11  thanhnien.vn
-   10  phunutoday.vn
+  Phân bố score:
+    >=3  : 0 (0.0%)
+    2-3  : 0 (0.0%)
+    1-2  : 17 (0.9%)
+    0.5-1: 1741 (93.5%)
+    <0.5 : 104 (5.6%)
+
+  Top 15 domains:
+    vinmec.com: 178
+    nhathuoclongchau.com.vn: 148
+    tamanhhospital.vn: 75
+    hellobacsi.com: 66
+    vnexpress.net: 62
+    pharmacity.vn: 56
+    benhvienthucuc.vn: 51
+    alobacsi.com: 43
+    nutrihome.vn: 42
+    medlatec.vn: 31
+    suckhoedoisong.vn: 28
+    eva.vn: 23
+    diag.vn: 22
+    dantri.com.vn: 21
+    thanhnien.vn: 21
+
+QUESTION COVERAGE (tổng 602 câu)
+  Có docs         : 581 (96.5%)
+  score >= 0.9    : 544 (90.4%)
+  score 0.1-0.9   : 37 (6.1%)
+  Không có docs   : 21 (3.5%)
+
+FILES
+  new_corpus_chunks_clean.jsonl  — corpus chính, 1862 docs
+  corpus_summary/question_coverage.csv        — 602 câu + coverage
+  corpus_summary/questions_no_docs.csv        — 21 câu chưa crawl được
+  corpus_summary/questions_low_quality_docs.csv — 37 câu score < 0.9
+============================================================

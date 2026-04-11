@@ -20,7 +20,7 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 # ----------------------------------------------------------
 
 GROQ_MODEL          = "llama-3.1-8b-instant"   # free tier, nhanh
-GAP_QUESTIONS_PATH  = "crawl_extra_combined.jsonl"   # 239 câu cần crawl thêm
+GAP_QUESTIONS_PATH  = "crawl_remaining_58.jsonl"   # 58 câu cần crawl thêm
 OUTPUT_JSONL        = "new_corpus_chunks.jsonl"         # append vào file cũ
 FAILED_LOG          = "crawl_failed_extra.txt"
 CHECKPOINT_DIR      = "checkpoints_extra"
