@@ -140,3 +140,11 @@ INFO:     127.0.0.1:62243 - "POST /think/stream HTTP/1.1" 200 OK
 2026-04-14 13:48:22,914 | brain.core.llm | INFO | LLM TTFC (first chunk from Gemini): 2143ms
 2026-04-14 13:48:22,915 | brain.core.llm | INFO | LLM TTFT: 2146ms | TTFC: 2143ms
 2026-04-14 13:48:24,886 | brain.grpc_handler | INFO | [latency-check] Done in 7014ms (expand=1, rag=2897)
+INFO:     127.0.0.1:51601 - "POST /think/stream HTTP/1.1" 200 OK
+2026-04-14 16:33:20,748 | brain.grpc_handler | INFO | [latency-check] Think: GẦN ĐÂY TÔI THƯỜNG UỐNG NƯỚC CAM VÀO BUỔI SÁNG VÌ NGHE NÓI TỐT CHO SỨC KHỎE NHƯN...
+Batches:   0%|          | 0/1 [00:00<?, ?it/s]Batches: 100%|██████████| 1/1 [00:04<00:00,  4.34s/it]Batches: 100%|██████████| 1/1 [00:04<00:00,  4.34s/it]
+2026-04-14 16:33:26,519 | httpx | INFO | HTTP Request: POST https://9e9ea076-4e38-45c4-bc43-dc8e92c31368.europe-west3-0.gcp.cloud.qdrant.io:6333/collections/nutrition_articles/points/query "HTTP/1.1 200 OK"
+2026-04-14 16:33:26,530 | google_genai.models | INFO | AFC is enabled with max remote calls: 10.
+2026-04-14 16:33:27,936 | brain.core.llm | INFO | LLM TTFC (first chunk from Gemini): 1406ms
+2026-04-14 16:33:27,936 | brain.core.llm | INFO | LLM TTFT: 1412ms | TTFC: 1406ms
+2026-04-14 16:33:29,481 | brain.grpc_handler | INFO | [latency-check] Done in 8733ms (expand=2, rag=5772)

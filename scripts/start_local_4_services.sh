@@ -90,7 +90,7 @@ start_service() {
   echo "[START] $name → log: $logfile" >&2
   (
     cd "$workdir"
-    nohup bash -lc "$cmd" >"$logfile" 2>&1 &
+    nohup bash -c "$cmd" >"$logfile" 2>&1 &
     echo "$!"
   )
 }

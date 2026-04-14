@@ -69,3 +69,11 @@ INFO:     127.0.0.1:62252 - "POST /speak/stream HTTP/1.1" 200 OK
 2026-04-14 13:48:25,007 | tts.grpc_handler | INFO | Speak: Chào bạn,
 
 Nước cam là một thức uống rất phổ biến và mang lạ...
+Warning: Could not phonemize VI texts: espeak not installed on your system
+Warning: Could not phonemize VI texts: espeak not installed on your system
+Warning: Could not phonemize VI texts: espeak not installed on your system
+Warning: Could not phonemize VI texts: espeak not installed on your system
+INFO:     127.0.0.1:51609 - "POST /speak/stream HTTP/1.1" 200 OK
+2026-04-14 16:33:29,571 | tts.grpc_handler | INFO | Speak: Chào bạn,
+
+Nước cam là một loại đồ uống rất phổ biến và được...

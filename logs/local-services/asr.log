@@ -24,3 +24,4 @@
 2026-04-14 13:47:47,204 | asr | INFO | "POST /transcribe HTTP/1.1" 200 -
 2026-04-14 13:48:10,715 | asr | INFO | "GET /health HTTP/1.1" 200 -
 2026-04-14 13:48:17,800 | asr | INFO | "POST /transcribe HTTP/1.1" 200 -
+2026-04-14 16:33:20,603 | asr | INFO | "POST /transcribe HTTP/1.1" 200 -

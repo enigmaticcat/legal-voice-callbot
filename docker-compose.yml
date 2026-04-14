@@ -1,0 +1,72 @@
+version: '3.9'
+
+services:
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.0
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - callbot
+
+  asr:
+    build:
+      context: ./nutrition-callbot
+      dockerfile: asr/Dockerfile
+    ports:
+      - "${ASR_PORT:-50051}:50051"
+    env_file: ./nutrition-callbot/.env
+    networks:
+      - callbot
+    restart: unless-stopped
+
+  brain:
+    build:
+      context: ./nutrition-callbot
+      dockerfile: brain/Dockerfile
+    ports:
+      - "${BRAIN_PORT:-50052}:50052"
+    env_file: ./nutrition-callbot/.env
+    environment:
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+    networks:
+      - callbot
+    depends_on:
+      - qdrant
+    restart: unless-stopped
+
+  tts:
+    build:
+      context: ./nutrition-callbot
+      dockerfile: tts/Dockerfile
+    ports:
+      - "${TTS_PORT:-50053}:50053"
+    env_file: ./nutrition-callbot/.env
+    networks:
+      - callbot
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: ./nutrition-callbot
+      dockerfile: gateway/Dockerfile
+    ports:
+      - "${GATEWAY_PORT:-8000}:8000"
+    env_file: ./nutrition-callbot/.env
+    networks:
+      - callbot
+    depends_on:
+      - asr
+      - brain
+      - tts
+    restart: unless-stopped
+
+networks:
+  callbot:
+    driver: bridge
+
+volumes:
+  qdrant_data:
