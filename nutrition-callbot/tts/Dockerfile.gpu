@@ -1,0 +1,19 @@
+FROM nvidia/cuda:12.1-cudnn8-runtime-python3.12
+
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl espeak-ng libespeak-ng-dev build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY tts/requirements.txt .
+# Torch CUDA 12.1
+RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cu121
+# llama-cpp-python với CUDA support
+RUN pip install --no-cache-dir llama-cpp-python \
+    --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu121
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY tts/ .
+
+EXPOSE 50053
+CMD ["python", "server.py"]

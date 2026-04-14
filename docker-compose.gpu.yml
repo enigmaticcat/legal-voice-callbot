@@ -1,0 +1,46 @@
+# GPU override — dùng kèm với docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up
+#
+# Yêu cầu: nvidia-container-toolkit đã cài trên host
+#   https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html
+
+services:
+
+  asr:
+    build:
+      context: ./nutrition-callbot
+      dockerfile: asr/Dockerfile.gpu
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - ASR_PROVIDER=cuda
+
+  tts:
+    build:
+      context: ./nutrition-callbot
+      dockerfile: tts/Dockerfile.gpu
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - TTS_DEVICE=cuda
+
+  brain:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - BRAIN_DEVICE=cuda

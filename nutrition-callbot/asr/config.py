@@ -16,6 +16,7 @@ class ASRConfig:
     tokens_path: str = os.getenv("ASR_TOKENS_PATH", os.path.join(os.path.dirname(__file__), "data", "config.json"))
     
     sample_rate: int = 16000
+    provider: str = os.getenv("ASR_PROVIDER", "cpu")  # "cpu" hoặc "cuda"
 
 
 config = ASRConfig()

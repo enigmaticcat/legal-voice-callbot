@@ -61,7 +61,8 @@ class Transcriber:
                 num_threads=4,
                 sample_rate=config.sample_rate,
                 feature_dim=80,
-                enable_endpoint_detection=True, # Hỗ trợ dứt lời ngay trong Sherpa
+                enable_endpoint_detection=True,
+                provider=config.provider,
             )
             logger.info("✅ Sherpa-Onnx OnlineRecognizer loaded successfully!")
         except Exception as e:
