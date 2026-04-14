@@ -5,9 +5,10 @@ from pathlib import Path
 
 import httpx
 
-AUDIO_PATH = Path('/Users/nguyenthithutam/Desktop/Callbot/wav_16k/eval_1/thucuc_s1_003.wav')
-OUT_PCM = Path('/Users/nguyenthithutam/Desktop/Callbot/latency_final_audio.pcm')
-OUT_WAV = Path('/Users/nguyenthithutam/Desktop/Callbot/latency_final_audio.wav')
+_REPO_ROOT = Path(__file__).parent.parent
+AUDIO_PATH = _REPO_ROOT / 'wav_16k' / 'eval_1' / 'thucuc_s1_003.wav'
+OUT_PCM = _REPO_ROOT / 'latency_final_audio.pcm'
+OUT_WAV = _REPO_ROOT / 'latency_final_audio.wav'
 SAMPLE_RATE = 24000
 
 ASR_URL = 'http://localhost:50051/transcribe'
