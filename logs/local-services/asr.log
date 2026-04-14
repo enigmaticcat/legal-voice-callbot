@@ -1,0 +1,26 @@
+2026-04-13 17:21:30,640 | asr.core.transcriber | INFO | Initializing Sherpa-Onnx OnlineRecognizer...
+2026-04-13 17:21:35,088 | asr.core.transcriber | INFO | ✅ Sherpa-Onnx OnlineRecognizer loaded successfully!
+2026-04-13 17:21:35,144 | asr | INFO | 🎤 ASR Worker running on port 50051
+/Users/nguyenthithutam/Desktop/Callbot/nutrition-callbot/asr/server.py:31: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  "timestamp": datetime.utcnow().isoformat(),
+2026-04-13 17:21:46,759 | asr | INFO | "GET /health HTTP/1.1" 200 -
+2026-04-13 17:21:46,947 | asr | INFO | "GET /apple-touch-icon-precomposed.png HTTP/1.1" 404 -
+2026-04-13 17:21:46,960 | asr | INFO | "GET /apple-touch-icon.png HTTP/1.1" 404 -
+2026-04-13 17:21:47,675 | asr | INFO | "GET /favicon.ico HTTP/1.1" 404 -
+2026-04-13 17:28:58,346 | asr | INFO | "GET /health HTTP/1.1" 200 -
+2026-04-13 17:30:27,713 | asr | INFO | "POST /transcribe HTTP/1.1" 200 -
+2026-04-13 17:31:00,624 | asr | INFO | "POST /transcribe HTTP/1.1" 200 -
+2026-04-13 17:32:30,391 | asr | INFO | "POST /transcribe HTTP/1.1" 200 -
+2026-04-13 17:40:43,668 | asr | INFO | "POST /transcribe HTTP/1.1" 200 -
+2026-04-13 17:41:29,573 | asr | INFO | "POST /transcribe HTTP/1.1" 200 -
+2026-04-13 17:41:43,804 | asr | INFO | "GET /health HTTP/1.1" 200 -
+2026-04-13 17:41:55,541 | asr | INFO | "POST /transcribe HTTP/1.1" 200 -
+2026-04-13 17:43:00,435 | asr | INFO | "POST /transcribe HTTP/1.1" 200 -
+2026-04-13 17:45:46,774 | asr | INFO | "GET /health HTTP/1.1" 200 -
+2026-04-13 17:45:48,845 | asr | INFO | "POST /transcribe HTTP/1.1" 200 -
+2026-04-13 17:47:59,990 | asr | INFO | "GET /health HTTP/1.1" 200 -
+2026-04-13 17:48:03,332 | asr | INFO | "POST /transcribe HTTP/1.1" 200 -
+2026-04-14 13:47:44,963 | asr | INFO | "GET /health HTTP/1.1" 200 -
+2026-04-14 13:47:47,204 | asr | INFO | "POST /transcribe HTTP/1.1" 200 -
+2026-04-14 13:48:10,715 | asr | INFO | "GET /health HTTP/1.1" 200 -
+2026-04-14 13:48:17,800 | asr | INFO | "POST /transcribe HTTP/1.1" 200 -

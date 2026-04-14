@@ -1,0 +1,12 @@
+vdd_s4_072
+vdd_s3_077
+thucuc_s2_071
+thucuc_s3_070
+thucuc_s3_088
+thucuc_s5_142
+vdd_s4_050
+vdd_s1_108
+thucuc_s5_070
+vdd_s4_080
+vdd_s2_030
+vdd_s3_085

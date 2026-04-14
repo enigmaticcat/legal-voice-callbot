@@ -37,5 +37,17 @@ class Settings:
     def tts_address(self) -> str:
         return f"{self.tts_host}:{self.tts_port}"
 
+    @property
+    def asr_http_url(self) -> str:
+        return f"http://{self.asr_host}:{self.asr_port}"
+
+    @property
+    def brain_http_url(self) -> str:
+        return f"http://{self.brain_host}:{self.brain_port}"
+
+    @property
+    def tts_http_url(self) -> str:
+        return f"http://{self.tts_host}:{self.tts_port}"
+
 
 settings = Settings()

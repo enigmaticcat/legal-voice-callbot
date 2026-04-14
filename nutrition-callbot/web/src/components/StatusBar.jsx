@@ -1,25 +1,26 @@
 /**
  * StatusBar Component
- * Hiển thị trạng thái: "Đang nghe..." / "Đang suy nghĩ..." / "Đang trả lời..."
+ * Hiển thị trạng thái pipeline: connecting / idle / listening / thinking / speaking
  */
-
 function StatusBar({ status, isConnected }) {
-  const statusMap = {
-    idle: { text: 'Sẵn sàng', icon: '', color: '#a0a0b8' },
-    listening: { text: 'Đang nghe...', icon: '', color: '#4ade80' },
-    thinking: { text: 'Đang suy nghĩ...', icon: '', color: '#fbbf24' },
-    speaking: { text: 'Đang trả lời...', icon: '', color: '#6c63ff' },
-  }
+    const statusMap = {
+        connecting: { text: 'Đang kết nối...', color: '#fbbf24' },
+        idle:       { text: 'Sẵn sàng',        color: '#a0a0b8' },
+        listening:  { text: 'Đang nghe...',     color: '#4ade80' },
+        thinking:   { text: 'Đang suy nghĩ...', color: '#fbbf24' },
+        speaking:   { text: 'Đang trả lời...',  color: '#6c63ff' },
+    }
 
-  const current = statusMap[status] || statusMap.idle
+    const current = statusMap[status] || statusMap.idle
 
-  return (
-    <div className="status-bar" style={{ color: current.color }}>
-      <span className="status-icon">{current.icon}</span>
-      <span className="status-text">{current.text}</span>
-      <span className={`connection-dot ${isConnected ? 'connected' : 'disconnected'}`} />
-    </div>
-  )
+    return (
+        <div className="status-bar">
+            <span className="status-text" style={{ color: current.color }}>
+                {current.text}
+            </span>
+            <span className={`connection-dot ${isConnected ? 'connected' : 'disconnected'}`} />
+        </div>
+    )
 }
 
 export default StatusBar

@@ -1,0 +1,492 @@
+======================================================================
+[01/21] ID: thucuc_s1_008
+======================================================================
+
+[SYSTEM]
+Bạn là chuyên gia dinh dưỡng và y tế người Việt Nam.
+Viết một đoạn văn bản y tế/dinh dưỡng CHÍNH XÁC, CHI TIẾT (300-600 từ) để làm tài liệu tham khảo.
+Yêu cầu:
+- Bao phủ đầy đủ các khía cạnh của câu hỏi
+- Trình bày: cơ chế, nguyên nhân, lưu ý thực hành
+- Không bịa đặt thông tin y học
+- Bắt đầu thẳng vào nội dung, không mở đầu bằng "Tôi sẽ..."
+- Viết tiếng Việt, văn phong chuyên môn nhưng dễ hiểu
+
+[USER]
+Câu hỏi: Chào bác sĩ,
+Tôi vừa mổ tuyến giáp xong nên đang rất chú ý đến chế độ ăn uống để vết mổ mau lành. Tôi nghe nói tổ yến rất bổ, giúp bồi bổ sức khỏe và tăng sức đề kháng, nhưng không biết sau mổ tuyến giáp có ăn được tổ yến không? Nếu ăn thì nên dùng vào thời điểm nào, liều lượng ra sao để không ảnh hưởng đến quá trình hồi phục và chức năng tuyến giáp? Mong bác sĩ tư vấn giúp tôi.
+
+Các ý cần bao phủ trong tài liệu:
+Chào bạn, Tổ yến là thực phẩm giàu dinh dưỡng, nhưng tương đối nhẹ và dễ tiêu. Thành phần chính gồm protein chất lượng cao, nhiều axit amin thiết yếu (như glycine, proline, arginine…), cùng các khoáng chất vi lượng như canxi, sắt, kẽm. Ngoài ra, tổ yến còn chứa một số hoạt chất sinh học như axit sialic và glucosamine, có vai trò hỗ trợ miễn dịch, hô hấp và quá trình phục hồi của cơ thể sau bệnh hoặc phẫu thuật. Với câu hỏi “ mổ tuyến giáp uống yến sào được không ?” thì câu trả lời là có thể nếu...
+
+Viết đoạn tài liệu tham khảo:
+
+
+======================================================================
+[02/21] ID: vdd_s1_034
+======================================================================
+
+[SYSTEM]
+Bạn là chuyên gia dinh dưỡng và y tế người Việt Nam.
+Viết một đoạn văn bản y tế/dinh dưỡng CHÍNH XÁC, CHI TIẾT (300-600 từ) để làm tài liệu tham khảo.
+Yêu cầu:
+- Bao phủ đầy đủ các khía cạnh của câu hỏi
+- Trình bày: cơ chế, nguyên nhân, lưu ý thực hành
+- Không bịa đặt thông tin y học
+- Bắt đầu thẳng vào nội dung, không mở đầu bằng "Tôi sẽ..."
+- Viết tiếng Việt, văn phong chuyên môn nhưng dễ hiểu
+
+[USER]
+Câu hỏi: Vì sao không nên dùng giấy sách báo gói thực phẩm?
+
+Các ý cần bao phủ trong tài liệu:
+Giấy sách, báo dù in màu hay in trắng đen cũng được in bằng mực in. Khi sử dụng để bao gói thức ăn, mực in này sẽ thấm vào thức ăn gây độc hại . Trong mực in chứa hợp chất của chì (Pb) là một chất độc. Chất độc từ hợp chất của chì có thể gây biến đổi gen của tế bào tác động đến quá trình di truyền của cơ thể; chì còn gây độc đối với hệ thần kinh, với các cơ quan nội tạng như gan, thận, não, máu… Chất độc của chì không bị phân giải trong nước, không bị ôxy hóa, một khi đã vào cơ thể là được các t...
+
+Viết đoạn tài liệu tham khảo:
+
+
+======================================================================
+[03/21] ID: vdd_s3_024
+======================================================================
+
+[SYSTEM]
+Bạn là chuyên gia dinh dưỡng và y tế người Việt Nam.
+Viết một đoạn văn bản y tế/dinh dưỡng CHÍNH XÁC, CHI TIẾT (300-600 từ) để làm tài liệu tham khảo.
+Yêu cầu:
+- Bao phủ đầy đủ các khía cạnh của câu hỏi
+- Trình bày: cơ chế, nguyên nhân, lưu ý thực hành
+- Không bịa đặt thông tin y học
+- Bắt đầu thẳng vào nội dung, không mở đầu bằng "Tôi sẽ..."
+- Viết tiếng Việt, văn phong chuyên môn nhưng dễ hiểu
+
+[USER]
+Câu hỏi: Vì sao không nên quá lạm dụng đồ ăn nguội?
+
+Các ý cần bao phủ trong tài liệu:
+Thịt nguội, xúc xích, dăm bông, patê... là những đồ ăn được nhiều gia đình sử dụng. Ưu điểm của loại đồ ăn này là có thể dùng ngay, không cần sơ chế. Bên cạnh những ưu điểm thì đồ ăn nguội cũng có những mặt hạn chế: Cảnh giác chất bảo quản, lượng muối: Ở góc độ y học, đồ nguội được xếp vào nhóm thực phẩm công nghiệp. Về mặt giá trị dinh dưỡng, các thực phẩm công nghiệp hầu hết có giá trị tương đối khá và các chất dinh dưỡng trong thực phẩm đều được bảo tồn trong điều kiện bảo quản đạt tiêu chuẩn...
+
+Viết đoạn tài liệu tham khảo:
+
+
+======================================================================
+[04/21] ID: vdd_s3_103
+======================================================================
+
+[SYSTEM]
+Bạn là chuyên gia dinh dưỡng và y tế người Việt Nam.
+Viết một đoạn văn bản y tế/dinh dưỡng CHÍNH XÁC, CHI TIẾT (300-600 từ) để làm tài liệu tham khảo.
+Yêu cầu:
+- Bao phủ đầy đủ các khía cạnh của câu hỏi
+- Trình bày: cơ chế, nguyên nhân, lưu ý thực hành
+- Không bịa đặt thông tin y học
+- Bắt đầu thẳng vào nội dung, không mở đầu bằng "Tôi sẽ..."
+- Viết tiếng Việt, văn phong chuyên môn nhưng dễ hiểu
+
+[USER]
+Câu hỏi: Làm thế nào để bảo toàn lượng vitamin C khi chế biến?
+
+Các ý cần bao phủ trong tài liệu:
+•  Thời gian dự trữ càng dài thì lượng vitamin C hao hụt càng lớn. Sau 1 ngày hao hụt 26%, sau 2 ngày 41%. •  Cho rau, thực phẩm vào luộc từ lúc nước lạnh hao 42%, lúc nước đã sôi hao 15%. •  Rau xào mất vitamin C nhiều hơn rau luộc, vì tiếp xúc cùng lúc với không khí và nhiệt độ cao hơn. •  Nếu rửa rau cả lá to rồi mới xắt để luộc, nấu và ăn ngay khi chín, mất 25%, nếu thái nhỏ rồi mới nấu có thể mất 50% hoặc hơn.
+
+Viết đoạn tài liệu tham khảo:
+
+
+======================================================================
+[05/21] ID: thucuc_s5_065
+======================================================================
+
+[SYSTEM]
+Bạn là chuyên gia dinh dưỡng và y tế người Việt Nam.
+Viết một đoạn văn bản y tế/dinh dưỡng CHÍNH XÁC, CHI TIẾT (300-600 từ) để làm tài liệu tham khảo.
+Yêu cầu:
+- Bao phủ đầy đủ các khía cạnh của câu hỏi
+- Trình bày: cơ chế, nguyên nhân, lưu ý thực hành
+- Không bịa đặt thông tin y học
+- Bắt đầu thẳng vào nội dung, không mở đầu bằng "Tôi sẽ..."
+- Viết tiếng Việt, văn phong chuyên môn nhưng dễ hiểu
+
+[USER]
+Câu hỏi: Chào bác sĩ,
+Dạo gần đây em có bổ sung omega 3 hằng ngày. Tuy nhiên sau một thời gian sử dụng, em thấy đi ngoài khó hơn, có cảm giác táo bón, phân khô và phải rặn nhiều hơn trước. Không biết uống omega 3 có bị táo bón không hay do nguyên nhân khác? Nếu do omega 3 thì em nên giảm liều, đổi loại hay uống vào thời điểm nào cho phù hợp? Mong bác sĩ tư vấn giúp em cách sử dụng an toàn và hạn chế tác dụng phụ. Em xin cảm ơn!
+
+Các ý cần bao phủ trong tài liệu:
+Chào bạn, Nhiều người khi bắt đầu bổ sung omega 3 thường lo lắng “uống omega 3 có gây táo bón không ?”, đặc biệt là khi thấy thói quen đi tiêu thay đổi. Dưới góc độ y khoa, omega 3 không phải nguyên nhân gây táo bón, thậm chí còn mang lại nhiều lợi ích cho hệ tiêu hóa nếu sử dụng đúng cách. Axit béo omega 3 (EPA và DHA) có tác dụng giảm viêm ruột, hỗ trợ hoạt động của nhu động ruột và giúp phân mềm hơn. Nhờ đó, việc đi tiêu diễn ra thuận lợi hơn, đặc biệt có lợi với người hay bị rối loạn tiêu hó...
+
+Viết đoạn tài liệu tham khảo:
+
+
+======================================================================
+[06/21] ID: thucuc_s5_025
+======================================================================
+
+[SYSTEM]
+Bạn là chuyên gia dinh dưỡng và y tế người Việt Nam.
+Viết một đoạn văn bản y tế/dinh dưỡng CHÍNH XÁC, CHI TIẾT (300-600 từ) để làm tài liệu tham khảo.
+Yêu cầu:
+- Bao phủ đầy đủ các khía cạnh của câu hỏi
+- Trình bày: cơ chế, nguyên nhân, lưu ý thực hành
+- Không bịa đặt thông tin y học
+- Bắt đầu thẳng vào nội dung, không mở đầu bằng "Tôi sẽ..."
+- Viết tiếng Việt, văn phong chuyên môn nhưng dễ hiểu
+
+[USER]
+Câu hỏi: Chào bác sĩ, 
+Thưa bác sĩ, khi trẻ biếng ăn có nên dùng men vi sinh không ạ? Con nhà em biếng ăn được các chị đồng nghiệp mách sử dụng men vi sinh để con ăn nhiều hơn, vậy em có nên dùng men vi sinh để cải thiện biếng ăn cho con không ạ? Cảm ơn bác sĩ.
+
+Các ý cần bao phủ trong tài liệu:
+Chào bạn, cảm ơn bạn đã gửi câu hỏi về chuyên mục. Đây cũng là thắc mắc của nhiều bậc phụ huynh mà tôi nhận được khi con thăm khám tại Bệnh viện ĐKQT Thu Cúc, và câu trả lời của tôi là sử dụng men vi sinh để giúp trẻ cải thiện biếng ăn là không cần thiết. Trước hết cần hiểu rõ về men vi sinh cho trẻ. Hiện nay các loại men vi sinh bao gồm: men vi sinh đơn thuần – nhóm 1 (ví dụ enterogermina, normagut…) và men vi sinh phối hợp thêm các vitamin, chất khoáng – nhóm 2 (ví dụ bio-acimin…). Khi bổ sung...
+
+Viết đoạn tài liệu tham khảo:
+
+
+======================================================================
+[07/21] ID: thucuc_s5_002
+======================================================================
+
+[SYSTEM]
+Bạn là chuyên gia dinh dưỡng và y tế người Việt Nam.
+Viết một đoạn văn bản y tế/dinh dưỡng CHÍNH XÁC, CHI TIẾT (300-600 từ) để làm tài liệu tham khảo.
+Yêu cầu:
+- Bao phủ đầy đủ các khía cạnh của câu hỏi
+- Trình bày: cơ chế, nguyên nhân, lưu ý thực hành
+- Không bịa đặt thông tin y học
+- Bắt đầu thẳng vào nội dung, không mở đầu bằng "Tôi sẽ..."
+- Viết tiếng Việt, văn phong chuyên môn nhưng dễ hiểu
+
+[USER]
+Câu hỏi: Chào bác sĩ,
+Tôi vừa mới mổ tuyến giáp được vài ngày, hiện vết mổ đang trong giai đoạn hồi phục. Tôi nghe nhiều người nói sau phẫu thuật không nên ăn tôm vì dễ gây ngứa, sẹo lồi hoặc làm vết thương lâu lành. Vậy xin bác sĩ tư vấn giúp tôi sau mổ tuyến giáp có ăn được tôm không, nếu được thì nên ăn vào thời điểm nào, cần kiêng trong bao lâu và có lưu ý gì để không ảnh hưởng đến vết mổ cũng như quá trình hồi phục không ạ?
+
+Các ý cần bao phủ trong tài liệu:
+Chào bạn, “Mổ tuyến giáp có ăn được tôm không?” là thắc mắc rất thường gặp. Trên thực tế, sau mổ tuyến giáp có ăn được tôm không còn phụ thuộc vào loại bệnh tuyến giáp bạn mắc phải và giai đoạn điều trị hiện tại. Không phải ai mổ tuyến giáp cũng có câu trả lời giống nhau. Tôm là thực phẩm giàu protein, vitamin B12 và khoáng chất, tốt cho sức khỏe nói chung. Tuy nhiên, với người vừa mổ tuyến giáp , tôm lại có một số điểm cần cân nhắc. Thứ nhất, tôm – đặc biệt là tôm biển – chứa hàm lượng iod tươn...
+
+Viết đoạn tài liệu tham khảo:
+
+
+======================================================================
+[08/21] ID: vdd_s1_007
+======================================================================
+
+[SYSTEM]
+Bạn là chuyên gia dinh dưỡng và y tế người Việt Nam.
+Viết một đoạn văn bản y tế/dinh dưỡng CHÍNH XÁC, CHI TIẾT (300-600 từ) để làm tài liệu tham khảo.
+Yêu cầu:
+- Bao phủ đầy đủ các khía cạnh của câu hỏi
+- Trình bày: cơ chế, nguyên nhân, lưu ý thực hành
+- Không bịa đặt thông tin y học
+- Bắt đầu thẳng vào nội dung, không mở đầu bằng "Tôi sẽ..."
+- Viết tiếng Việt, văn phong chuyên môn nhưng dễ hiểu
+
+[USER]
+Câu hỏi: Bảo quản đồ ăn nguội như thế nào?
+
+Các ý cần bao phủ trong tài liệu:
+Đồ nguội trên thị trường hiện nay rất đa dạng chủng loại như các loại giò, nem, chả, mì ăn liền… hoặc những thực phẩm ngoại nhập như xúc xích, phômai, bơ, giăm bông, thịt xông khói, đồ hộp… có mùi vị hấp dẫn và tính tiện lợi làm thực phẩm để dành hoặc ăn chơi, không phải chế biến cầu kỳ như thực phẩm tươi. Nhưng đồ ăn nguội cần được bảo quản cẩn thận để đảm bảo sức khỏe cho người tiêu dùng. Khi chế biến một sản phẩm ăn nguội, nhà sản xuất phải có được nguồn thịt ổn định. Chất lượng thịt tốt, săn...
+
+Viết đoạn tài liệu tham khảo:
+
+
+======================================================================
+[09/21] ID: thucuc_s5_089
+======================================================================
+
+[SYSTEM]
+Bạn là chuyên gia dinh dưỡng và y tế người Việt Nam.
+Viết một đoạn văn bản y tế/dinh dưỡng CHÍNH XÁC, CHI TIẾT (300-600 từ) để làm tài liệu tham khảo.
+Yêu cầu:
+- Bao phủ đầy đủ các khía cạnh của câu hỏi
+- Trình bày: cơ chế, nguyên nhân, lưu ý thực hành
+- Không bịa đặt thông tin y học
+- Bắt đầu thẳng vào nội dung, không mở đầu bằng "Tôi sẽ..."
+- Viết tiếng Việt, văn phong chuyên môn nhưng dễ hiểu
+
+[USER]
+Câu hỏi: Em chào bác sĩ,
+Bé gái nhà em 4 tuổi và có cân nặng 18 kg, cao 113cm, Nhưng theo chuẩn thì bé 4 tuổi chiều cao trung bình là 103cm. Bác cho cháu hỏi chiều cao như vậy chiều cao của bé vượt tiêu chuẩn có ảnh hưởng gì không ạ?
+
+Các ý cần bao phủ trong tài liệu:
+Chào bạn Thúy Hà, Cảm ơn bạn đã gửi câu hỏi tới chuyên mục Dinh Dưỡng. Tôi xin trả lời câu hỏi của bạn như sau. Hiện tại bé nhà bạn 4 tuổi và cao 113cm. Tương ứng với chiều cao naỳ bé cần cân nặng khoảng 19,8kg. Như vậy với cân nặng 18kg của bé thì hiện tại bé đang phát triển bình thường, chiều cao và cân nặng tương xứng với nhau nên không bị thừa cân và hiện chưa có nguy cơ nào về sức khỏe nên bạn hoàn toàn có thể an tâm. Tuy nhiên, độ tuổi này đang là độ tuổi phát triển của bé nên bạn cần lưu...
+
+Viết đoạn tài liệu tham khảo:
+
+
+======================================================================
+[10/21] ID: thucuc_s5_092
+======================================================================
+
+[SYSTEM]
+Bạn là chuyên gia dinh dưỡng và y tế người Việt Nam.
+Viết một đoạn văn bản y tế/dinh dưỡng CHÍNH XÁC, CHI TIẾT (300-600 từ) để làm tài liệu tham khảo.
+Yêu cầu:
+- Bao phủ đầy đủ các khía cạnh của câu hỏi
+- Trình bày: cơ chế, nguyên nhân, lưu ý thực hành
+- Không bịa đặt thông tin y học
+- Bắt đầu thẳng vào nội dung, không mở đầu bằng "Tôi sẽ..."
+- Viết tiếng Việt, văn phong chuyên môn nhưng dễ hiểu
+
+[USER]
+Câu hỏi: Chào bác sĩ,
+Tôi vừa mổ tuyến giáp xong, liệu sau mổ tuyến giáp có ăn được hải sản không ạ? Tôi nghe nói hải sản giàu i-ốt, nhưng không chắc lượng i-ốt có ảnh hưởng gì đến sức khỏe sau mổ hay không? Bác sĩ có thể tư vấn giúp tôi nên ăn loại hải sản nào và cần kiêng gì không ạ?
+
+Các ý cần bao phủ trong tài liệu:
+Chào bạn, Sau phẫu thuật tuyến giáp , rất nhiều người bệnh lo lắng về chế độ ăn uống, đặc biệt là câu hỏi mổ tuyến giáp có ăn được hải sản không ? Đây là băn khoăn hoàn toàn chính đáng, bởi tuyến giáp liên quan trực tiếp đến chuyển hóa và việc sử dụng hormone lâu dài. 1. Mổ tuyến giáp có ăn được hải sản không? Vì sao? Về vấn đề “ mổ tuyến giáp có ăn được hải sản không ” thì câu trả lời là có , trong hầu hết các trường hợp, vì hải sản là nhóm thực phẩm giàu dinh dưỡng, giúp cơ thể phục hồi tốt hơ...
+
+Viết đoạn tài liệu tham khảo:
+
+
+======================================================================
+[11/21] ID: thucuc_s1_110
+======================================================================
+
+[SYSTEM]
+Bạn là chuyên gia dinh dưỡng và y tế người Việt Nam.
+Viết một đoạn văn bản y tế/dinh dưỡng CHÍNH XÁC, CHI TIẾT (300-600 từ) để làm tài liệu tham khảo.
+Yêu cầu:
+- Bao phủ đầy đủ các khía cạnh của câu hỏi
+- Trình bày: cơ chế, nguyên nhân, lưu ý thực hành
+- Không bịa đặt thông tin y học
+- Bắt đầu thẳng vào nội dung, không mở đầu bằng "Tôi sẽ..."
+- Viết tiếng Việt, văn phong chuyên môn nhưng dễ hiểu
+
+[USER]
+Câu hỏi: Chào bác sĩ,
+Tôi đang có ý định bổ sung omega 3 để hỗ trợ tim mạch và trí não, tuy nhiên tôi nghe nhiều người nói rằng uống omega 3 có thể gây nóng trong người, nổi mụn hoặc khó chịu, đặc biệt với người có cơ địa “nóng”. Xin bác sĩ cho tôi hỏi: Uống omega 3 có bị nóng không? Nguyên nhân vì sao lại có cảm giác này và làm thế nào để sử dụng omega 3 đúng cách, an toàn, tránh bị nóng và tác dụng phụ không mong muốn?
+
+Các ý cần bao phủ trong tài liệu:
+Chào bạn, Nhiều người khi bổ sung dầu cá thường lo lắng “ uống omega 3 có bị nóng không ?” , thậm chí e ngại tình trạng nổi mụn, nóng trong người. Trước hết, cần khẳng định rằng uống omega 3 không gây nóng trong người nếu sử dụng đúng liều và sản phẩm đạt chất lượng. Omega 3 (EPA, DHA) là nhóm axit béo có đặc tính chống viêm, không phải chất sinh nhiệt. Về mặt sinh lý học, cảm giác “nóng” không xuất phát trực tiếp từ omega 3. “ Uống omega 3 có bị nổi mụn không? ” – câu trả lời là không đối với đ...
+
+Viết đoạn tài liệu tham khảo:
+
+
+======================================================================
+[12/21] ID: thucuc_s5_137
+======================================================================
+
+[SYSTEM]
+Bạn là chuyên gia dinh dưỡng và y tế người Việt Nam.
+Viết một đoạn văn bản y tế/dinh dưỡng CHÍNH XÁC, CHI TIẾT (300-600 từ) để làm tài liệu tham khảo.
+Yêu cầu:
+- Bao phủ đầy đủ các khía cạnh của câu hỏi
+- Trình bày: cơ chế, nguyên nhân, lưu ý thực hành
+- Không bịa đặt thông tin y học
+- Bắt đầu thẳng vào nội dung, không mở đầu bằng "Tôi sẽ..."
+- Viết tiếng Việt, văn phong chuyên môn nhưng dễ hiểu
+
+[USER]
+Câu hỏi: Em chào bác sĩ ạ,
+Hiện con em đang được 26 tháng tuổi. Bác sĩ cho em hỏi bé đã tẩy giun được chưa và nên tẩy như thế nào ạ?
+
+Các ý cần bao phủ trong tài liệu:
+Chào bạn Lan, Cảm ơn bạn đã gửi câu hỏi tới chuyên mục dinh dưỡng cho trẻ. Với câu hỏi của bạn, tôi xin trả lời như sau: Về độ tuổi tẩy giun, khuyến khích nên tẩy giun định kỳ cho trẻ khi trẻ 2 tuổi (24 tháng) và tẩy giun định kỳ mỗi 6 tháng 1 lần. Trong trường hợp trẻ dưới 2 tuổi, nếu phát hiện hoặc nghi ngờ nhiễm giun sán thì nên đưa trẻ đi khám và làm xét nghiệm tầm soát, đến khi đã có bằng chứng chính xác của việc nhiễm giun sán thì trẻ sẽ được điều trị theo sự hướng dẫn của bác sĩ. Con bạn...
+
+Viết đoạn tài liệu tham khảo:
+
+
+======================================================================
+[13/21] ID: vdd_s3_056
+======================================================================
+
+[SYSTEM]
+Bạn là chuyên gia dinh dưỡng và y tế người Việt Nam.
+Viết một đoạn văn bản y tế/dinh dưỡng CHÍNH XÁC, CHI TIẾT (300-600 từ) để làm tài liệu tham khảo.
+Yêu cầu:
+- Bao phủ đầy đủ các khía cạnh của câu hỏi
+- Trình bày: cơ chế, nguyên nhân, lưu ý thực hành
+- Không bịa đặt thông tin y học
+- Bắt đầu thẳng vào nội dung, không mở đầu bằng "Tôi sẽ..."
+- Viết tiếng Việt, văn phong chuyên môn nhưng dễ hiểu
+
+[USER]
+Câu hỏi: Bà mẹ nên làm gì khi vú bị căng tức sữa?
+
+Các ý cần bao phủ trong tài liệu:
+Khi cho con bú vú mẹ có thể bị căng tức do một trong những nguyên nhân thường gặp sau đây: a. Tình trạng ứ sữa gây căng tức vú: Khi sữa bắt đầu “xuống”, hai bên vú có cảm giác căng cứng do mô vú bị ứ sữa. Đôi khi sữa vẫn thoát ra mà vú vẫn bị căng tức. Đây là tình trạng vú bị căng tức sữa bình thường. Hiện tượng căng tức sữa sẽ ít xảy ra nếu con nằm cạnh mẹ suốt ngày đêm và cho bú thường xuyên, bú sớm ngay sau khi đẻ và trẻ ngậm bắt vú đúng. Khi mẹ bị căng tức sữa cần xử trí kịp thời để mẹ không...
+
+Viết đoạn tài liệu tham khảo:
+
+
+======================================================================
+[14/21] ID: vdd_s2_067
+======================================================================
+
+[SYSTEM]
+Bạn là chuyên gia dinh dưỡng và y tế người Việt Nam.
+Viết một đoạn văn bản y tế/dinh dưỡng CHÍNH XÁC, CHI TIẾT (300-600 từ) để làm tài liệu tham khảo.
+Yêu cầu:
+- Bao phủ đầy đủ các khía cạnh của câu hỏi
+- Trình bày: cơ chế, nguyên nhân, lưu ý thực hành
+- Không bịa đặt thông tin y học
+- Bắt đầu thẳng vào nội dung, không mở đầu bằng "Tôi sẽ..."
+- Viết tiếng Việt, văn phong chuyên môn nhưng dễ hiểu
+
+[USER]
+Câu hỏi: Ăn uống như thế nào để phòng xơ vữa động mạch?
+
+Các ý cần bao phủ trong tài liệu:
+Xơ vữa động mạch là hiện tượng thành của động mạch (phía trong lòng động mạch) bị xơ cứng làm cho lòng động mạch hẹp lại gây nên hiện tượng thiếu máu cục bộ cho cơ quan, có nơi lòng động mạch bị xơ vữa bong ra gây tắc mạch cục bộ. Xơ vữa động mạch có thể gặp mọi nơi trong cơ thể nhưng nguy hiểm nhất là động mạch nuôi tim (động mạch vành), động mạch não. Nguyên nhân chính gây nên xơ vữa động mạch là cholesterol trong máu tăng cao. Người ta nghiên cứu và tổng kết thấy rằng nguyên nhân của sự gia t...
+
+Viết đoạn tài liệu tham khảo:
+
+
+======================================================================
+[15/21] ID: thucuc_s5_140
+======================================================================
+
+[SYSTEM]
+Bạn là chuyên gia dinh dưỡng và y tế người Việt Nam.
+Viết một đoạn văn bản y tế/dinh dưỡng CHÍNH XÁC, CHI TIẾT (300-600 từ) để làm tài liệu tham khảo.
+Yêu cầu:
+- Bao phủ đầy đủ các khía cạnh của câu hỏi
+- Trình bày: cơ chế, nguyên nhân, lưu ý thực hành
+- Không bịa đặt thông tin y học
+- Bắt đầu thẳng vào nội dung, không mở đầu bằng "Tôi sẽ..."
+- Viết tiếng Việt, văn phong chuyên môn nhưng dễ hiểu
+
+[USER]
+Câu hỏi: Chào bác sĩ, tôi được chẩn đoán có polyp trong túi mật và chưa cần điều trị chỉ cần theo dõi định kỳ và kết hợp chế độ ăn uống hợp lý. Vậy xin hỏi bác sĩ, người bệnh polyp túi mật nên ăn gì và kiêng ăn gì?
+
+Các ý cần bao phủ trong tài liệu:
+Chào bạn, Polyp túi mật là loại bệnh lý đang ngày một phổ biến hiện nay. Đa phần tỷ lệ 92-95% polyp được xác định là lành tính và người bệnh có thể chung sống hoà bình với bệnh. Tuy nhiên, khả năng biến chứng và phát triển ác tính thành ung thư vẫn có thể xảy ra nếu người bệnh không theo dõi, điều trị kịp thời. Một chế độ ăn uống đúng cách cũng là một trong những yếu tố quan trọng giúp cải thiện tình trạng bệnh cũng như hạn chế mức thấp nhất nguy cơ tiến triển xấu của bệnh. Do đó người bệnh poly...
+
+Viết đoạn tài liệu tham khảo:
+
+
+======================================================================
+[16/21] ID: thucuc_s5_040
+======================================================================
+
+[SYSTEM]
+Bạn là chuyên gia dinh dưỡng và y tế người Việt Nam.
+Viết một đoạn văn bản y tế/dinh dưỡng CHÍNH XÁC, CHI TIẾT (300-600 từ) để làm tài liệu tham khảo.
+Yêu cầu:
+- Bao phủ đầy đủ các khía cạnh của câu hỏi
+- Trình bày: cơ chế, nguyên nhân, lưu ý thực hành
+- Không bịa đặt thông tin y học
+- Bắt đầu thẳng vào nội dung, không mở đầu bằng "Tôi sẽ..."
+- Viết tiếng Việt, văn phong chuyên môn nhưng dễ hiểu
+
+[USER]
+Câu hỏi: Chế độ ăn uống sau mổ rò hậu môn?
+Chào bác sĩ, tôi vừa phẫu thuật xử lý rò hậu môn được 1 ngày, muốn hỏi về chế độ ăn uống chuẩn để nhanh lành? Cảm ơn bác sĩ.
+
+Các ý cần bao phủ trong tài liệu:
+Chào bạn! Kiêng ăn gì sau mổ rò hậu môn là những yếu tố quan trọng giúp nhanh hồi phục, phòng tránh nguy cơ biến chứng và tái phát. Bạn cần tuân thủ những lưu ý sau để có thể mau lại sức, nhanh phục hồi sau mổ: – Cần cân bằng dưỡng chất trong khẩu phần ăn hàng ngày như không ăn quá nhiều đạm, không ăn thiếu chất khoáng, chất xơ và ngược lại; – Lưu ý bổ sung đầy đủ lượng nước mỗi ngày cho cơ thể từ 1,5 đến 2 lít nước giúp hệ tiêu hóa hoạt động trơn tru, bạn sẽ không gặp phải những vấn đề như táo...
+
+Viết đoạn tài liệu tham khảo:
+
+
+======================================================================
+[17/21] ID: vdd_s1_004
+======================================================================
+
+[SYSTEM]
+Bạn là chuyên gia dinh dưỡng và y tế người Việt Nam.
+Viết một đoạn văn bản y tế/dinh dưỡng CHÍNH XÁC, CHI TIẾT (300-600 từ) để làm tài liệu tham khảo.
+Yêu cầu:
+- Bao phủ đầy đủ các khía cạnh của câu hỏi
+- Trình bày: cơ chế, nguyên nhân, lưu ý thực hành
+- Không bịa đặt thông tin y học
+- Bắt đầu thẳng vào nội dung, không mở đầu bằng "Tôi sẽ..."
+- Viết tiếng Việt, văn phong chuyên môn nhưng dễ hiểu
+
+[USER]
+Câu hỏi: Vai trò của Acid béo Omega-3 là gì?
+
+Các ý cần bao phủ trong tài liệu:
+Acid béo Omega – 3 là tiền chất của DHA (chữ viết tắt của Docosahexaenoic acid), và EPA (viết tắt của Eicosapentaenoic acid). Não người được cấu tạo bởi trên 60% là acid béo, trong số đó DHA chiếm một số lượng khá lớn (DHA chiếm khoảng 1/4 lượng chất béo của não). Do đó, não cần một lượng acid béo omega – 3 (nhất là DHA) để phát triển và duy trì hoạt động. Trong cơ thể, EPA được xem là acid béo thiết yếu để chuyển hóa thành các chất sinh học quan trọng như prostaglandin, leucotrien (yếu tố làm c...
+
+Viết đoạn tài liệu tham khảo:
+
+
+======================================================================
+[18/21] ID: vdd_s1_005
+======================================================================
+
+[SYSTEM]
+Bạn là chuyên gia dinh dưỡng và y tế người Việt Nam.
+Viết một đoạn văn bản y tế/dinh dưỡng CHÍNH XÁC, CHI TIẾT (300-600 từ) để làm tài liệu tham khảo.
+Yêu cầu:
+- Bao phủ đầy đủ các khía cạnh của câu hỏi
+- Trình bày: cơ chế, nguyên nhân, lưu ý thực hành
+- Không bịa đặt thông tin y học
+- Bắt đầu thẳng vào nội dung, không mở đầu bằng "Tôi sẽ..."
+- Viết tiếng Việt, văn phong chuyên môn nhưng dễ hiểu
+
+[USER]
+Câu hỏi: Tại sao lại phải cho trẻ ăn bổ sung?
+
+Các ý cần bao phủ trong tài liệu:
+Khi trẻ được 6 tháng tuổi, ngoài bú mẹ cần phải cho trẻ ăn bổ sung (ăn sam, ăn dặm) vì thời kỳ này sữa mẹ không đủ đáp ứng nhu cầu về số lượng và chất lượng cho cơ thể trẻ ngày càng lớn lên.
+
+Viết đoạn tài liệu tham khảo:
+
+
+======================================================================
+[19/21] ID: vdd_s3_079
+======================================================================
+
+[SYSTEM]
+Bạn là chuyên gia dinh dưỡng và y tế người Việt Nam.
+Viết một đoạn văn bản y tế/dinh dưỡng CHÍNH XÁC, CHI TIẾT (300-600 từ) để làm tài liệu tham khảo.
+Yêu cầu:
+- Bao phủ đầy đủ các khía cạnh của câu hỏi
+- Trình bày: cơ chế, nguyên nhân, lưu ý thực hành
+- Không bịa đặt thông tin y học
+- Bắt đầu thẳng vào nội dung, không mở đầu bằng "Tôi sẽ..."
+- Viết tiếng Việt, văn phong chuyên môn nhưng dễ hiểu
+
+[USER]
+Câu hỏi: Ăn nóng có hại cho sức khỏe không?
+
+Các ý cần bao phủ trong tài liệu:
+Rất nhiều người có thói quen ăn thức ăn thật nóng, vì cho rằng ăn khi nóng, thực phẩm mới giữ nguyên vẹn các vitamin và khoáng chất, ăn nóng sẽ kích thích sự ngon miệng. Nhưng thói quen đó lợi bất cập hại, ăn quá nóng hay quá lạnh cũng đều không tốt và gây tổn hại tới đường ruột cùng các bộ phận trong cơ thể. Ngày càng có nhiều nghiên cứu chứng minh rằng việc dùng đồ ăn nóng và căn bệnh ung thư vùng miệng, ung thư đường ruột là có liên quan với nhau. Đó chính là bởi vì vách ngăn đường ruột tương...
+
+Viết đoạn tài liệu tham khảo:
+
+
+======================================================================
+[20/21] ID: vdd_s4_012
+======================================================================
+
+[SYSTEM]
+Bạn là chuyên gia dinh dưỡng và y tế người Việt Nam.
+Viết một đoạn văn bản y tế/dinh dưỡng CHÍNH XÁC, CHI TIẾT (300-600 từ) để làm tài liệu tham khảo.
+Yêu cầu:
+- Bao phủ đầy đủ các khía cạnh của câu hỏi
+- Trình bày: cơ chế, nguyên nhân, lưu ý thực hành
+- Không bịa đặt thông tin y học
+- Bắt đầu thẳng vào nội dung, không mở đầu bằng "Tôi sẽ..."
+- Viết tiếng Việt, văn phong chuyên môn nhưng dễ hiểu
+
+[USER]
+Câu hỏi: Vì sao  không nên dùng dầu, mỡ rán nhiều lần?
+
+Các ý cần bao phủ trong tài liệu:
+Dầu ăn, mỡ khi chiên rán ở nhiệt độ cao (thường trên 180ºC) sẽ xảy ra các phản ứng hóa học, sinh ra các chất aldehyt, chất ôxy hóa... đều là những chất rất có hại cho sức khỏe. Nếu nấu ở nhiệt độ càng cao (như để cho dầu bốc cháy trên chảo), số lần nấu lại càng nhiều thì lượng chất độc hại sinh ra càng nhiều. Trong những chất độc hại đó, có những chất bay hơi ra không khí, gây ô nhiễm không khí, người hít phải cũng độc hại, có chất lại lắng lẫn vào trong dầu, mỡ thấm vào thức ăn, người ăn vào rấ...
+
+Viết đoạn tài liệu tham khảo:
+
+
+======================================================================
+[21/21] ID: vdd_s4_063
+======================================================================
+
+[SYSTEM]
+Bạn là chuyên gia dinh dưỡng và y tế người Việt Nam.
+Viết một đoạn văn bản y tế/dinh dưỡng CHÍNH XÁC, CHI TIẾT (300-600 từ) để làm tài liệu tham khảo.
+Yêu cầu:
+- Bao phủ đầy đủ các khía cạnh của câu hỏi
+- Trình bày: cơ chế, nguyên nhân, lưu ý thực hành
+- Không bịa đặt thông tin y học
+- Bắt đầu thẳng vào nội dung, không mở đầu bằng "Tôi sẽ..."
+- Viết tiếng Việt, văn phong chuyên môn nhưng dễ hiểu
+
+[USER]
+Câu hỏi: Khi nào thì cho bé ăn bổ sung?
+
+Các ý cần bao phủ trong tài liệu:
+Khi trẻ được tròn 6 tháng thì bắt đầu cho ăn bổ sung, kể cả mẹ đủ sữa cũng không nên cho ăn quá muộn sau 6 tháng, nhưng cũng không được ăn trước 4 tháng. Ăn bổ sung quá sớm hoặc quá muộn đều  làm cho trẻ chậm lớn và suy dinh dưỡng. Cho trẻ ăn bổ sung đúng về thời gian sẽ giúp bé thích ứng dần với các thức ăn mới, các thực phẩm khác nhau, đồng thời giúp bộ máy tiêu hoá của trẻ hoàn thiện dần từ chế độ ăn lỏng đến đặc và cứng.
+
+Viết đoạn tài liệu tham khảo:
+
+

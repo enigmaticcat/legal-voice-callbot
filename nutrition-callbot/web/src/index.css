@@ -149,3 +149,168 @@ h1 {
   transform: translateY(-2px);
   box-shadow: 0 8px 32px var(--accent-glow);
 }
+
+.call-button.active {
+  background: linear-gradient(135deg, #e53e3e, #fc8181);
+  box-shadow: 0 4px 24px rgba(229, 62, 62, 0.35);
+}
+
+/* ── Status bar ───────────────────────────────────────────────────── */
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1.25rem;
+  backdrop-filter: blur(12px);
+}
+
+.status-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.connection-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: background 0.3s ease;
+}
+
+.connection-dot.connected {
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
+}
+
+.connection-dot.disconnected {
+  background: #6b7280;
+}
+
+/* ── Transcript ──────────────────────────────────────────────────── */
+.transcript {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  max-height: 280px;
+  overflow-y: auto;
+  backdrop-filter: blur(12px);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.transcript.empty {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  padding: 2rem 1rem;
+}
+
+.message {
+  margin-bottom: 0.75rem;
+}
+
+.message:last-child {
+  margin-bottom: 0;
+}
+
+.role-label {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.message.user .role-label { color: var(--accent); }
+.message.bot  .role-label { color: var(--success); }
+
+.message p {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* ── Input row (mic + upload) ────────────────────────────────────── */
+.input-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.input-row .mic-button {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+/* ── Upload button ───────────────────────────────────────────────── */
+.upload-button {
+  flex-shrink: 0;
+  width: 3.2rem;
+  padding: 0.75rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.upload-button:not(:disabled):hover {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.upload-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── Mic button ──────────────────────────────────────────────────── */
+.mic-button {
+  width: 100%;
+  padding: 1rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 0.75rem;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.mic-button:not(:disabled):hover {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.mic-button.recording {
+  border-color: #e53e3e;
+  background: rgba(229, 62, 62, 0.12);
+  color: #fc8181;
+  animation: pulse-border 1s ease-in-out infinite;
+}
+
+.mic-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+@keyframes pulse-border {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.4); }
+  50%       { box-shadow: 0 0 0 6px rgba(229, 62, 62, 0); }
+}

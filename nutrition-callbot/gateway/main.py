@@ -4,9 +4,11 @@ FastAPI application factory.
 Chỉ bootstrap + compose — không có business logic ở đây.
 """
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from config import settings
 from routes.health import router as health_router
@@ -39,11 +41,13 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(ws_router)
 
-
-@app.get("/")
-async def root():
-    """Root endpoint — status check."""
-    return {"status": "ok", "service": "gateway", "version": "0.1.0"}
+# ─── Static files — React frontend ───────────────────────
+# Serve web/dist nếu đã được build (Colab / production).
+# Route handlers ở trên có priority cao hơn, nên /health và /ws/voice không bị ảnh hưởng.
+_WEB_DIST = Path(__file__).parent.parent / "web" / "dist"
+if _WEB_DIST.is_dir():
+    app.mount("/", StaticFiles(directory=str(_WEB_DIST), html=True), name="static")
+    logger.info("Serving frontend from %s", _WEB_DIST)
 
 
 # ─── Startup / Shutdown ─────────────────────────────────

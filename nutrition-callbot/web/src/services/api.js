@@ -16,6 +16,11 @@ export async function getStatus() {
 }
 
 export function getWebSocketUrl() {
-    const wsUrl = GATEWAY_URL.replace('http', 'ws')
-    return `${wsUrl}/ws/voice`
+    // Nếu VITE_GATEWAY_URL được set (local dev với Vite riêng) — dùng nó
+    if (import.meta.env.VITE_GATEWAY_URL) {
+        return import.meta.env.VITE_GATEWAY_URL.replace(/^http/, 'ws') + '/ws/voice'
+    }
+    // Same-origin: frontend serve từ gateway (Colab qua ngrok / production)
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    return `${proto}//${window.location.host}/ws/voice`
 }
