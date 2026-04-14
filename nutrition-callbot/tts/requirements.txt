@@ -1,4 +1,5 @@
 # ── VieNeu-TTS (bundled in tts/vieneu + tts/vieneu_utils) ──
+llama-cpp-python>=0.3.16
 neucodec>=0.0.4
 phonemizer>=3.3.0
 librosa>=0.11.0
