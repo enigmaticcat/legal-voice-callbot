@@ -6,6 +6,7 @@ librosa>=0.11.0
 huggingface_hub>=0.20.0
 torch
 torchaudio
+torchao>=0.6.0,<0.7.0
 
 # ── API Server ──
 fastapi>=0.115.0
