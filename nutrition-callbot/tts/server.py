@@ -96,13 +96,26 @@ async def speak_stream(request: Request):
     if not text:
         raise HTTPException(status_code=400, detail="text is required")
 
+    stream = handler.speak(text)
+
+    try:
+        first_chunk = await anext(stream)
+    except StopAsyncIteration:
+        raise HTTPException(status_code=502, detail="TTS returned empty audio stream")
+    except Exception as e:
+        logger.exception("TTS stream preflight failed")
+        raise HTTPException(status_code=502, detail=f"TTS stream failed: {e}")
+
     async def generate():
-        has_audio = False
-        async for chunk in handler.speak(text):
-            has_audio = True
-            yield chunk
-        if not has_audio:
-            raise RuntimeError("TTS returned empty audio stream")
+        # Emit chunk dau tien da preflight de dam bao response khong bi chunked read loi.
+        yield first_chunk
+        try:
+            async for chunk in stream:
+                yield chunk
+        except Exception:
+            # Da bat dau stream thi khong duoc raise tiep; chi log va dong stream sach.
+            logger.exception("TTS stream interrupted after first chunk")
+            return
 
     return StreamingResponse(
         generate(),
