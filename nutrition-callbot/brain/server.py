@@ -27,6 +27,10 @@ rag = RAGPipeline(
     qdrant_api_key=config.qdrant_api_key,
     collection=config.qdrant_collection,
     qdrant_path=config.qdrant_path or None,
+    qdrant_snapshot_path=config.qdrant_snapshot_path or None,
+    qdrant_snapshot_force_restore=config.qdrant_snapshot_force_restore,
+    qdrant_snapshot_timeout_s=config.qdrant_snapshot_timeout_s,
+    qdrant_snapshot_priority=config.qdrant_snapshot_priority,
 )
 handler = BrainServiceHandler(llm=llm, rag=rag)
 
