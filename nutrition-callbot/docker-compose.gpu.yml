@@ -31,3 +31,6 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [ gpu ]
+    environment:
+      - TTS_DEVICE=cuda
+      - TTS_REQUIRE_CUDA=true

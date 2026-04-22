@@ -52,6 +52,12 @@ class Synthesizer:
         except ImportError:
             pass
 
+        if config.require_cuda and not has_cuda:
+            raise RuntimeError(
+                "TTS_REQUIRE_CUDA=true but CUDA is unavailable in runtime. "
+                "Ensure the container has GPU access and CUDA-compatible dependencies."
+            )
+
         if config.backbone_device:
             backbone_device = _normalize_backbone_device(config.backbone_device)
         elif config.tts_device:
@@ -65,6 +71,12 @@ class Synthesizer:
             codec_device = _normalize_codec_device(config.tts_device)
         else:
             codec_device = "cuda" if has_cuda else "cpu"
+
+        if config.require_cuda and (backbone_device != "gpu" or codec_device != "cuda"):
+            raise RuntimeError(
+                "TTS strict CUDA mode is enabled but selected devices are not CUDA "
+                f"(backbone={backbone_device}, codec={codec_device})."
+            )
 
         logger.info(f"Loading VieNeu-TTS (backbone={backbone_device}, codec={codec_device})...")
         self._tts = Vieneu(

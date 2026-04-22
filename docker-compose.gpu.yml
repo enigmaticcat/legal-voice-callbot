@@ -33,4 +33,5 @@ services:
               capabilities: [ gpu ]
     environment:
       - TTS_DEVICE=cuda
+      - TTS_REQUIRE_CUDA=true
   # Brain dùng API (Gemini/OpenAI-compatible), không yêu cầu GPU local.
