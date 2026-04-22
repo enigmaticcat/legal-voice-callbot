@@ -19,6 +19,7 @@ RUN pip install --no-cache-dir llama-cpp-python \
     --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip uninstall -y torchao || true
+RUN pip uninstall -y torchtune || true
 
 COPY tts/ .
 
