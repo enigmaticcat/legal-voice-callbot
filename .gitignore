@@ -1,5 +1,6 @@
 CallBot_Implementation_Plan_v2.md
 CallBot_Execution_Roadmap.md
+CLAUDE.md
 
 # Môi trường ảo (Virtual Env)
 venv/
@@ -17,11 +18,21 @@ env/
 *.csv
 *.parquet
 *.wav
+*.pcm
 vietnamese_legal_parquet/
 !package.json
 !tsconfig.json
 !evaluation/thucuc_qa.json
 !evaluation/thucuc_qa.jsonl
+
+# Log & test audio
+*.log
+logs/
+wav_16k/
+
+# OS & runtime
+.DS_Store
+.local_services.pids
 
 # Cache và Compiled Python code
 __pycache__/
