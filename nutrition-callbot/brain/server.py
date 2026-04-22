@@ -1,6 +1,7 @@
 import json
 import logging
 import asyncio
+import time
 
 import httpx
 from fastapi import FastAPI, Request
@@ -20,10 +21,12 @@ logging.basicConfig(
 logger = logging.getLogger("brain")
 
 llm = LLMClient(api_key=config.gemini_api_key, model=config.gemini_model)
+qdrant_url = config.qdrant_url or f"http://{config.qdrant_host}:{config.qdrant_port}"
 rag = RAGPipeline(
-    qdrant_url=config.qdrant_url,
+    qdrant_url=qdrant_url,
     qdrant_api_key=config.qdrant_api_key,
     collection=config.qdrant_collection,
+    qdrant_path=config.qdrant_path or None,
 )
 handler = BrainServiceHandler(llm=llm, rag=rag)
 
@@ -74,8 +77,20 @@ async def think_stream(request: Request):
     history = body.get("conversation_history", [])
 
     async def generate():
-        async for chunk in handler.think(query, session_id, history):
-            yield json.dumps(chunk, ensure_ascii=False) + "\n"
+        started = time.time()
+        try:
+            async for chunk in handler.think(query, session_id, history):
+                yield json.dumps(chunk, ensure_ascii=False) + "\n"
+        except Exception as e:
+            logger.exception("[%s] think/stream failed", session_id)
+            error_chunk = {
+                "text": "Xin lỗi, Brain đang gặp lỗi xử lý. Vui lòng thử lại.",
+                "is_final": True,
+                "error": True,
+                "error_type": type(e).__name__,
+                "timing": {"total_ms": round((time.time() - started) * 1000, 1)},
+            }
+            yield json.dumps(error_chunk, ensure_ascii=False) + "\n"
 
     return StreamingResponse(
         generate(),
