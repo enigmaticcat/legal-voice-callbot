@@ -64,12 +64,16 @@ class Orchestrator:
                         logger.warning("[%s] Invalid NDJSON chunk from brain", session_id)
 
     async def _tts_stream(self, text: str) -> AsyncGenerator[bytes, None]:
+        saw_audio = False
         async with httpx.AsyncClient(timeout=self.http_timeout) as client:
             async with client.stream("POST", f"{self.tts_url}/speak/stream", json={"text": text}) as response:
                 response.raise_for_status()
                 async for chunk in response.aiter_bytes(chunk_size=4800):
                     if chunk:
+                        saw_audio = True
                         yield chunk
+        if not saw_audio:
+            raise RuntimeError("TTS returned empty audio stream")
 
     async def process_text(
         self,
@@ -112,12 +116,23 @@ class Orchestrator:
                             "session_id": session_id,
                             "sample_rate": 24000,
                         }
-                    async for pcm_chunk in self._tts_stream(buffer):
+                    try:
+                        async for pcm_chunk in self._tts_stream(buffer):
+                            yield {
+                                "type": "audio_chunk",
+                                "session_id": session_id,
+                                "audio": pcm_chunk,
+                            }
+                    except Exception as e:
+                        logger.exception("[%s] TTS streaming failed", session_id)
                         yield {
-                            "type": "audio_chunk",
+                            "type": "error",
                             "session_id": session_id,
-                            "audio": pcm_chunk,
+                            "message": "TTS khong tao duoc audio.",
+                            "code": "TTS_STREAM_ERROR",
+                            "detail": str(e),
                         }
+                        return
                     buffer = ""
 
             if is_final:
@@ -131,12 +146,23 @@ class Orchestrator:
                     "session_id": session_id,
                     "sample_rate": 24000,
                 }
-            async for pcm_chunk in self._tts_stream(buffer):
+            try:
+                async for pcm_chunk in self._tts_stream(buffer):
+                    yield {
+                        "type": "audio_chunk",
+                        "session_id": session_id,
+                        "audio": pcm_chunk,
+                    }
+            except Exception as e:
+                logger.exception("[%s] TTS streaming failed", session_id)
                 yield {
-                    "type": "audio_chunk",
+                    "type": "error",
                     "session_id": session_id,
-                    "audio": pcm_chunk,
+                    "message": "TTS khong tao duoc audio.",
+                    "code": "TTS_STREAM_ERROR",
+                    "detail": str(e),
                 }
+                return
 
         if not saw_any_brain_chunk:
             yield {

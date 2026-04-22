@@ -20,5 +20,10 @@ class TTSConfig:
     # Word-Safe Chunking
     min_chunk_size: int = 40
 
+    # Device control (optional): if empty, auto-detect from torch.cuda.is_available()
+    tts_device: str = os.getenv("TTS_DEVICE", "").strip().lower()
+    backbone_device: str = os.getenv("TTS_BACKBONE_DEVICE", "").strip().lower()
+    codec_device: str = os.getenv("TTS_CODEC_DEVICE", "").strip().lower()
+
 
 config = TTSConfig()

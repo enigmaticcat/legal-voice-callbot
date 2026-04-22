@@ -12,7 +12,7 @@ import logging
 import os
 import sys
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse, Response
 import uvicorn
 
@@ -50,7 +50,9 @@ async def root():
 async def speak(request: Request):
     """Synthesize text → full WAV. Headers carry TTFB and RTF."""
     body = await request.json()
-    text = body.get("text", "")
+    text = (body.get("text", "") or "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="text is required")
 
     t0 = time.perf_counter()
     pcm_chunks = []
@@ -62,6 +64,9 @@ async def speak(request: Request):
         pcm_chunks.append(chunk)
 
     pcm = b"".join(pcm_chunks)
+    if not pcm:
+        raise HTTPException(status_code=502, detail="TTS returned empty audio")
+
     synth_s = time.perf_counter() - t0
     duration_s = len(pcm) / 2 / synthesizer.sample_rate  # int16 = 2 bytes/sample
 
@@ -87,11 +92,17 @@ async def speak(request: Request):
 async def speak_stream(request: Request):
     """Stream raw PCM int16 chunks as they are synthesized."""
     body = await request.json()
-    text = body.get("text", "")
+    text = (body.get("text", "") or "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="text is required")
 
     async def generate():
+        has_audio = False
         async for chunk in handler.speak(text):
+            has_audio = True
             yield chunk
+        if not has_audio:
+            raise RuntimeError("TTS returned empty audio stream")
 
     return StreamingResponse(
         generate(),
