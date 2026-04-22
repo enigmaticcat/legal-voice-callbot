@@ -15,7 +15,10 @@ services:
           devices:
             - driver: nvidia
               count: 1
-              capabilities: [gpu]
+              capabilities: [ gpu ]
+    environment:
+      - ASR_PROVIDER=cuda
+      - ASR_REQUIRE_CUDA=true
 
   tts:
     build:
@@ -27,4 +30,4 @@ services:
           devices:
             - driver: nvidia
               count: 1
-              capabilities: [gpu]
+              capabilities: [ gpu ]

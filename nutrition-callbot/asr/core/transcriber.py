@@ -49,6 +49,12 @@ class Transcriber:
 
     def __init__(self):
         from config import config
+
+        self.provider = config.provider.lower().strip()
+        self.require_cuda = bool(config.require_cuda)
+
+        if self.provider == "cuda":
+            self._assert_cuda_provider_available(require_cuda=self.require_cuda)
         
         logger.info("Initializing Sherpa-Onnx OnlineRecognizer...")
         try:
@@ -62,12 +68,37 @@ class Transcriber:
                 sample_rate=config.sample_rate,
                 feature_dim=80,
                 enable_endpoint_detection=True,
-                provider=config.provider,
+                provider=self.provider,
             )
-            logger.info("✅ Sherpa-Onnx OnlineRecognizer loaded successfully!")
+            logger.info("✅ Sherpa-Onnx OnlineRecognizer loaded successfully! provider=%s", self.provider)
         except Exception as e:
             logger.error(f"❌ Failed to load Sherpa-Onnx Recognizer: {e}")
             raise e
+
+    @staticmethod
+    def _assert_cuda_provider_available(require_cuda: bool):
+        try:
+            import onnxruntime as ort
+            providers = ort.get_available_providers()
+        except Exception as e:
+            msg = f"Cannot inspect ONNX Runtime providers: {e}"
+            if require_cuda:
+                raise RuntimeError(msg)
+            logger.warning(msg)
+            return
+
+        has_cuda = "CUDAExecutionProvider" in providers
+        if has_cuda:
+            logger.info("ONNX Runtime providers=%s", providers)
+            return
+
+        msg = (
+            "ASR_PROVIDER=cuda but CUDAExecutionProvider is unavailable. "
+            f"providers={providers}. Ensure GPU runtime and CUDA-compatible dependencies are installed."
+        )
+        if require_cuda:
+            raise RuntimeError(msg)
+        logger.warning(msg)
 
     def create_stream(self):
         """

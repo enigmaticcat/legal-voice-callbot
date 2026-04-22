@@ -17,6 +17,7 @@ class ASRConfig:
     
     sample_rate: int = 16000
     provider: str = os.getenv("ASR_PROVIDER", "cpu")  # "cpu" hoặc "cuda"
+    require_cuda: bool = os.getenv("ASR_REQUIRE_CUDA", "false").strip().lower() in {"1", "true", "yes", "on"}
 
 
 config = ASRConfig()

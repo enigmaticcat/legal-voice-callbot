@@ -29,6 +29,8 @@ class HTTPHandler(BaseHTTPRequestHandler):
                 "status": "healthy",
                 "service": "asr",
                 "timestamp": datetime.utcnow().isoformat(),
+                "provider": config.provider,
+                "require_cuda": config.require_cuda,
             })
         elif self.path == "/":
             self._respond(200, {
