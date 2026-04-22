@@ -1,0 +1,30 @@
+# GPU override — chạy từ thư mục nutrition-callbot/:
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build -d
+#
+# Yêu cầu: nvidia-container-toolkit đã cài trên host
+
+services:
+
+  asr:
+    build:
+      context: .
+      dockerfile: asr/Dockerfile.gpu
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  tts:
+    build:
+      context: .
+      dockerfile: tts/Dockerfile.gpu
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
