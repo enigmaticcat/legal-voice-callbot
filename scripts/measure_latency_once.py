@@ -13,7 +13,7 @@ SAMPLE_RATE = 24000
 
 ASR_URL = 'http://localhost:50051/transcribe'
 BRAIN_URL = 'http://localhost:50052/think/stream'
-TTS_URL = 'http://localhost:50053/speak/stream'
+TTS_URL = 'http://localhost:50053/speak'
 
 
 def main() -> None:
@@ -86,17 +86,17 @@ def main() -> None:
         tts_ttfb_ms = None
         pcm_chunks = []
 
-        with client.stream('POST', TTS_URL, json={'text': brain_text}) as resp:
-            resp.raise_for_status()
-            for chunk in resp.iter_bytes():
-                if not chunk:
-                    continue
-                if tts_ttfb_ms is None:
-                    tts_ttfb_ms = (time.perf_counter() - tts_start) * 1000
-                pcm_chunks.append(chunk)
+        tts_resp = client.post(TTS_URL, json={'text': brain_text})
+        tts_resp.raise_for_status()
+        if tts_ttfb_ms is None:
+            tts_ttfb_ms = (time.perf_counter() - tts_start) * 1000
+        pcm_chunks.append(tts_resp.content)
 
         tts_total_ms = (time.perf_counter() - tts_start) * 1000
         pcm = b''.join(pcm_chunks)
+        if not pcm:
+            raise RuntimeError('TTS returned empty audio stream')
+
         OUT_PCM.write_bytes(pcm)
 
         with wave.open(str(OUT_WAV), 'wb') as w:

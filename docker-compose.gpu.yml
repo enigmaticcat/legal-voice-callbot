@@ -16,7 +16,7 @@ services:
           devices:
             - driver: nvidia
               count: 1
-              capabilities: [gpu]
+              capabilities: [ gpu ]
     environment:
       - ASR_PROVIDER=cuda
 
@@ -30,17 +30,7 @@ services:
           devices:
             - driver: nvidia
               count: 1
-              capabilities: [gpu]
+              capabilities: [ gpu ]
     environment:
       - TTS_DEVICE=cuda
-
-  brain:
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-    environment:
-      - BRAIN_DEVICE=cuda
+  # Brain dùng API (Gemini/OpenAI-compatible), không yêu cầu GPU local.
