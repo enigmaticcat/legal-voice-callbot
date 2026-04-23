@@ -39,8 +39,8 @@ class BrainServiceHandler:
             rag_ms = (time.time() - t0) * 1000
             contexts = [d.get("content", "") for d in docs]
             context = "\n\n".join(
-                f"[{d.get('source','').upper()} - {d.get('title','')}]\n{d.get('content','')}"
-                for d in docs
+                f"[Tài liệu {i+1}: {d.get('title','')}]\n{d.get('content','')}"
+                for i, d in enumerate(docs)
             )
             prompt = build_prompt(
                 query=expanded,
