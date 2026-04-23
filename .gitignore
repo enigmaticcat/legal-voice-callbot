@@ -44,3 +44,4 @@ __pycache__/
 .env
 secret*.json
 
+.snapshot
