@@ -2,9 +2,11 @@ import json
 import re
 import time
 import wave
+import asyncio
 from pathlib import Path
 
 import httpx
+import websockets
 
 
 def _clean_for_tts(text: str) -> str:
@@ -16,11 +18,12 @@ _REPO_ROOT = Path(__file__).parent.parent
 AUDIO_PATH = _REPO_ROOT / 'wav_16k' / 'eval_1' / 'thucuc_s1_003.wav'
 OUT_WAV = _REPO_ROOT / 'latency_final_audio.wav'
 
-ASR_URL = 'http://localhost:50051/transcribe'
-BRAIN_URL = 'http://localhost:50052/think/stream'
+ASR_WS_URL  = 'ws://localhost:50051/ws/transcribe'
+BRAIN_URL   = 'http://localhost:50052/think/stream'
 TTS_STREAM_URL = 'http://localhost:50053/speak/stream'
 
-# Phải khớp với orchestrator._ready_for_tts
+CHUNK_BYTES = 3200   # 100ms × 16kHz × 2 bytes (PCM Int16)
+
 _TTS_MIN_CHARS = 40
 _TTS_PUNCTS = {'.', '?', '!', '\n'}
 
@@ -29,6 +32,30 @@ def _ready_for_tts(buf: str) -> bool:
     if len(buf.strip()) >= _TTS_MIN_CHARS:
         return True
     return any(p in buf for p in _TTS_PUNCTS)
+
+
+async def _asr_stream(audio_bytes: bytes) -> tuple[str, float, float]:
+    """
+    Mô phỏng streaming ASR:
+      - Feed toàn bộ audio theo từng chunk 100ms (không delay, nhanh hơn real-time)
+      - Gửi "end" và đo thời gian finalize
+    Trả về (transcript, feed_ms, finalize_ms)
+    """
+    async with websockets.connect(ASR_WS_URL) as ws:
+        # Feed tất cả chunks (mô phỏng quá trình user đang nói)
+        t_feed_start = time.perf_counter()
+        for i in range(0, len(audio_bytes), CHUNK_BYTES):
+            chunk = audio_bytes[i:i + CHUNK_BYTES]
+            await ws.send(chunk)
+        feed_ms = (time.perf_counter() - t_feed_start) * 1000
+
+        # Gửi end và đo thời gian finalize (= phần ASR đóng góp vào TTFB thực tế)
+        t_finalize = time.perf_counter()
+        await ws.send(json.dumps({'type': 'end'}))
+        result = json.loads(await ws.recv())
+        finalize_ms = (time.perf_counter() - t_finalize) * 1000
+
+    return result.get('text', ''), feed_ms, finalize_ms
 
 
 def main() -> None:
@@ -50,24 +77,19 @@ def main() -> None:
         'asr_input_bytes': len(audio_bytes),
     }
 
+    # ── 1) ASR streaming ──────────────────────────────────────────────────────
+    transcript, feed_ms, finalize_ms = asyncio.run(_asr_stream(audio_bytes))
+
+    # feed_ms = thời gian push hết audio vào model (song song với user nói trong thực tế)
+    # finalize_ms = thời gian ASR flush buffer cuối sau khi user dừng → đây là phần
+    #               đóng góp thực sự vào TTFB trong streaming mode
+    result['asr_feed_ms']      = round(feed_ms, 1)
+    result['asr_finalize_ms']  = round(finalize_ms, 1)
+    result['asr_rtf_feed']     = round((feed_ms / 1000) / asr_in_duration_s, 3) if asr_in_duration_s > 0 else None
+    result['transcript_preview'] = transcript[:220]
+
     with httpx.Client(timeout=300) as client:
-        # ── 1) ASR ────────────────────────────────────────────────────────────
-        t0 = time.perf_counter()
-        asr_resp = client.post(
-            ASR_URL,
-            content=audio_bytes,
-            headers={'Content-Type': 'application/octet-stream'},
-        )
-        asr_resp.raise_for_status()
-        asr_ms = (time.perf_counter() - t0) * 1000
-        transcript = asr_resp.json().get('text', '')
-
-        result['asr_ms'] = round(asr_ms, 1)
-        result['asr_rtf'] = round((asr_ms / 1000) / asr_in_duration_s, 3) if asr_in_duration_s > 0 else None
-        result['transcript_preview'] = transcript[:220]
-
         # ── 2) Brain stream ───────────────────────────────────────────────────
-        # Ghi lại các "flush point": mỗi khi buffer đủ điều kiện gửi TTS.
         payload = {
             'query': transcript,
             'session_id': 'latency-check',
@@ -75,9 +97,9 @@ def main() -> None:
         }
 
         brain_text_parts: list[str] = []
-        brain_flushes: list[str] = []   # mỗi phần text sẽ được gửi TTS riêng
+        brain_flushes: list[str] = []
         brain_first_chunk_ms = None
-        brain_first_flush_ms = None     # thời điểm flush đầu tiên (= khi TTS bắt đầu thật)
+        brain_first_flush_ms = None
         brain_timing: dict = {}
         buf = ''
 
@@ -111,7 +133,6 @@ def main() -> None:
                     break
 
         brain_total_ms = (time.perf_counter() - brain_start) * 1000
-        # Phần còn dư chưa flush
         if buf.strip():
             if brain_first_flush_ms is None:
                 brain_first_flush_ms = brain_total_ms
@@ -120,16 +141,13 @@ def main() -> None:
         brain_text = ''.join(brain_text_parts)
         result['brain_first_chunk_ms'] = round(brain_first_chunk_ms or 0, 1)
         result['brain_first_flush_ms'] = round(brain_first_flush_ms or 0, 1)
-        result['brain_total_ms'] = round(brain_total_ms, 1)
-        result['brain_timing'] = brain_timing
-        result['brain_text'] = brain_text
-        result['brain_text_chars'] = len(brain_text)
-        result['brain_flush_count'] = len(brain_flushes)
+        result['brain_total_ms']       = round(brain_total_ms, 1)
+        result['brain_timing']         = brain_timing
+        result['brain_text']           = brain_text
+        result['brain_text_chars']     = len(brain_text)
+        result['brain_flush_count']    = len(brain_flushes)
 
-        # ── 3) TTS real stream ────────────────────────────────────────────────
-        # Phát lại các flush theo đúng thứ tự orchestrator sẽ làm.
-        # Script chạy tuần tự nên đây là lower-bound: thực tế brain vẫn tiếp tục
-        # stream song song khi TTS đang xử lý flush đầu tiên.
+        # ── 3) TTS stream ─────────────────────────────────────────────────────
         sample_rate = 24000
         all_pcm = bytearray()
         tts_first_chunk_ms = None
@@ -153,34 +171,36 @@ def main() -> None:
             raise RuntimeError('TTS returned empty audio stream')
 
         duration_s = len(pcm) / 2 / sample_rate
-
         with wave.open(str(OUT_WAV), 'wb') as w:
             w.setnchannels(1)
             w.setsampwidth(2)
             w.setframerate(sample_rate)
             w.writeframes(pcm)
 
-        result['tts_mode'] = 'real_stream'
-        result['tts_first_chunk_ms'] = round(tts_first_chunk_ms or 0, 1)
-        result['tts_total_ms'] = round(tts_total_ms, 1)
+        result['tts_mode']             = 'real_stream'
+        result['tts_first_chunk_ms']   = round(tts_first_chunk_ms or 0, 1)
+        result['tts_total_ms']         = round(tts_total_ms, 1)
         result['tts_output_sample_rate'] = sample_rate
-        result['tts_text_chars'] = len(brain_text)
-        result['tts_rtf'] = round((tts_total_ms / 1000) / duration_s, 3) if duration_s > 0 else None
-        result['audio_duration_s'] = round(duration_s, 2)
-        result['audio_bytes'] = len(pcm)
+        result['tts_text_chars']       = len(brain_text)
+        result['tts_rtf']              = round((tts_total_ms / 1000) / duration_s, 3) if duration_s > 0 else None
+        result['audio_duration_s']     = round(duration_s, 2)
+        result['audio_bytes']          = len(pcm)
 
         # ── 4) Metrics tổng hợp ───────────────────────────────────────────────
-        # pipeline_ttfb_ms: từ lúc người nói xong → tiếng đầu tiên cất ra.
-        # = ASR + (brain đến lúc flush đầu) + (TTS đến khi có PCM chunk đầu tiên)
-        # Lưu ý: đây là đo tuần tự (brain xong rồi mới gọi TTS) nên brain_first_flush_ms
-        # là upper-bound; thực tế song song sẽ chỉ còn ASR + brain_first_flush + TTS_first_chunk.
-        pipeline_ttfb_ms = asr_ms + (brain_first_flush_ms or brain_total_ms) + (tts_first_chunk_ms or 0)
-        result['pipeline_ttfb_ms'] = round(pipeline_ttfb_ms, 1)
-        result['pipeline_total_ms'] = round(asr_ms + brain_total_ms + tts_total_ms, 1)
-        result['speech_end_to_first_audio_ms'] = round(pipeline_ttfb_ms, 1)
+        # speech_end_to_first_audio_ms: từ lúc người nói XONG → byte audio đầu tiên
+        # Trong streaming mode, ASR xử lý song song khi user đang nói.
+        # Chỉ còn asr_finalize_ms (flush buffer cuối) + brain + tts đóng góp vào TTFB.
+        speech_end_to_first_audio_ms = (
+            finalize_ms
+            + (brain_first_flush_ms or brain_total_ms)
+            + (tts_first_chunk_ms or 0)
+        )
+        result['speech_end_to_first_audio_ms'] = round(speech_end_to_first_audio_ms, 1)
+        result['pipeline_total_ms'] = round(feed_ms + brain_total_ms + tts_total_ms, 1)
 
     print(json.dumps(result, ensure_ascii=False, indent=2))
-    print(f"\n>>> Thời gian từ khi nói xong → byte audio đầu tiên: {result['speech_end_to_first_audio_ms']} ms ({result['speech_end_to_first_audio_ms']/1000:.2f}s)")
+    print(f"\n>>> ASR finalize (sau khi user dừng): {finalize_ms:.1f} ms")
+    print(f">>> Thời gian từ khi nói xong → byte audio đầu tiên: {speech_end_to_first_audio_ms:.1f} ms ({speech_end_to_first_audio_ms/1000:.2f}s)")
 
 
 if __name__ == '__main__':
