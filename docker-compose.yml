@@ -58,6 +58,7 @@ services:
     environment:
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
+      - TTS_URL=http://tts:50053
     networks:
       - callbot
     depends_on:
@@ -85,6 +86,10 @@ services:
     ports:
       - "${GATEWAY_PORT:-8000}:8000"
     env_file: ./nutrition-callbot/.env
+    environment:
+      - ASR_HOST=asr
+      - BRAIN_HOST=brain
+      - TTS_HOST=tts
     networks:
       - callbot
     depends_on:
