@@ -10,10 +10,12 @@ function App() {
     const [callActive, setCallActive] = useState(false)
     const [status, setStatus] = useState('idle')
     const [messages, setMessages] = useState([])
+    const [isRecording, setIsRecording] = useState(false)
 
-    const audioChunksRef = useRef([])    // PCM chunks tích lũy khi đang giữ mic
+    const audioChunksRef = useRef([])    // PCM chunks tích lũy khi đang ghi âm
     const currentBotTextRef = useRef('') // text bot đang stream về
     const fileInputRef = useRef(null)    // hidden <input type="file">
+    const padTimerRef = useRef(null)     // timer cho 200ms padding
 
     const { startCapture, stopCapture, playPcm, resetPlayback } = useAudioSession()
 
@@ -81,36 +83,38 @@ function App() {
         }
     }, [callActive, connect, disconnect, stopCapture])
 
-    // ── Push-to-talk: giữ để nói, thả để gửi ─────────────────────────
-    const handleMicStart = useCallback(async (e) => {
-        e.preventDefault()
+    // ── Toggle mic: bấm để bắt đầu, bấm lại để dừng ────────────────────
+    const handleMicToggle = useCallback(async () => {
         if (status === 'thinking' || status === 'speaking') return
-        audioChunksRef.current = []
-        setStatus('listening')
-        await startCapture((chunk) => {
-            audioChunksRef.current.push(chunk)
-        })
-    }, [status, startCapture])
 
-    const handleMicEnd = useCallback((e) => {
-        e.preventDefault()
-        stopCapture()
-        const chunks = audioChunksRef.current
-        if (chunks.length === 0) { setStatus('idle'); return }
+        if (!isRecording) {
+            audioChunksRef.current = []
+            setIsRecording(true)
+            setStatus('listening')
+            await startCapture((chunk) => {
+                audioChunksRef.current.push(chunk)
+            })
+        } else {
+            setIsRecording(false)
+            // Đợi 200ms để ghi thêm phần đuôi, giúp ASR detect tốt hơn
+            padTimerRef.current = setTimeout(() => {
+                stopCapture()
+                const chunks = audioChunksRef.current
+                if (chunks.length === 0) { setStatus('idle'); return }
 
-        // Merge tất cả PCM Int16 chunks thành một ArrayBuffer
-        const totalLen = chunks.reduce((sum, c) => sum + c.byteLength, 0)
-        const merged = new Uint8Array(totalLen)
-        let offset = 0
-        for (const chunk of chunks) {
-            merged.set(new Uint8Array(chunk), offset)
-            offset += chunk.byteLength
+                const totalLen = chunks.reduce((sum, c) => sum + c.byteLength, 0)
+                const merged = new Uint8Array(totalLen)
+                let offset = 0
+                for (const chunk of chunks) {
+                    merged.set(new Uint8Array(chunk), offset)
+                    offset += chunk.byteLength
+                }
+                send(merged.buffer)
+                audioChunksRef.current = []
+                setStatus('thinking')
+            }, 200)
         }
-
-        send(merged.buffer)
-        audioChunksRef.current = []
-        setStatus('thinking')
-    }, [stopCapture, send])
+    }, [status, isRecording, startCapture, stopCapture, send])
 
     // ── Audio file upload ─────────────────────────────────────────────
     const handleFileUpload = useCallback(async (e) => {
@@ -154,9 +158,9 @@ function App() {
         <div className="app">
             <div className="container">
                 <div className="hero">
-                    <div className="icon">⚖️</div>
-                    <h1>Legal CallBot</h1>
-                    <p className="subtitle">Tư Vấn Pháp Luật Việt Nam Bằng Giọng Nói AI</p>
+                    <div className="icon">🥗</div>
+                    <h1>Nutrition CallBot</h1>
+                    <p className="subtitle">Tư Vấn Dinh Dưỡng Bằng Giọng Nói AI</p>
                 </div>
 
                 <StatusBar status={status} isConnected={isConnected} />
@@ -167,14 +171,11 @@ function App() {
 
                         <div className="input-row">
                             <button
-                                className={`mic-button ${status === 'listening' ? 'recording' : ''}`}
-                                onMouseDown={handleMicStart}
-                                onMouseUp={handleMicEnd}
-                                onTouchStart={handleMicStart}
-                                onTouchEnd={handleMicEnd}
+                                className={`mic-button ${isRecording ? 'recording' : ''}`}
+                                onClick={handleMicToggle}
                                 disabled={isBusy}
                             >
-                                {status === 'listening' ? '🔴 Đang nghe...' : '🎙️ Giữ để nói'}
+                                {isRecording ? '🔴 Đang nghe... (bấm để dừng)' : '🎙️ Bấm để nói'}
                             </button>
 
                             <button
