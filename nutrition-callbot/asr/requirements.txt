@@ -2,4 +2,5 @@ sherpa-onnx
 grpcio
 grpcio-tools
 numpy
-
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0

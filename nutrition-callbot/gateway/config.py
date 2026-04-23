@@ -42,6 +42,10 @@ class Settings:
         return f"http://{self.asr_host}:{self.asr_port}"
 
     @property
+    def asr_ws_url(self) -> str:
+        return f"ws://{self.asr_host}:{self.asr_port}/ws/transcribe"
+
+    @property
     def brain_http_url(self) -> str:
         return f"http://{self.brain_host}:{self.brain_port}"
 

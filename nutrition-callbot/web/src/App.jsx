@@ -12,7 +12,6 @@ function App() {
     const [messages, setMessages] = useState([])
     const [isRecording, setIsRecording] = useState(false)
 
-    const audioChunksRef = useRef([])    // PCM chunks tích lũy khi đang ghi âm
     const currentBotTextRef = useRef('') // text bot đang stream về
     const fileInputRef = useRef(null)    // hidden <input type="file">
     const padTimerRef = useRef(null)     // timer cho 200ms padding
@@ -88,29 +87,17 @@ function App() {
         if (status === 'thinking' || status === 'speaking') return
 
         if (!isRecording) {
-            audioChunksRef.current = []
             setIsRecording(true)
             setStatus('listening')
             await startCapture((chunk) => {
-                audioChunksRef.current.push(chunk)
+                send(chunk)  // stream từng chunk 100ms trực tiếp lên gateway
             })
         } else {
             setIsRecording(false)
-            // Đợi 200ms để ghi thêm phần đuôi, giúp ASR detect tốt hơn
+            // Đợi 200ms để capture thêm phần đuôi
             padTimerRef.current = setTimeout(() => {
                 stopCapture()
-                const chunks = audioChunksRef.current
-                if (chunks.length === 0) { setStatus('idle'); return }
-
-                const totalLen = chunks.reduce((sum, c) => sum + c.byteLength, 0)
-                const merged = new Uint8Array(totalLen)
-                let offset = 0
-                for (const chunk of chunks) {
-                    merged.set(new Uint8Array(chunk), offset)
-                    offset += chunk.byteLength
-                }
-                send(merged.buffer)
-                audioChunksRef.current = []
+                send(JSON.stringify({ type: 'end_speech' }))
                 setStatus('thinking')
             }, 200)
         }

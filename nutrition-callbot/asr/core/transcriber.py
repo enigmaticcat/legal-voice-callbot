@@ -126,6 +126,16 @@ class Transcriber:
         return self.recognizer.get_result(stream)
 
 
+    def finalize_stream(self, stream) -> str:
+        """
+        Flush buffer cuối và trả transcript hoàn chỉnh.
+        Gọi sau khi đã feed hết audio (user dừng nói).
+        """
+        stream.input_finished()
+        while self.recognizer.is_ready(stream):
+            self.recognizer.decode_stream(stream)
+        return self.recognizer.get_result(stream)
+
     def is_endpoint(self, stream) -> bool:
         """
         Kiểm tra đã dứt lời (Endpoint) chưa.

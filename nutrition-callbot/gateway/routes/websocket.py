@@ -1,14 +1,11 @@
-"""
-WebSocket Voice Route
-WS /ws/voice — Entry point cho cuộc gọi tư vấn.
-Bước 6 sẽ implement orchestrator pipeline thật (ASR → Brain → TTS).
-"""
-import logging
 import json
+import logging
 from uuid import uuid4
 
+import websockets
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
+from config import settings
 from services.orchestrator import Orchestrator
 
 router = APIRouter(tags=["voice"])
@@ -18,15 +15,12 @@ orchestrator = Orchestrator()
 
 @router.websocket("/ws/voice")
 async def voice_chat(websocket: WebSocket):
-    """
-    WebSocket endpoint cho cuộc gọi voice.
-
-    Pipeline (sẽ implement ở Bước 6):
-      Client Audio → gRPC ASR → Text → gRPC Brain → Text → gRPC TTS → Audio → Client
-    """
     session_id = str(uuid4())
     await websocket.accept()
-    logger.info(f"[{session_id}] Client connected")
+    logger.info("[%s] Client connected", session_id)
+
+    conversation_history = []
+    asr_ws = None
 
     try:
         while True:
@@ -35,46 +29,90 @@ async def voice_chat(websocket: WebSocket):
             if message.get("type") == "websocket.disconnect":
                 break
 
-            # Ưu tiên binary cho voice payload.
+            # ── Binary: audio chunk đang stream từ mic ────────────────
             if message.get("bytes") is not None:
-                audio_data = message["bytes"]
-                async for event in orchestrator.process_audio(session_id, audio_data):
+                audio_chunk = message["bytes"]
+                if asr_ws is None:
+                    asr_ws = await websockets.connect(settings.asr_ws_url)
+                    logger.info("[%s] ASR stream opened", session_id)
+                await asr_ws.send(audio_chunk)
+                continue
+
+            text_data = message.get("text")
+            if not text_data:
+                continue
+
+            try:
+                payload = json.loads(text_data)
+            except json.JSONDecodeError:
+                payload = {"type": "text", "text": text_data}
+
+            msg_type = payload.get("type", "text")
+
+            # ── end_speech: user bấm dừng nói ────────────────────────
+            if msg_type == "end_speech":
+                if asr_ws is None:
+                    await websocket.send_json({
+                        "type": "error",
+                        "session_id": session_id,
+                        "code": "NO_AUDIO",
+                        "message": "Không có audio.",
+                    })
+                    continue
+
+                await asr_ws.send(json.dumps({"type": "end"}))
+                asr_result = json.loads(await asr_ws.recv())
+                await asr_ws.close()
+                asr_ws = None
+
+                transcript = (asr_result or {}).get("text", "").strip()
+                logger.info("[%s] ASR transcript: %s", session_id, transcript[:80])
+
+                await websocket.send_json({
+                    "type": "transcript",
+                    "session_id": session_id,
+                    "text": transcript,
+                    "is_final": True,
+                })
+
+                if not transcript:
+                    await websocket.send_json({
+                        "type": "error",
+                        "session_id": session_id,
+                        "code": "ASR_EMPTY",
+                        "message": "ASR không nhận diện được nội dung.",
+                    })
+                    continue
+
+                async for event in orchestrator.process_text(
+                    session_id, transcript, conversation_history
+                ):
+                    if event.get("type") == "transcript":
+                        continue
                     if event.get("type") == "audio_chunk":
                         await websocket.send_bytes(event["audio"])
                     else:
                         await websocket.send_json(event)
-                continue
 
-            text_data = message.get("text")
-            if text_data is None:
-                continue
-
-            # Hỗ trợ 2 mode:
-            # 1) plain text: "toi nen an gi"
-            # 2) json text:  {"type":"text","text":"..."}
-            query = text_data
-            try:
-                payload = json.loads(text_data)
-                if isinstance(payload, dict) and payload.get("type") == "text":
-                    query = str(payload.get("text", "")).strip()
-            except json.JSONDecodeError:
-                pass
-
-            if not query:
-                await websocket.send_json({
-                    "type": "error",
-                    "session_id": session_id,
-                    "message": "Query rỗng.",
-                    "code": "EMPTY_QUERY",
-                })
-                continue
-
-            logger.debug(f"[{session_id}] Received text query: {query[:100]}")
-            async for event in orchestrator.process_text(session_id, query):
-                if event.get("type") == "audio_chunk":
-                    await websocket.send_bytes(event["audio"])
-                else:
-                    await websocket.send_json(event)
+            # ── text: query text trực tiếp ────────────────────────────
+            elif msg_type == "text":
+                query = str(payload.get("text", "")).strip()
+                if not query:
+                    continue
+                logger.debug("[%s] Text query: %s", session_id, query[:80])
+                async for event in orchestrator.process_text(
+                    session_id, query, conversation_history
+                ):
+                    if event.get("type") == "audio_chunk":
+                        await websocket.send_bytes(event["audio"])
+                    else:
+                        await websocket.send_json(event)
 
     except WebSocketDisconnect:
-        logger.info(f"[{session_id}] Client disconnected")
+        logger.info("[%s] Client disconnected", session_id)
+    finally:
+        if asr_ws:
+            try:
+                await asr_ws.close()
+            except Exception:
+                pass
