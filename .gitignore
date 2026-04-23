@@ -44,4 +44,6 @@ __pycache__/
 .env
 secret*.json
 
-.snapshot
+*.snapshot
+snapshots/*
+!snapshots/.gitkeep

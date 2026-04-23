@@ -21,6 +21,36 @@ services:
       - callbot-net
     restart: unless-stopped
 
+  qdrant-restore:
+    image: curlimages/curl:8.7.1
+    container_name: callbot-qdrant-restore
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    environment:
+      - QDRANT_URL=http://qdrant:6333
+      - QDRANT_COLLECTION=${QDRANT_COLLECTION:-nutrition_articles}
+      - QDRANT_SNAPSHOT_FILE=${QDRANT_SNAPSHOT_FILE:-nutrition_articles.snapshot}
+      - QDRANT_SNAPSHOT_PRIORITY=${QDRANT_SNAPSHOT_PRIORITY:-snapshot}
+    volumes:
+      - ../snapshots:/snapshots:ro
+    command: >
+      sh -c ' set -eu; SNAP="/snapshots/$${QDRANT_SNAPSHOT_FILE}"; if [ ! -f "$${SNAP}" ] || [ ! -s "$${SNAP}" ]; then
+        echo "No valid snapshot at $${SNAP} (missing or empty). Skip restore.";
+        exit 0;
+      fi; echo "Restoring snapshot $${SNAP} -> collection=$${QDRANT_COLLECTION}"; curl -fsS -X DELETE "$${QDRANT_URL}/collections/$${QDRANT_COLLECTION}" || true; curl -fsS -X POST "$${QDRANT_URL}/collections/$${QDRANT_COLLECTION}/snapshots/upload?priority=$${QDRANT_SNAPSHOT_PRIORITY}" -F "snapshot=@$${SNAP}"; i=0; until [ "$${i}" -ge 120 ]; do
+        STATUS=$$(curl -fsS "$${QDRANT_URL}/collections/$${QDRANT_COLLECTION}" | sed -n "s/.*\"status\":\"\\([^\"]*\\)\".*/\\1/p" | head -n 1 || true);
+        if [ "$${STATUS}" = "green" ]; then
+          echo "Snapshot restore completed.";
+          exit 0;
+        fi;
+        i=$$((i+1));
+        sleep 2;
+      done; echo "Snapshot restore timeout"; exit 1;'
+    networks:
+      - callbot-net
+    restart: "no"
+
   # ─── ASR Worker ────────────────────────────────────────
   asr:
     build: ./asr
@@ -47,6 +77,8 @@ services:
     depends_on:
       qdrant:
         condition: service_healthy
+      qdrant-restore:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     networks:

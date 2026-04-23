@@ -1,11 +1,14 @@
 FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN rm -f /etc/apt/sources.list.d/cuda*.list /etc/apt/sources.list.d/nvidia-ml.list || true \
+    && apt-get update -o Acquire::Retries=5 \
+    && apt-get install -y --no-install-recommends \
     software-properties-common curl build-essential \
     espeak-ng libespeak-ng-dev \
     && add-apt-repository ppa:deadsnakes/ppa \
-    && apt-get update && apt-get install -y --no-install-recommends \
+    && apt-get update -o Acquire::Retries=5 \
+    && apt-get install -y --no-install-recommends \
     python3.12 python3.12-dev \
     && curl -sS https://bootstrap.pypa.io/get-pip.py | python3.12 \
     && ln -sf /usr/bin/python3.12 /usr/bin/python3 \
