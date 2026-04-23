@@ -1,6 +1,9 @@
 import logging
+import re
 import time
 from typing import AsyncGenerator
+
+_SOURCE_TAG = re.compile(r'\s*\([A-Z][A-Z0-9,\.\-]*\)')
 
 from .core.llm import LLMClient
 from .core.rag import RAGPipeline
@@ -39,7 +42,7 @@ class BrainServiceHandler:
             rag_ms = (time.time() - t0) * 1000
             contexts = [d.get("content", "") for d in docs]
             context = "\n\n".join(
-                f"[Tài liệu {i+1}: {d.get('title','')}]\n{d.get('content','')}"
+                f"[Tài liệu {i+1}: {d.get('title','')}]\n{_SOURCE_TAG.sub('', d.get('content',''))}"
                 for i, d in enumerate(docs)
             )
             prompt = build_prompt(
