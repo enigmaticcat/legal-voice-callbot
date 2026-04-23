@@ -99,7 +99,7 @@ services:
 
   # ─── Vector Database (RAG) ────────────────────────────
   qdrant:
-    image: qdrant/qdrant:latest
+    image: ${QDRANT_IMAGE:-qdrant/qdrant:latest}
     container_name: callbot-qdrant
     ports:
       - "${QDRANT_PORT:-6333}:6333"
