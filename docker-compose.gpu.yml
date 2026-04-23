@@ -35,4 +35,15 @@ services:
     environment:
       - TTS_DEVICE=cuda
       - TTS_REQUIRE_CUDA=true
-  # Brain dùng API (Gemini/OpenAI-compatible), không yêu cầu GPU local.
+
+  brain:
+    build:
+      context: ./nutrition-callbot
+      dockerfile: brain/Dockerfile.gpu
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
