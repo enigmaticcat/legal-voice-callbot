@@ -2,6 +2,7 @@ import logging
 import asyncio
 import os
 import time
+from pathlib import Path
 from typing import List, Dict
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
@@ -42,7 +43,7 @@ class RAGPipeline:
                 self.qdrant = QdrantClient(url=qdrant_url)
 
         if qdrant_snapshot_path:
-            self._restore_snapshot_if_needed(
+            self._restore_snapshot(
                 snapshot_path=qdrant_snapshot_path,
                 force_restore=qdrant_snapshot_force_restore,
                 timeout_s=qdrant_snapshot_timeout_s,
@@ -53,51 +54,59 @@ class RAGPipeline:
         self.model = SentenceTransformer(MODEL_NAME)
         logger.info("RAGPipeline ready.")
 
-    def _restore_snapshot_if_needed(
+    def _collection_has_data(self) -> bool:
+        try:
+            info = self.qdrant.get_collection(self.collection)
+            points_count = getattr(info, "points_count", None)
+            return bool(points_count and points_count > 0)
+        except Exception:
+            return False
+
+    def _restore_snapshot(
         self,
         snapshot_path: str,
         force_restore: bool,
         timeout_s: int,
         priority: str,
     ):
-        if self.qdrant_path:
-            logger.warning(
-                "QDRANT_SNAPSHOT_PATH is set but QDRANT_PATH local-embedded mode is active. "
-                "Snapshot auto-restore supports HTTP Qdrant server mode only; skipping restore."
-            )
-            return
-
         if not snapshot_path or not os.path.exists(snapshot_path):
             logger.warning("Qdrant snapshot path not found: %s", snapshot_path)
             return
 
-        if not self.qdrant_url:
-            logger.warning("Qdrant snapshot restore skipped: qdrant_url is empty")
+        if not force_restore and self._collection_has_data():
+            logger.info(
+                "Qdrant collection '%s' already has data. Skip snapshot restore.",
+                self.collection,
+            )
             return
 
-        base_url = self.qdrant_url.rstrip("/")
-        headers = {}
-        if self.qdrant_api_key:
-            headers["api-key"] = self.qdrant_api_key
+        if self.qdrant_path:
+            self._restore_snapshot_local(snapshot_path)
+        else:
+            self._restore_snapshot_http(snapshot_path, timeout_s, priority)
 
+    def _restore_snapshot_local(self, snapshot_path: str):
+        """Restore snapshot into local embedded Qdrant via recover_snapshot()."""
+        snapshot_uri = Path(snapshot_path).resolve().as_uri()
+        logger.info("Restoring snapshot to local Qdrant: %s", snapshot_uri)
         try:
-            if not force_restore:
-                info = self.qdrant.get_collection(self.collection)
-                points_count = getattr(info, "points_count", None)
-                status = getattr(getattr(info, "status", None), "value", getattr(info, "status", None))
-                if points_count and points_count > 0:
-                    logger.info(
-                        "Qdrant collection '%s' already has %s points (status=%s). Skip snapshot restore.",
-                        self.collection,
-                        points_count,
-                        status,
-                    )
-                    return
-        except Exception:
-            # Collection missing or inaccessible; continue restore flow.
-            pass
+            self.qdrant.recover_snapshot(
+                collection_name=self.collection,
+                location=snapshot_uri,
+            )
+            logger.info("Local snapshot restore complete: collection=%s", self.collection)
+        except Exception as e:
+            raise RuntimeError(f"Local snapshot restore failed: {e}") from e
 
-        logger.info("Restoring Qdrant snapshot from: %s", snapshot_path)
+    def _restore_snapshot_http(self, snapshot_path: str, timeout_s: int, priority: str):
+        """Upload snapshot to a running Qdrant HTTP server."""
+        if not self.qdrant_url:
+            raise RuntimeError("QDRANT_URL must be set for HTTP snapshot restore")
+
+        base_url = self.qdrant_url.rstrip("/")
+        headers = {"api-key": self.qdrant_api_key} if self.qdrant_api_key else {}
+
+        logger.info("Uploading snapshot to Qdrant HTTP server: %s", base_url)
         with httpx.Client(timeout=timeout_s) as client:
             with open(snapshot_path, "rb") as f:
                 resp = client.post(
@@ -113,20 +122,17 @@ class RAGPipeline:
                 r = client.get(f"{base_url}/collections/{self.collection}", headers=headers)
                 if r.status_code == 200:
                     data = r.json().get("result", {})
-                    status = data.get("status")
-                    points_count = data.get("points_count", 0)
-                    if status == "green":
+                    if data.get("status") == "green":
                         logger.info(
-                            "Qdrant snapshot restored. collection=%s status=%s points=%s",
+                            "HTTP snapshot restored. collection=%s points=%s",
                             self.collection,
-                            status,
-                            points_count,
+                            data.get("points_count", 0),
                         )
                         return
                 time.sleep(2)
 
         raise RuntimeError(
-            f"Qdrant snapshot restore timed out after {timeout_s}s for collection '{self.collection}'"
+            f"Qdrant HTTP snapshot restore timed out after {timeout_s}s"
         )
 
     async def search(self, query: str, filters: dict = None, top_k: int = 5) -> List[Dict]:
