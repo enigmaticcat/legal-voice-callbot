@@ -21,18 +21,33 @@ services:
     volumes:
       - ./snapshots:/snapshots:ro
     command: >
-      sh -c ' set -eu; SNAP="/snapshots/$${QDRANT_SNAPSHOT_FILE}"; until curl -fsS "$${QDRANT_URL}/healthz" >/dev/null; do sleep 2; done; if [ ! -f "$${SNAP}" ] || [ ! -s "$${SNAP}" ]; then
-        echo "No valid snapshot at $${SNAP} (missing or empty). Skip restore.";
-        exit 0;
-      fi; echo "Restoring snapshot $${SNAP} -> collection=$${QDRANT_COLLECTION}"; curl -fsS -X DELETE "$${QDRANT_URL}/collections/$${QDRANT_COLLECTION}" || true; curl -fsS -X POST "$${QDRANT_URL}/collections/$${QDRANT_COLLECTION}/snapshots/upload?priority=$${QDRANT_SNAPSHOT_PRIORITY}" -F "snapshot=@$${SNAP}"; i=0; until [ "$${i}" -ge 120 ]; do
-        STATUS=$$(curl -fsS "$${QDRANT_URL}/collections/$${QDRANT_COLLECTION}" | sed -n "s/.*\"status\":\"\\([^\"]*\\)\".*/\\1/p" | head -n 1 || true);
-        if [ "$${STATUS}" = "green" ]; then
-          echo "Snapshot restore completed.";
+      sh -c '
+        set -eu;
+        SNAP="/snapshots/$${QDRANT_SNAPSHOT_FILE}";
+        until curl -fsS "$${QDRANT_URL}/healthz" >/dev/null; do sleep 2; done;
+        if [ ! -f "$${SNAP}" ] || [ ! -s "$${SNAP}" ]; then
+          echo "No valid snapshot at $${SNAP}. Skip restore.";
           exit 0;
         fi;
-        i=$$((i+1));
-        sleep 2;
-      done; echo "Snapshot restore timeout"; exit 1;'
+        POINTS=$$(curl -fsS "$${QDRANT_URL}/collections/$${QDRANT_COLLECTION}" 2>/dev/null | grep -o "\"points_count\":[0-9]*" | grep -o "[0-9]*" || echo "0");
+        if [ "$${POINTS}" -gt 0 ] 2>/dev/null; then
+          echo "Collection already has $${POINTS} points. Skip restore.";
+          exit 0;
+        fi;
+        echo "Restoring snapshot $${SNAP} -> collection=$${QDRANT_COLLECTION}";
+        curl -fsS -X DELETE "$${QDRANT_URL}/collections/$${QDRANT_COLLECTION}" || true;
+        curl -fsS -X POST "$${QDRANT_URL}/collections/$${QDRANT_COLLECTION}/snapshots/upload?priority=$${QDRANT_SNAPSHOT_PRIORITY}" -F "snapshot=@$${SNAP}";
+        i=0; until [ "$${i}" -ge 150 ]; do
+          POINTS=$$(curl -fsS "$${QDRANT_URL}/collections/$${QDRANT_COLLECTION}" 2>/dev/null | grep -o "\"points_count\":[0-9]*" | grep -o "[0-9]*" || echo "0");
+          if [ "$${POINTS}" -gt 0 ] 2>/dev/null; then
+            echo "Snapshot restore completed. points=$${POINTS}";
+            exit 0;
+          fi;
+          i=$$((i+1));
+          sleep 2;
+        done;
+        echo "Snapshot restore timeout"; exit 1;
+      '
     networks:
       - callbot
     restart: "no"
