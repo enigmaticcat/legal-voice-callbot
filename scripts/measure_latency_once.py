@@ -36,20 +36,19 @@ def _ready_for_tts(buf: str) -> bool:
 
 async def _asr_stream(audio_bytes: bytes) -> tuple[str, float, float]:
     """
-    Mô phỏng streaming ASR:
-      - Feed toàn bộ audio theo từng chunk 100ms (không delay, nhanh hơn real-time)
-      - Gửi "end" và đo thời gian finalize
+    Mô phỏng streaming ASR real-time:
+      - Feed từng chunk 100ms với delay 100ms để ASR xử lý song song (giống user đang nói)
+      - Gửi "end" và đo thời gian finalize (phần duy nhất đóng góp vào TTFB)
     Trả về (transcript, feed_ms, finalize_ms)
     """
     async with websockets.connect(ASR_WS_URL) as ws:
-        # Feed tất cả chunks (mô phỏng quá trình user đang nói)
         t_feed_start = time.perf_counter()
         for i in range(0, len(audio_bytes), CHUNK_BYTES):
             chunk = audio_bytes[i:i + CHUNK_BYTES]
             await ws.send(chunk)
+            await asyncio.sleep(0.1)  # giả lập real-time: 100ms/chunk
         feed_ms = (time.perf_counter() - t_feed_start) * 1000
 
-        # Gửi end và đo thời gian finalize (= phần ASR đóng góp vào TTFB thực tế)
         t_finalize = time.perf_counter()
         await ws.send(json.dumps({'type': 'end'}))
         result = json.loads(await ws.recv())
@@ -199,8 +198,6 @@ def main() -> None:
         result['pipeline_total_ms'] = round(feed_ms + brain_total_ms + tts_total_ms, 1)
 
     print(json.dumps(result, ensure_ascii=False, indent=2))
-    print(f"\n>>> ASR finalize (sau khi user dừng): {finalize_ms:.1f} ms")
-    print(f">>> Thời gian từ khi nói xong → byte audio đầu tiên: {speech_end_to_first_audio_ms:.1f} ms ({speech_end_to_first_audio_ms/1000:.2f}s)")
 
 
 if __name__ == '__main__':
