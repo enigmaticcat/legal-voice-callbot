@@ -177,8 +177,10 @@ def main() -> None:
         pipeline_ttfb_ms = asr_ms + (brain_first_flush_ms or brain_total_ms) + (tts_first_chunk_ms or 0)
         result['pipeline_ttfb_ms'] = round(pipeline_ttfb_ms, 1)
         result['pipeline_total_ms'] = round(asr_ms + brain_total_ms + tts_total_ms, 1)
+        result['speech_end_to_first_audio_ms'] = round(pipeline_ttfb_ms, 1)
 
     print(json.dumps(result, ensure_ascii=False, indent=2))
+    print(f"\n>>> Thời gian từ khi nói xong → byte audio đầu tiên: {result['speech_end_to_first_audio_ms']} ms ({result['speech_end_to_first_audio_ms']/1000:.2f}s)")
 
 
 if __name__ == '__main__':
