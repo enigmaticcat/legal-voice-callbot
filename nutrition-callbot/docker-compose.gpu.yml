@@ -6,6 +6,9 @@
 services:
 
   brain:
+    build:
+      context: .
+      dockerfile: brain/Dockerfile.gpu
     deploy:
       resources:
         reservations:
