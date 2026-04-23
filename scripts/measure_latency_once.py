@@ -1,10 +1,16 @@
 import json
-import io
+import re
 import time
 import wave
 from pathlib import Path
 
 import httpx
+
+
+def _clean_for_tts(text: str) -> str:
+    text = re.sub(r'\n+', ' ', text)
+    text = re.sub(r' {2,}', ' ', text)
+    return text.strip()
 
 _REPO_ROOT = Path(__file__).parent.parent
 AUDIO_PATH = _REPO_ROOT / 'wav_16k' / 'eval_1' / 'thucuc_s1_003.wav'
@@ -130,7 +136,7 @@ def main() -> None:
 
         tts_start = time.perf_counter()
         for flush_text in brain_flushes:
-            with client.stream('POST', TTS_STREAM_URL, json={'text': flush_text}) as resp:
+            with client.stream('POST', TTS_STREAM_URL, json={'text': _clean_for_tts(flush_text)}) as resp:
                 resp.raise_for_status()
                 sr_header = resp.headers.get('X-Sample-Rate')
                 if sr_header and not all_pcm:

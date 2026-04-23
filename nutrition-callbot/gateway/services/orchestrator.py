@@ -28,6 +28,13 @@ class Orchestrator:
             return True
         return any(p in buffer for p in [".", "?", "!", "\n"])
 
+    @staticmethod
+    def _clean_for_tts(text: str) -> str:
+        import re
+        text = re.sub(r'\n+', ' ', text)
+        text = re.sub(r' {2,}', ' ', text)
+        return text.strip()
+
     async def _asr_transcribe(self, session_id: str, audio_data: bytes) -> dict:
         async with httpx.AsyncClient(timeout=self.http_timeout) as client:
             response = await client.post(
@@ -117,7 +124,7 @@ class Orchestrator:
                             "sample_rate": 24000,
                         }
                     try:
-                        async for pcm_chunk in self._tts_stream(buffer):
+                        async for pcm_chunk in self._tts_stream(self._clean_for_tts(buffer)):
                             yield {
                                 "type": "audio_chunk",
                                 "session_id": session_id,
@@ -147,7 +154,7 @@ class Orchestrator:
                     "sample_rate": 24000,
                 }
             try:
-                async for pcm_chunk in self._tts_stream(buffer):
+                async for pcm_chunk in self._tts_stream(self._clean_for_tts(buffer)):
                     yield {
                         "type": "audio_chunk",
                         "session_id": session_id,

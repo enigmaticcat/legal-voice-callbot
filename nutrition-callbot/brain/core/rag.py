@@ -50,8 +50,10 @@ class RAGPipeline:
                 priority=qdrant_snapshot_priority,
             )
 
-        logger.info(f"Loading embedding model: {MODEL_NAME}")
-        self.model = SentenceTransformer(MODEL_NAME)
+        import torch
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        logger.info(f"Loading embedding model: {MODEL_NAME} (device={device})")
+        self.model = SentenceTransformer(MODEL_NAME, device=device)
         logger.info("RAGPipeline ready.")
 
     def _collection_has_data(self) -> bool:
