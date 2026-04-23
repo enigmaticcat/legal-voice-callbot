@@ -116,7 +116,7 @@ def main() -> None:
         result['brain_first_flush_ms'] = round(brain_first_flush_ms or 0, 1)
         result['brain_total_ms'] = round(brain_total_ms, 1)
         result['brain_timing'] = brain_timing
-        result['brain_text_preview'] = brain_text[:260]
+        result['brain_text'] = brain_text
         result['brain_text_chars'] = len(brain_text)
         result['brain_flush_count'] = len(brain_flushes)
 
