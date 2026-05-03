@@ -4,8 +4,8 @@ from typing import AsyncGenerator
 
 logger = logging.getLogger("brain.core.chunker")
 
-PUNCTUATION = re.compile(r"[.!?;:,।।\n]")
-MIN_CHUNK_SIZE = 40  
+PUNCTUATION = re.compile(r"[.!?;:,।।]")
+MIN_CHUNK_SIZE = 40
 
 
 async def chunk_llm_stream(text_stream, min_size: int = MIN_CHUNK_SIZE) -> AsyncGenerator[str, None]:
@@ -13,6 +13,7 @@ async def chunk_llm_stream(text_stream, min_size: int = MIN_CHUNK_SIZE) -> Async
 
     async for chunk in text_stream:
         text = chunk.get("text", "") if isinstance(chunk, dict) else chunk
+        text = re.sub(r"\n+", " ", text)
         buffer += text
 
         while len(buffer) >= min_size:
