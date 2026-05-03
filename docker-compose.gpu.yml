@@ -22,6 +22,8 @@ services:
       --max-model-len 4096
       --gpu-memory-utilization 0.45
       --enable-prefix-caching
+    networks:
+      - callbot
     deploy:
       resources:
         reservations:
