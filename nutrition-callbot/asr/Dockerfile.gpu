@@ -13,10 +13,9 @@ RUN rm -f /etc/apt/sources.list.d/cuda*.list /etc/apt/sources.list.d/nvidia-ml.l
 WORKDIR /app
 COPY asr/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install --no-cache-dir onnxruntime-gpu==1.19.2
 RUN pip install --no-cache-dir --no-index \
     -f https://k2-fsa.github.io/sherpa/onnx/cuda.html \
-    "sherpa-onnx==1.12.39+cuda"
+    "sherpa-onnx==1.12.39+cuda12.4"
 
 COPY asr/ .
 
