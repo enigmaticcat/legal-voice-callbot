@@ -53,6 +53,8 @@ class Transcriber:
             return {"text": "", "confidence": 0.0}
 
         samples = np.frombuffer(audio_pcm, dtype=np.int16).astype(np.float32) / 32768.0
+        # Pad 0.5s silence so the encoder flushes the last spoken frames
+        samples = np.concatenate([samples, np.zeros(sample_rate // 2, dtype=np.float32)])
 
         stream = self._recognizer.create_stream()
         stream.accept_waveform(sample_rate, samples)
