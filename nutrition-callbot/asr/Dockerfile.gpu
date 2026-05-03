@@ -15,7 +15,7 @@ COPY asr/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir --no-index \
     -f https://k2-fsa.github.io/sherpa/onnx/cuda.html \
-    "sherpa-onnx==1.12.39+cuda12.4"
+    "sherpa-onnx==1.12.39+cuda12.cudnn9"
 
 COPY asr/ .
 
