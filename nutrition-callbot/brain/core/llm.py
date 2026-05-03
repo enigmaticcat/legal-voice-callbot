@@ -113,7 +113,7 @@ class OpenAILLMClient:
         prompt: str,
         system_instruction: str = "",
         temperature: float = 0.3,
-        max_output_tokens: int = 4096,
+        max_output_tokens: int = 512,
     ) -> AsyncGenerator[dict, None]:
         messages = []
         if system_instruction:
