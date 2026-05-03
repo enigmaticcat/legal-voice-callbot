@@ -27,9 +27,6 @@ class Transcriber:
         if provider == "gpu":
             provider = "cuda"
 
-        if self.config.require_cuda:
-            self._assert_cuda_available()
-
         logger.info(
             "Loading Sherpa-Onnx OfflineRecognizer (provider=%s, threads=%d)...",
             provider,
@@ -49,19 +46,6 @@ class Transcriber:
             debug=False,
         )
         logger.info("Sherpa-Onnx OfflineRecognizer loaded (provider=%s).", provider)
-
-    @staticmethod
-    def _assert_cuda_available():
-        try:
-            import onnxruntime as ort
-            providers = ort.get_available_providers()
-        except Exception as e:
-            raise RuntimeError(f"Cannot inspect ONNX Runtime providers: {e}")
-        if "CUDAExecutionProvider" not in providers:
-            raise RuntimeError(
-                "ASR_REQUIRE_CUDA=true but CUDAExecutionProvider is unavailable. "
-                f"providers={providers}"
-            )
 
     def transcribe(self, audio_pcm: bytes, sample_rate: int = SAMPLE_RATE) -> dict:
         """Transcribe a complete audio clip (PCM int16, 16kHz mono)."""
