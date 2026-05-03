@@ -1,154 +1,79 @@
 """
-Transcriber — Sherpa-Onnx Online Transducer Inference Wrapper
-Nhận audio PCM qua stream → trả text tiếng Việt thời gian thực.
+Transcriber — Sherpa-Onnx Offline Transducer
+Model: ZipFormer-RNNT (hynt/Zipformer-30M-RNNT-6000h)
+Nhận toàn bộ audio PCM một lần → trả transcript tiếng Việt.
 """
 import logging
-import os
+
 import numpy as np
-import sherpa_onnx
 
 logger = logging.getLogger("asr.core.transcriber")
 
+SAMPLE_RATE = 16_000
+
 
 class Transcriber:
-    def accept_wave_with_ttft(self, stream, audio_pcm: bytes, sample_rate: int = 16000):
-        """
-        Đẩy chunk audio PCM vào stream, đo time to first token (TTFT).
-        Returns:
-            (text, ttft):
-                text: văn bản đã nhận diện được
-                ttft: thời gian (giây) từ lúc bắt đầu đến khi sinh ra token đầu tiên
-        """
-        import time
-        if not audio_pcm:
-            return "", None
-
-        samples = np.frombuffer(audio_pcm, dtype=np.int16).astype(np.float32) / 32768.0
-        stream.accept_waveform(sample_rate, samples)
-
-        ttft = None
-        text = ""
-        start_time = time.time()
-        first_token_emitted = False
-
-        while self.recognizer.is_ready(stream):
-            self.recognizer.decode_stream(stream)
-            current_text = self.recognizer.get_result(stream)
-            if not first_token_emitted and current_text.strip():
-                ttft = time.time() - start_time
-                first_token_emitted = True
-                text = current_text
-        # Nếu không có token nào thì ttft = None
-        if not first_token_emitted:
-            text = self.recognizer.get_result(stream)
-        return text, ttft
-    """
-    Sherpa-Onnx Streaming ASR engine.
-    Hỗ trợ Online (Streaming) Transducer với encoder, decoder, joiner.
-    """
 
     def __init__(self):
         from config import config
+        self.config = config
+        self._recognizer = None
+        self._load()
 
-        self.provider = config.provider.lower().strip()
-        self.require_cuda = bool(config.require_cuda)
+    def _load(self):
+        import sherpa_onnx
 
-        if self.provider == "cuda":
-            self._assert_cuda_provider_available(require_cuda=self.require_cuda)
-        
-        logger.info("Initializing Sherpa-Onnx OnlineRecognizer...")
-        try:
-            # load online transducer via factory method
-            self.recognizer = sherpa_onnx.OnlineRecognizer.from_transducer(
-                tokens=config.tokens_path,
-                encoder=config.encoder_path,
-                decoder=config.decoder_path,
-                joiner=config.joiner_path,
-                num_threads=4,
-                sample_rate=config.sample_rate,
-                feature_dim=80,
-                enable_endpoint_detection=True,
-                provider=self.provider,
-            )
-            logger.info("✅ Sherpa-Onnx OnlineRecognizer loaded successfully! provider=%s", self.provider)
-        except Exception as e:
-            logger.error(f"❌ Failed to load Sherpa-Onnx Recognizer: {e}")
-            raise e
+        provider = self.config.provider.lower().strip()
+        if provider == "gpu":
+            provider = "cuda"
+
+        if self.config.require_cuda:
+            self._assert_cuda_available()
+
+        logger.info(
+            "Loading Sherpa-Onnx OfflineRecognizer (provider=%s, threads=%d)...",
+            provider,
+            self.config.num_threads,
+        )
+
+        self._recognizer = sherpa_onnx.OfflineRecognizer.from_transducer(
+            encoder=self.config.encoder_path,
+            decoder=self.config.decoder_path,
+            joiner=self.config.joiner_path,
+            tokens=self.config.tokens_path,
+            num_threads=self.config.num_threads,
+            sample_rate=SAMPLE_RATE,
+            feature_dim=80,
+            decoding_method="greedy_search",
+            provider=provider,
+            debug=False,
+        )
+        logger.info("Sherpa-Onnx OfflineRecognizer loaded (provider=%s).", provider)
 
     @staticmethod
-    def _assert_cuda_provider_available(require_cuda: bool):
+    def _assert_cuda_available():
         try:
             import onnxruntime as ort
             providers = ort.get_available_providers()
         except Exception as e:
-            msg = f"Cannot inspect ONNX Runtime providers: {e}"
-            if require_cuda:
-                raise RuntimeError(msg)
-            logger.warning(msg)
-            return
+            raise RuntimeError(f"Cannot inspect ONNX Runtime providers: {e}")
+        if "CUDAExecutionProvider" not in providers:
+            raise RuntimeError(
+                "ASR_REQUIRE_CUDA=true but CUDAExecutionProvider is unavailable. "
+                f"providers={providers}"
+            )
 
-        has_cuda = "CUDAExecutionProvider" in providers
-        if has_cuda:
-            logger.info("ONNX Runtime providers=%s", providers)
-            return
-
-        msg = (
-            "ASR_PROVIDER=cuda but CUDAExecutionProvider is unavailable. "
-            f"providers={providers}. Ensure GPU runtime and CUDA-compatible dependencies are installed."
-        )
-        if require_cuda:
-            raise RuntimeError(msg)
-        logger.warning(msg)
-
-    def create_stream(self):
-        """
-        Khởi tạo một online stream cho một session/cuộc gọi mới.
-        """
-        return self.recognizer.create_stream()
-
-    def accept_wave(self, stream, audio_pcm: bytes, sample_rate: int = 16000) -> str:
-        """
-        Đẩy chunk audio PCM (16-bit, 16kHz mono) vào stream và giải mã.
-        
-        Returns:
-            Văn bản đã nhận diện được cho stream tới thời điểm hiện tại.
-        """
+    def transcribe(self, audio_pcm: bytes, sample_rate: int = SAMPLE_RATE) -> dict:
+        """Transcribe a complete audio clip (PCM int16, 16kHz mono)."""
         if not audio_pcm:
-            return ""
-            
-        # Convert bytes to float32 numpy array
+            return {"text": "", "confidence": 0.0}
+
         samples = np.frombuffer(audio_pcm, dtype=np.int16).astype(np.float32) / 32768.0
+
+        stream = self._recognizer.create_stream()
         stream.accept_waveform(sample_rate, samples)
-        
-        while self.recognizer.is_ready(stream):
-            self.recognizer.decode_stream(stream)
-            
-        return self.recognizer.get_result(stream)
+        self._recognizer.decode_streams([stream])
 
-
-    def finalize_stream(self, stream) -> str:
-        """
-        Flush buffer cuối và trả transcript hoàn chỉnh.
-        Gọi sau khi đã feed hết audio (user dừng nói).
-        """
-        stream.input_finished()
-        while self.recognizer.is_ready(stream):
-            self.recognizer.decode_stream(stream)
-        return self.recognizer.get_result(stream)
-
-    def is_endpoint(self, stream) -> bool:
-        """
-        Kiểm tra đã dứt lời (Endpoint) chưa.
-        """
-        return self.recognizer.is_endpoint(stream)
-
-    def transcribe(self, audio_pcm: bytes, sample_rate: int = 16000) -> dict:
-        """
-        Hàm fallback cho chế độ Batch (được gọi từ server.py dummy).
-        """
-        stream = self.create_stream()
-        text = self.accept_wave(stream, audio_pcm, sample_rate)
-        return {
-            "text": text,
-            "confidence": 0.95,
-        }
+        text = stream.result.text.strip()
+        logger.info("Transcribed (%d bytes → %d chars): %s", len(audio_pcm), len(text), text[:80])
+        return {"text": text, "confidence": 0.95}

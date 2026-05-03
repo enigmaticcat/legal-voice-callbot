@@ -38,31 +38,32 @@ async def transcribe(request: Request):
 
 @app.websocket("/ws/transcribe")
 async def ws_transcribe(websocket: WebSocket):
+    """Buffer all audio chunks, transcribe in one shot when 'end' is received."""
     await websocket.accept()
-    stream = handler.transcriber.create_stream()
-    logger.info("ASR streaming session started")
+    audio_chunks: list[bytes] = []
+    logger.info("ASR WebSocket session started")
 
     try:
         while True:
             message = await websocket.receive()
 
             if message.get("bytes"):
-                await asyncio.to_thread(
-                    handler.transcriber.accept_wave, stream, message["bytes"]
-                )
+                audio_chunks.append(message["bytes"])
 
             elif message.get("text"):
                 data = json.loads(message["text"])
                 if data.get("type") == "end":
-                    text = await asyncio.to_thread(
-                        handler.transcriber.finalize_stream, stream
+                    audio_data = b"".join(audio_chunks)
+                    audio_chunks.clear()
+                    result = await asyncio.to_thread(
+                        handler.transcriber.transcribe, audio_data
                     )
-                    logger.info("ASR final: %s", text[:80])
-                    await websocket.send_json({"text": text, "is_final": True})
+                    logger.info("ASR final: %s", result["text"][:80])
+                    await websocket.send_json({"text": result["text"], "is_final": True})
                     return
 
     except WebSocketDisconnect:
-        logger.info("ASR streaming session disconnected")
+        logger.info("ASR WebSocket session disconnected")
 
 
 if __name__ == "__main__":

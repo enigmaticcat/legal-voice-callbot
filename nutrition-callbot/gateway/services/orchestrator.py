@@ -2,6 +2,8 @@
 Orchestrator Service
 HTTP-only pipeline: ASR -> Brain -> TTS.
 """
+import asyncio
+import contextlib
 import json
 import logging
 from typing import AsyncGenerator
@@ -31,6 +33,14 @@ class Orchestrator:
     @staticmethod
     def _clean_for_tts(text: str) -> str:
         import re
+        # Strip markdown formatting
+        text = re.sub(r'\*{1,3}([^*]+?)\*{1,3}', r'\1', text)       # bold/italic
+        text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)   # headings
+        text = re.sub(r'^[-*+]\s+', '', text, flags=re.MULTILINE)    # bullet list
+        text = re.sub(r'^\d+\.\s+', '', text, flags=re.MULTILINE)    # numbered list
+        text = re.sub(r'`{1,3}[^`]*`{1,3}', '', text)                # inline/block code
+        text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)        # links → label only
+        text = re.sub(r'_{1,2}([^_]+?)_{1,2}', r'\1', text)          # underscore italic/bold
         text = re.sub(r'\n+', ' ', text)
         text = re.sub(r' {2,}', ' ', text)
         return text.strip()
@@ -88,7 +98,13 @@ class Orchestrator:
         query: str,
         conversation_history: list | None = None,
     ) -> AsyncGenerator[dict, None]:
-        """HTTP pipeline text -> Brain stream -> TTS stream."""
+        """HTTP pipeline text -> Brain stream -> TTS stream.
+
+        Brain and TTS run in parallel via asyncio.Queue:
+        - brain_producer streams text chunks into tts_queue
+        - tts_consumer reads tts_queue and synthesises audio concurrently
+        - both push events into event_queue for the main loop to yield
+        """
         logger.info("[%s] Processing text query", session_id)
         yield {
             "type": "transcript",
@@ -97,79 +113,105 @@ class Orchestrator:
             "is_final": True,
         }
 
-        buffer = ""
-        sent_audio_start = False
+        # str = text segment for TTS, None = sentinel (done)
+        tts_queue: asyncio.Queue = asyncio.Queue(maxsize=4)
+        # dict = event to yield, None = sentinel (all done)
+        event_queue: asyncio.Queue = asyncio.Queue()
         saw_any_brain_chunk = False
 
-        async for brain_chunk in self._brain_stream(session_id, query, conversation_history):
-            text = (brain_chunk or {}).get("text", "")
-            is_final = bool((brain_chunk or {}).get("is_final", False))
+        async def brain_producer():
+            nonlocal saw_any_brain_chunk
+            buffer = ""
+            try:
+                async for brain_chunk in self._brain_stream(session_id, query, conversation_history):
+                    text = (brain_chunk or {}).get("text", "")
+                    is_final = bool((brain_chunk or {}).get("is_final", False))
 
-            if text:
-                saw_any_brain_chunk = True
-                yield {
-                    "type": "bot_response",
+                    if text:
+                        saw_any_brain_chunk = True
+                        await event_queue.put({
+                            "type": "bot_response",
+                            "session_id": session_id,
+                            "text": text,
+                            "is_final": False,
+                        })
+                        buffer += text
+
+                        if self._ready_for_tts(buffer):
+                            await tts_queue.put(self._clean_for_tts(buffer))
+                            buffer = ""
+
+                    if is_final:
+                        break
+
+                if buffer:
+                    await tts_queue.put(self._clean_for_tts(buffer))
+
+            except Exception as e:
+                logger.exception("[%s] Brain streaming failed", session_id)
+                await event_queue.put({
+                    "type": "error",
                     "session_id": session_id,
-                    "text": text,
-                    "is_final": False,
-                }
-                buffer += text
+                    "message": "Brain stream loi.",
+                    "code": "BRAIN_STREAM_ERROR",
+                    "detail": str(e),
+                })
+            finally:
+                await tts_queue.put(None)
 
-                if self._ready_for_tts(buffer):
+        async def tts_consumer():
+            sent_audio_start = False
+            try:
+                while True:
+                    segment = await tts_queue.get()
+                    if segment is None:
+                        break
                     if not sent_audio_start:
                         sent_audio_start = True
-                        yield {
+                        await event_queue.put({
                             "type": "audio_start",
                             "session_id": session_id,
                             "sample_rate": 24000,
-                        }
+                        })
                     try:
-                        async for pcm_chunk in self._tts_stream(self._clean_for_tts(buffer)):
-                            yield {
+                        async for pcm_chunk in self._tts_stream(segment):
+                            await event_queue.put({
                                 "type": "audio_chunk",
                                 "session_id": session_id,
                                 "audio": pcm_chunk,
-                            }
+                            })
                     except Exception as e:
                         logger.exception("[%s] TTS streaming failed", session_id)
-                        yield {
+                        await event_queue.put({
                             "type": "error",
                             "session_id": session_id,
                             "message": "TTS khong tao duoc audio.",
                             "code": "TTS_STREAM_ERROR",
                             "detail": str(e),
-                        }
+                        })
+                        # drain remaining segments so brain_producer unblocks
+                        while True:
+                            item = await tts_queue.get()
+                            if item is None:
+                                break
                         return
-                    buffer = ""
+            finally:
+                await event_queue.put(None)
 
-            if is_final:
-                break
+        producer_task = asyncio.create_task(brain_producer())
+        consumer_task = asyncio.create_task(tts_consumer())
 
-        if buffer:
-            if not sent_audio_start:
-                sent_audio_start = True
-                yield {
-                    "type": "audio_start",
-                    "session_id": session_id,
-                    "sample_rate": 24000,
-                }
-            try:
-                async for pcm_chunk in self._tts_stream(self._clean_for_tts(buffer)):
-                    yield {
-                        "type": "audio_chunk",
-                        "session_id": session_id,
-                        "audio": pcm_chunk,
-                    }
-            except Exception as e:
-                logger.exception("[%s] TTS streaming failed", session_id)
-                yield {
-                    "type": "error",
-                    "session_id": session_id,
-                    "message": "TTS khong tao duoc audio.",
-                    "code": "TTS_STREAM_ERROR",
-                    "detail": str(e),
-                }
-                return
+        try:
+            while True:
+                event = await event_queue.get()
+                if event is None:
+                    break
+                yield event
+        finally:
+            producer_task.cancel()
+            consumer_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await asyncio.gather(producer_task, consumer_task, return_exceptions=True)
 
         if not saw_any_brain_chunk:
             yield {

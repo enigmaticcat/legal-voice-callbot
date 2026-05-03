@@ -6,6 +6,7 @@ Dùng đúng API từ vieneu library (vieneu/core.py):
   for audio_chunk in tts.infer_stream(text, voice=voice): ...  # np.ndarray float32
 """
 import logging
+import threading
 import numpy as np
 from typing import Iterator
 
@@ -24,6 +25,7 @@ class Synthesizer:
         self.sample_rate = SAMPLE_RATE
         self._tts = None
         self._voice = None
+        self._cancel_event = threading.Event()
         logger.info(f"Synthesizer init: {backbone_repo}")
 
     def load_model(self):
@@ -97,6 +99,7 @@ class Synthesizer:
         if self._tts is None:
             self.load_model()
 
+        self._cancel_event.clear()
         for audio_chunk in self._tts.infer_stream(
             text=text,
             voice=self._voice,
@@ -104,12 +107,16 @@ class Synthesizer:
             temperature=1.0,
             top_k=50,
         ):
+            if self._cancel_event.is_set():
+                logger.info("TTS synthesis cancelled mid-stream")
+                return
             # audio_chunk: np.ndarray float32, shape (N,)
             audio_i16 = (audio_chunk * 32767).clip(-32768, 32767).astype(np.int16)
             yield audio_i16.tobytes()
 
     def cancel(self, session_id: str):
-        logger.info(f"Cancel: {session_id}")
+        logger.info(f"Cancel requested: {session_id}")
+        self._cancel_event.set()
 
     def close(self):
         if self._tts is not None:
