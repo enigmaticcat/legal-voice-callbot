@@ -176,7 +176,22 @@ def save_results(results: list[dict], out_dir: Path, tag: str) -> Path:
     out_path = out_dir / f"brain_responses_{tag}.jsonl"
     with open(out_path, "w", encoding="utf-8") as f:
         for r in results:
-            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+            t = r.get("timing", {})
+            record = {
+                "id":       r["id"],
+                "source":   r["source"],
+                "question": r["question"],
+                "answer":   r["answer"],
+                "contexts": r.get("contexts", []),
+                "reference": r["reference"],
+                "latency": {
+                    "rag_ms":   t.get("rag_ms", 0),
+                    "ttft_ms":  t.get("llm_ttft_ms", 0),
+                    "llm_ms":   t.get("llm_full_ms", 0),
+                    "total_ms": t.get("total_ms", 0),
+                },
+            }
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
     logger.info("Kết quả đã lưu: %s", out_path)
     return out_path
 
