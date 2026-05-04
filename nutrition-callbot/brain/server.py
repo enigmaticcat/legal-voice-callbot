@@ -61,15 +61,19 @@ async def think(request: Request):
 
     full_text = []
     timing = {}
+    contexts = []
     async for chunk in handler.think(query, session_id, history):
         if chunk["text"]:
             full_text.append(chunk["text"])
         if "timing" in chunk:
             timing.update(chunk["timing"])
+        if "contexts" in chunk:
+            contexts = chunk["contexts"]
 
     return {
         "text": " ".join(full_text),
         "timing": timing,
+        "contexts": contexts,
     }
 
 

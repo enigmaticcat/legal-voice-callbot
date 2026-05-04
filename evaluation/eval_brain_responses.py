@@ -87,6 +87,7 @@ async def call_brain(
         return {
             "success": True,
             "response": data.get("text", ""),
+            "contexts": data.get("contexts", []),
             "timing": data.get("timing", {}),
             "wall_ms": round(wall_ms, 1),
         }
@@ -155,8 +156,9 @@ async def evaluate_all(
                 "id": sample.get("id", f"sample_{idx}"),
                 "source": sample.get("source", ""),
                 "question": sample["question"],
-                "reference_answer": sample.get("reference_answer", ""),
-                "response": result["response"],
+                "answer": result["response"],
+                "contexts": result.get("contexts", []),
+                "reference": sample.get("reference_answer", ""),
                 "success": result["success"],
                 "error": result.get("error"),
                 "timing": timing,
