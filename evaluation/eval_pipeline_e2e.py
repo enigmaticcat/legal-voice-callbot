@@ -296,7 +296,11 @@ async def main():
     parser.add_argument("--asr-url",   default="http://localhost:50051")
     parser.add_argument("--brain-url", default="http://localhost:50052")
     parser.add_argument("--tts-url",   default="http://localhost:50053")
-    available = sorted(d.name for d in WAV_ROOT.iterdir() if d.is_dir()) if WAV_ROOT.is_dir() else []
+    parser.add_argument("--wav-root",  default=None,
+                        help="Thư mục gốc chứa wav_16k (mặc định: tự detect từ vị trí script)")
+    # Resolve wav root (allow CLI override for Lightning AI or other environments)
+    wav_root = Path(parser.parse_known_args()[0].wav_root) if parser.parse_known_args()[0].wav_root else WAV_ROOT
+    available = sorted(d.name for d in wav_root.iterdir() if d.is_dir()) if wav_root.is_dir() else []
     parser.add_argument("--eval-dirs", nargs="+", default=available,
                         help="Danh sách eval dirs trong wav_16k (mặc định: tự detect)")
     parser.add_argument("--sample",      type=int, default=None, help="Giới hạn số file (mặc định: tất cả)")
@@ -315,7 +319,8 @@ async def main():
                 logger.error("%s không phản hồi tại %s: %s", name, url, e)
                 return
 
-    items = collect_wav_files(WAV_ROOT, args.eval_dirs)
+    wav_root = Path(args.wav_root) if args.wav_root else WAV_ROOT
+    items = collect_wav_files(wav_root, args.eval_dirs)
     if not items:
         logger.error("Không tìm thấy file WAV nào trong %s", WAV_ROOT)
         return
