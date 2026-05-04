@@ -296,8 +296,9 @@ async def main():
     parser.add_argument("--asr-url",   default="http://localhost:50051")
     parser.add_argument("--brain-url", default="http://localhost:50052")
     parser.add_argument("--tts-url",   default="http://localhost:50053")
-    parser.add_argument("--eval-dirs", nargs="+", default=["eval_1", "eval_2", "eval_3", "eval_4", "eval_5"],
-                        help="Danh sách eval dirs trong wav_16k (mặc định: tất cả)")
+    available = sorted(d.name for d in WAV_ROOT.iterdir() if d.is_dir()) if WAV_ROOT.is_dir() else []
+    parser.add_argument("--eval-dirs", nargs="+", default=available,
+                        help="Danh sách eval dirs trong wav_16k (mặc định: tự detect)")
     parser.add_argument("--sample",      type=int, default=None, help="Giới hạn số file (mặc định: tất cả)")
     parser.add_argument("--concurrency", type=int, default=1,    help="Số request song song (mặc định: 1)")
     parser.add_argument("--out-dir", default=str(RESULTS_DIR))
