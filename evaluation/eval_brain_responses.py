@@ -198,6 +198,8 @@ def compute_metrics(results: list[dict]) -> dict:
         }
 
     total_ms_list = [r["timing"].get("total_ms", r["wall_ms"]) for r in success]
+    # first_chunk_total_ms = expand + rag + llm_ttft, đây là phần brain đóng góp vào TTFB thực tế
+    first_chunk_list = [r["timing"]["first_chunk_total_ms"] for r in success if r["timing"].get("first_chunk_total_ms")]
     rag_ms_list = [r["timing"].get("rag_ms", 0) for r in success]
     ttft_ms_list = [r["timing"].get("llm_ttft_ms", 0) for r in success if r["timing"].get("llm_ttft_ms", 0) > 0]
     expand_ms_list = [r["timing"].get("expand_ms", 0) for r in success]
@@ -206,13 +208,14 @@ def compute_metrics(results: list[dict]) -> dict:
     by_source: dict[str, list] = {}
     for r in success:
         src = r.get("source", "unknown")
-        by_source.setdefault(src, []).append(r["timing"].get("total_ms", r["wall_ms"]))
+        by_source.setdefault(src, []).append(r["timing"].get("first_chunk_total_ms") or r["timing"].get("total_ms", r["wall_ms"]))
 
     return {
         "total_samples": len(results),
         "success_count": len(success),
         "error_count": len(errors),
         "success_rate_pct": round(100 * len(success) / len(results), 1) if results else 0,
+        "latency_first_chunk_ms": _stat(first_chunk_list),   # ← đây là metric TTFB-relevant
         "latency_total_ms": _stat(total_ms_list),
         "latency_rag_ms": _stat(rag_ms_list),
         "latency_ttft_ms": _stat(ttft_ms_list),
@@ -244,11 +247,15 @@ def print_summary(metrics: dict):
             return
         print(f"  {label:<20}: mean={stat['mean']}ms  p90={stat['p90']}ms  max={stat['max']}ms")
 
-    print("\n  --- Latency ---")
-    _row("Total (e2e)", metrics["latency_total_ms"])
+    print("\n  --- Latency (TTFB-relevant: brain contribution) ---")
+    _row("Brain first chunk", metrics.get("latency_first_chunk_ms", {}))
+    print("    (= expand + RAG + LLM TTFT — cộng thêm ASR ~100-200ms + TTS ~200-300ms = TTFB)")
+    print("\n  --- Latency chi tiết ---")
     _row("RAG search", metrics["latency_rag_ms"])
     _row("LLM TTFT", metrics["latency_ttft_ms"])
     _row("Query expand", metrics["latency_expand_ms"])
+    print("\n  --- Latency toàn bộ (full generation) ---")
+    _row("Total brain", metrics["latency_total_ms"])
 
     wc = metrics["response_word_count"]
     if wc:
@@ -276,8 +283,11 @@ def generate_charts(results: list[dict], metrics: dict, out_dir: Path, tag: str)
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         import numpy as np
-    except ImportError:
-        logger.warning("matplotlib không có — bỏ qua vẽ đồ thị. Cài: pip install matplotlib")
+    except Exception:
+        logger.warning(
+            "Khong ve duoc do thi (matplotlib/numpy conflict). "
+            "Fix: pip install -U matplotlib  hoac  pip install 'numpy<2'"
+        )
         return
 
     success = [r for r in results if r["success"]]
@@ -288,6 +298,7 @@ def generate_charts(results: list[dict], metrics: dict, out_dir: Path, tag: str)
     fig, axes = plt.subplots(2, 3, figsize=(16, 10))
     fig.suptitle(f"Brain Service Evaluation — {tag}\n({len(success)}/{len(results)} samples)", fontsize=13)
 
+    first_chunk_ms = [r["timing"]["first_chunk_total_ms"] for r in success if r["timing"].get("first_chunk_total_ms")]
     total_ms = [r["timing"].get("total_ms", r["wall_ms"]) for r in success]
     rag_ms = [r["timing"].get("rag_ms", 0) for r in success]
     ttft_ms = [r["timing"].get("llm_ttft_ms", 0) for r in success if r["timing"].get("llm_ttft_ms", 0) > 0]
@@ -297,7 +308,7 @@ def generate_charts(results: list[dict], metrics: dict, out_dir: Path, tag: str)
         if not data:
             ax.set_title(title + " (no data)")
             return
-        ax.hist(data, bins=bins, color=color, edgecolor="white", linewidth=0.5)
+        ax.hist(data, bins=min(bins, len(data)), color=color, edgecolor="white", linewidth=0.5)
         ax.axvline(np.mean(data), color="red", linestyle="--", linewidth=1.5, label=f"mean={np.mean(data):.0f}")
         ax.axvline(np.percentile(data, 90), color="orange", linestyle="--", linewidth=1.2, label=f"p90={np.percentile(data, 90):.0f}")
         ax.set_title(title)
@@ -305,35 +316,39 @@ def generate_charts(results: list[dict], metrics: dict, out_dir: Path, tag: str)
         ax.set_ylabel("Count")
         ax.legend(fontsize=8)
 
-    _hist(axes[0, 0], total_ms, "Total Latency", "ms", "steelblue")
+    # [0,0] Brain first chunk = TTFB contribution (key UX metric)
+    _hist(axes[0, 0], first_chunk_ms, "Brain First Chunk (TTFB contribution)", "ms", "darkorange")
     _hist(axes[0, 1], rag_ms, "RAG Search Latency", "ms", "teal")
     _hist(axes[0, 2], ttft_ms, "LLM Time-to-First-Token", "ms", "mediumorchid")
     _hist(axes[1, 0], word_counts, "Response Word Count", "words", "coral")
 
-    # CDF of total latency
+    # CDF of first_chunk_ms (most meaningful for UX)
     ax_cdf = axes[1, 1]
-    sorted_ms = sorted(total_ms)
+    cdf_data = first_chunk_ms if first_chunk_ms else total_ms
+    cdf_label = "First Chunk" if first_chunk_ms else "Total"
+    sorted_ms = sorted(cdf_data)
     cdf = np.arange(1, len(sorted_ms) + 1) / len(sorted_ms)
-    ax_cdf.plot(sorted_ms, cdf, color="steelblue", linewidth=2)
+    ax_cdf.plot(sorted_ms, cdf, color="darkorange", linewidth=2)
     for p in [50, 90, 95]:
         pv = np.percentile(sorted_ms, p)
         ax_cdf.axvline(pv, linestyle="--", linewidth=1, alpha=0.7, label=f"p{p}={pv:.0f}ms")
-    ax_cdf.set_title("CDF — Total Latency")
+    ax_cdf.set_title(f"CDF — Brain {cdf_label} Latency")
     ax_cdf.set_xlabel("ms")
     ax_cdf.set_ylabel("Cumulative fraction")
     ax_cdf.legend(fontsize=8)
     ax_cdf.grid(True, alpha=0.3)
 
-    # Latency by source (box plot)
+    # Latency by source (box plot) — dùng first_chunk_ms nếu có
     ax_src = axes[1, 2]
     by_source: dict[str, list] = {}
     for r in success:
         src = r.get("source", "unknown")
-        by_source.setdefault(src, []).append(r["timing"].get("total_ms", r["wall_ms"]))
+        v = r["timing"].get("first_chunk_total_ms") or r["timing"].get("total_ms", r["wall_ms"])
+        by_source.setdefault(src, []).append(v)
     if by_source:
         labels = list(by_source.keys())
         data_by_src = [by_source[k] for k in labels]
-        ax_src.boxplot(data_by_src, tick_labels=labels)
+        ax_src.boxplot(data_by_src, labels=labels)
         ax_src.set_title("Total Latency by Source")
         ax_src.set_ylabel("ms")
         ax_src.tick_params(axis="x", rotation=15)
