@@ -131,6 +131,7 @@ class OpenAILLMClient:
                 temperature=temperature,
                 max_tokens=max_output_tokens,
                 stream=True,
+                extra_body={"chat_template_kwargs": {"enable_thinking": False}},
             )
 
             async for chunk in stream:

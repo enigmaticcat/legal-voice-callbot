@@ -5,13 +5,14 @@ import time
 from pathlib import Path
 from typing import List, Dict
 from qdrant_client import QdrantClient
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer, CrossEncoder
 import httpx
 
 logger = logging.getLogger("brain.core.rag")
 
 QUERY_PREFIX = "Instruct: Tìm thông tin dinh dưỡng liên quan\nQuery: "
 MODEL_NAME = "intfloat/multilingual-e5-large-instruct"
+RERANKER_MODEL = "BAAI/bge-reranker-v2-m3"
 
 
 class RAGPipeline:
@@ -54,6 +55,8 @@ class RAGPipeline:
         device = "cuda" if torch.cuda.is_available() else "cpu"
         logger.info(f"Loading embedding model: {MODEL_NAME} (device={device})")
         self.model = SentenceTransformer(MODEL_NAME, device=device)
+        logger.info(f"Loading reranker model: {RERANKER_MODEL} (device={device})")
+        self.reranker = CrossEncoder(RERANKER_MODEL, device=device)
         logger.info("RAGPipeline ready.")
 
     def _collection_has_data(self) -> bool:
@@ -156,16 +159,18 @@ class RAGPipeline:
             ]
             qfilter = models.Filter(must=must_conds)
 
+        # Fetch 15 candidates, rerank, return top_k
+        fetch_k = 15
         results = await asyncio.to_thread(
             self.qdrant.query_points,
             collection_name=self.collection,
             query=q_vec,
-            limit=top_k,
+            limit=fetch_k,
             query_filter=qfilter,
             with_payload=True,
         )
 
-        return [
+        docs = [
             {
                 "title": p.payload.get("title", ""),
                 "source": p.payload.get("source", ""),
@@ -175,3 +180,14 @@ class RAGPipeline:
             }
             for p in results.points
         ]
+
+        if not docs:
+            return docs
+
+        # Rerank with cross-encoder
+        pairs = [[query, d["content"]] for d in docs]
+        rerank_scores = await asyncio.to_thread(self.reranker.predict, pairs)
+        docs_scored = sorted(zip(rerank_scores, docs), key=lambda x: -x[0])
+        reranked = [d for _, d in docs_scored[:top_k]]
+        logger.debug(f"Reranked {fetch_k} → {top_k} docs")
+        return reranked
