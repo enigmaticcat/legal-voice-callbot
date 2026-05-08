@@ -32,7 +32,12 @@ rag = RAGPipeline(
     qdrant_snapshot_timeout_s=config.qdrant_snapshot_timeout_s,
     qdrant_snapshot_priority=config.qdrant_snapshot_priority,
 )
-handler = BrainServiceHandler(llm=llm, rag=rag)
+handler = BrainServiceHandler(
+    llm=llm, rag=rag,
+    rag_fetch_k=config.rag_fetch_k,
+    rag_top_k=config.rag_top_k,
+    min_chunk_size=config.min_chunk_size,
+)
 
 app = FastAPI(title="Brain Worker", version="0.2.0")
 
@@ -77,17 +82,42 @@ async def think(request: Request):
     }
 
 
+@app.post("/summarize")
+async def summarize(request: Request):
+    body = await request.json()
+    old_summary: str = body.get("summary", "")
+    turns: list = body.get("turns", [])
+
+    parts = []
+    if old_summary:
+        parts.append(f"Tóm tắt trước: {old_summary}")
+    for t in turns:
+        role_label = "Người dùng" if t.get("role") == "user" else "Tư vấn viên"
+        parts.append(f"{role_label}: {t.get('text', '')}")
+
+    prompt = (
+        "Tóm tắt ngắn gọn (tối đa 3 câu) hội thoại dưới đây. "
+        "Giữ lại thông tin quan trọng về sức khỏe, tình trạng của người dùng "
+        "và các chủ đề dinh dưỡng đã được thảo luận:\n\n"
+        + "\n".join(parts)
+        + "\n\nTóm tắt:"
+    )
+    summary = await llm.generate(prompt, temperature=0)
+    return {"summary": summary.strip()}
+
+
 @app.post("/think/stream")
 async def think_stream(request: Request):
     body = await request.json()
     query = body.get("query", "")
     session_id = body.get("session_id", "test-session")
     history = body.get("conversation_history", [])
+    summary = body.get("conversation_summary", "")
 
     async def generate():
         started = time.time()
         try:
-            async for chunk in handler.think(query, session_id, history):
+            async for chunk in handler.think(query, session_id, history, summary):
                 yield json.dumps(chunk, ensure_ascii=False) + "\n"
         except Exception as e:
             logger.exception("[%s] think/stream failed", session_id)

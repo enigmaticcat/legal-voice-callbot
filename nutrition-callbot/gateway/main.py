@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from config import settings
 from routes.health import router as health_router
 from routes.websocket import router as ws_router
+import services.session_memory as session_memory
 
 # ─── Logging ─────────────────────────────────────────────
 logging.basicConfig(
@@ -54,11 +55,16 @@ if _WEB_DIST.is_dir():
 @app.on_event("startup")
 async def startup():
     logger.info("Gateway starting up...")
-    logger.info(f"   ASR  → {settings.asr_address}")
+    logger.info(f"   ASR   → {settings.asr_address}")
     logger.info(f"   Brain → {settings.brain_address}")
-    logger.info(f"   TTS  → {settings.tts_address}")
+    logger.info(f"   TTS   → {settings.tts_address}")
+    try:
+        await session_memory.init(settings.redis_url, settings.brain_http_url)
+    except Exception as e:
+        logger.warning("Redis unavailable (%s) — falling back to in-memory history", e)
 
 
 @app.on_event("shutdown")
 async def shutdown():
     logger.info("Gateway shutting down...")
+    await session_memory.close()

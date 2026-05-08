@@ -16,15 +16,21 @@ logger = logging.getLogger("brain.grpc_handler")
 
 class BrainServiceHandler:
 
-    def __init__(self, llm: LLMClient, rag: RAGPipeline):
+    def __init__(self, llm: LLMClient, rag: RAGPipeline,
+                 rag_fetch_k: int = 15, rag_top_k: int = 5,
+                 min_chunk_size: int = 40):
         self.llm = llm
         self.rag = rag
+        self.rag_fetch_k = rag_fetch_k
+        self.rag_top_k = rag_top_k
+        self.min_chunk_size = min_chunk_size
 
     async def think(
         self,
         query: str,
         session_id: str,
         conversation_history: list = None,
+        conversation_summary: str = "",
     ) -> AsyncGenerator[dict, None]:
         start_time = time.time()
         logger.info(f"[{session_id}] Think: {query[:80]}...")
@@ -38,7 +44,7 @@ class BrainServiceHandler:
             expand_ms = (time.time() - t0) * 1000
 
             t0 = time.time()
-            docs = await self.rag.search(expanded)
+            docs = await self.rag.search(expanded, top_k=self.rag_top_k, fetch_k=self.rag_fetch_k)
             rag_ms = (time.time() - t0) * 1000
             contexts = [d.get("content", "") for d in docs]
             context = "\n\n".join(
@@ -49,6 +55,7 @@ class BrainServiceHandler:
                 query=expanded,
                 nutrition_context=context,
                 conversation_history=conversation_history,
+                conversation_summary=conversation_summary,
             )
 
             t_llm = time.time()
@@ -67,7 +74,7 @@ class BrainServiceHandler:
                         llm_ttft_ms = chunk["ttfc_ms"]
                     yield chunk
 
-            async for chunk_text in chunk_llm_stream(_llm_with_ttft()):
+            async for chunk_text in chunk_llm_stream(_llm_with_ttft(), min_size=self.min_chunk_size):
                 result = {"text": chunk_text, "is_final": False}
 
                 if first_chunk:

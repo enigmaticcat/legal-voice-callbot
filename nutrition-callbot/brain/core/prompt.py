@@ -77,6 +77,7 @@ def build_prompt(
     query: str,
     nutrition_context: str = "",
     conversation_history: list = None,
+    conversation_summary: str = "",
 ) -> str:
     parts = []
 
@@ -94,9 +95,13 @@ def build_prompt(
     else:
         parts.append("(Chưa có dữ liệu RAG — trả lời từ kiến thức dinh dưỡng chung của bạn.)")
 
+    if conversation_summary:
+        parts.append("\nTóm tắt hội thoại trước:")
+        parts.append(f"  {conversation_summary}")
+
     if conversation_history:
-        parts.append("\nLịch sử hội thoại:")
-        for turn in conversation_history[-6:]:
+        parts.append("\nHội thoại gần nhất:")
+        for turn in conversation_history:
             role = "Người dùng" if turn["role"] == "user" else "Bot"
             text = turn["text"]
             if turn.get("interrupted"):

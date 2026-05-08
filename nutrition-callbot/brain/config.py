@@ -42,7 +42,10 @@ class BrainConfig:
     qdrant_snapshot_timeout_s: int = int(os.getenv("QDRANT_SNAPSHOT_TIMEOUT_S", "600"))
     qdrant_snapshot_priority: str = os.getenv("QDRANT_SNAPSHOT_PRIORITY", "snapshot")
     qdrant_collection: str = "nutrition_articles"
-    min_chunk_size: int = 40
+    min_chunk_size: int = int(os.getenv("BRAIN_MIN_CHUNK_SIZE", "40"))
+    rag_fetch_k: int = int(os.getenv("RAG_FETCH_K", "15"))
+    rag_top_k: int = int(os.getenv("RAG_TOP_K", "5"))
+    llm_max_output_tokens: int = int(os.getenv("LLM_MAX_OUTPUT_TOKENS", "1500"))
     tts_url: str = os.getenv("TTS_URL", "http://localhost:50053")
 
 

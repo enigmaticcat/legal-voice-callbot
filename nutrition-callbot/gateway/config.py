@@ -25,6 +25,9 @@ class Settings:
     # --- Session ---
     session_timeout_seconds: int = int(os.getenv("SESSION_TIMEOUT", "300"))
 
+    # --- Redis ---
+    redis_url: str = os.getenv("REDIS_URL", "redis://localhost:6379")
+
     @property
     def asr_address(self) -> str:
         return f"{self.asr_host}:{self.asr_port}"

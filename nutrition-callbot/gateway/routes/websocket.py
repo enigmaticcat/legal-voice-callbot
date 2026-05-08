@@ -7,6 +7,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from config import settings
 from services.orchestrator import Orchestrator
+import services.session_memory as session_memory
 
 router = APIRouter(tags=["voice"])
 logger = logging.getLogger("gateway.routes.websocket")
@@ -21,7 +22,8 @@ async def voice_chat(websocket: WebSocket):
     await websocket.accept()
     logger.info("[%s] Client connected", session_id)
 
-    conversation_history = []
+    mem = session_memory.get()
+    fallback_history: list = []  # dùng khi Redis không khả dụng
     audio_buffer: list[bytes] = []
 
     try:
@@ -101,9 +103,16 @@ async def voice_chat(websocket: WebSocket):
                     })
                     continue
 
+                if mem:
+                    ctx = await mem.get_context(session_id)
+                else:
+                    ctx = {"summary": "", "turns": fallback_history}
+
                 bot_text = ""
                 async for event in orchestrator.process_text(
-                    session_id, transcript, conversation_history
+                    session_id, transcript,
+                    conversation_history=ctx["turns"],
+                    conversation_summary=ctx["summary"],
                 ):
                     if event.get("type") == "transcript":
                         continue
@@ -113,10 +122,17 @@ async def voice_chat(websocket: WebSocket):
                         await websocket.send_bytes(event["audio"])
                     else:
                         await websocket.send_json(event)
+
                 if bot_text:
-                    conversation_history.append({"role": "user", "text": transcript})
-                    conversation_history.append({"role": "assistant", "text": bot_text})
-                    conversation_history[:] = conversation_history[-20:]
+                    if mem:
+                        await mem.append_turn(session_id, "user", transcript)
+                        await mem.append_turn(session_id, "assistant", bot_text)
+                    else:
+                        fallback_history.extend([
+                            {"role": "user", "text": transcript},
+                            {"role": "assistant", "text": bot_text},
+                        ])
+                        fallback_history[:] = fallback_history[-6:]
 
             # ── text: query text trực tiếp ────────────────────────────
             elif msg_type == "text":
@@ -124,9 +140,17 @@ async def voice_chat(websocket: WebSocket):
                 if not query:
                     continue
                 logger.debug("[%s] Text query: %s", session_id, query[:80])
+
+                if mem:
+                    ctx = await mem.get_context(session_id)
+                else:
+                    ctx = {"summary": "", "turns": fallback_history}
+
                 bot_text = ""
                 async for event in orchestrator.process_text(
-                    session_id, query, conversation_history
+                    session_id, query,
+                    conversation_history=ctx["turns"],
+                    conversation_summary=ctx["summary"],
                 ):
                     if event.get("type") == "bot_response" and not event.get("is_final"):
                         bot_text += event.get("text", "")
@@ -134,10 +158,17 @@ async def voice_chat(websocket: WebSocket):
                         await websocket.send_bytes(event["audio"])
                     else:
                         await websocket.send_json(event)
+
                 if bot_text:
-                    conversation_history.append({"role": "user", "text": query})
-                    conversation_history.append({"role": "assistant", "text": bot_text})
-                    conversation_history[:] = conversation_history[-20:]
+                    if mem:
+                        await mem.append_turn(session_id, "user", query)
+                        await mem.append_turn(session_id, "assistant", bot_text)
+                    else:
+                        fallback_history.extend([
+                            {"role": "user", "text": query},
+                            {"role": "assistant", "text": bot_text},
+                        ])
+                        fallback_history[:] = fallback_history[-6:]
 
     except WebSocketDisconnect:
         logger.info("[%s] Client disconnected", session_id)

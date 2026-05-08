@@ -1,5 +1,13 @@
 services:
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - callbot
+    restart: unless-stopped
+
   qdrant:
     image: ${QDRANT_IMAGE:-qdrant/qdrant:v1.12.0}
     ports:
@@ -105,12 +113,14 @@ services:
       - ASR_HOST=asr
       - BRAIN_HOST=brain
       - TTS_HOST=tts
+      - REDIS_URL=redis://redis:6379
     networks:
       - callbot
     depends_on:
       - asr
       - brain
       - tts
+      - redis
     restart: unless-stopped
 
 networks:

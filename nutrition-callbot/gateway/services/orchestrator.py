@@ -62,11 +62,13 @@ class Orchestrator:
         session_id: str,
         query: str,
         conversation_history: list | None = None,
+        conversation_summary: str = "",
     ) -> AsyncGenerator[dict, None]:
         payload = {
             "query": query,
             "session_id": session_id,
             "conversation_history": conversation_history or [],
+            "conversation_summary": conversation_summary,
         }
 
         async with httpx.AsyncClient(timeout=self.http_timeout) as client:
@@ -97,6 +99,7 @@ class Orchestrator:
         session_id: str,
         query: str,
         conversation_history: list | None = None,
+        conversation_summary: str = "",
     ) -> AsyncGenerator[dict, None]:
         """HTTP pipeline text -> Brain stream -> TTS stream.
 
@@ -123,7 +126,7 @@ class Orchestrator:
             nonlocal saw_any_brain_chunk
             buffer = ""
             try:
-                async for brain_chunk in self._brain_stream(session_id, query, conversation_history):
+                async for brain_chunk in self._brain_stream(session_id, query, conversation_history, conversation_summary):
                     text = (brain_chunk or {}).get("text", "")
                     is_final = bool((brain_chunk or {}).get("is_final", False))
 

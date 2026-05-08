@@ -140,7 +140,8 @@ class RAGPipeline:
             f"Qdrant HTTP snapshot restore timed out after {timeout_s}s"
         )
 
-    async def search(self, query: str, filters: dict = None, top_k: int = 5) -> List[Dict]:
+    async def search(self, query: str, filters: dict = None,
+                     top_k: int = 5, fetch_k: int = 15) -> List[Dict]:
         logger.debug(f"RAG search: {query[:80]}...")
 
         q_vec = await asyncio.to_thread(
@@ -158,9 +159,6 @@ class RAGPipeline:
                 for k, v in filters.items()
             ]
             qfilter = models.Filter(must=must_conds)
-
-        # Fetch 15 candidates, rerank, return top_k
-        fetch_k = 15
         results = await asyncio.to_thread(
             self.qdrant.query_points,
             collection_name=self.collection,
