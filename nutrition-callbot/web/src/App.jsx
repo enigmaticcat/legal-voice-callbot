@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import CallButton from './components/CallButton'
 import StatusBar from './components/StatusBar'
 import Transcript from './components/Transcript'
@@ -10,11 +10,10 @@ function App() {
     const [callActive, setCallActive] = useState(false)
     const [status, setStatus] = useState('idle')
     const [messages, setMessages] = useState([])
-    const [isRecording, setIsRecording] = useState(false)
 
-    const currentBotTextRef = useRef('') // text bot đang stream về
-    const fileInputRef = useRef(null)    // hidden <input type="file">
-    const padTimerRef = useRef(null)     // timer cho 200ms padding
+    const currentBotTextRef = useRef('')
+    const fileInputRef = useRef(null)
+    const vadStartedRef = useRef(false)
 
     const { startCapture, stopCapture, playPcm, resetPlayback } = useAudioSession()
 
@@ -45,7 +44,7 @@ function App() {
                     })
                 } else if (event.is_final) {
                     currentBotTextRef.current = ''
-                    setStatus('idle')
+                    setStatus('listening')
                 }
                 break
 
@@ -54,9 +53,17 @@ function App() {
                 setStatus('speaking')
                 break
 
+            case 'vad_ready':
+                setStatus('listening')
+                break
+
+            case 'vad_stopped':
+                setStatus('idle')
+                break
+
             case 'error':
                 console.error('[Bot error]', event.code, event.message)
-                setStatus('idle')
+                setStatus('listening')
                 break
 
             default:
@@ -66,10 +73,23 @@ function App() {
 
     const { isConnected, connect, disconnect, send } = useWebSocket(handleBinary, handleJson)
 
-    // ── Bắt đầu / kết thúc cuộc gọi ─────────────────────────────────
+    // ── Tự động khởi động VAD khi WebSocket kết nối thành công ───────
+    useEffect(() => {
+        if (isConnected && callActive && !vadStartedRef.current) {
+            vadStartedRef.current = true
+            send(JSON.stringify({ type: 'start_vad' }))
+            startCapture((chunk) => send(chunk))
+        }
+        if (!isConnected || !callActive) {
+            vadStartedRef.current = false
+        }
+    }, [isConnected, callActive, send, startCapture])
+
+    // ── Bắt đầu / kết thúc cuộc hội thoại ───────────────────────────
     const handleCallToggle = useCallback(async () => {
         if (callActive) {
             stopCapture()
+            send(JSON.stringify({ type: 'stop_vad' }))
             disconnect()
             setCallActive(false)
             setStatus('idle')
@@ -80,38 +100,16 @@ function App() {
             connect(getWebSocketUrl())
             setCallActive(true)
         }
-    }, [callActive, connect, disconnect, stopCapture])
-
-    // ── Toggle mic: bấm để bắt đầu, bấm lại để dừng ────────────────────
-    const handleMicToggle = useCallback(async () => {
-        if (status === 'thinking' || status === 'speaking') return
-
-        if (!isRecording) {
-            setIsRecording(true)
-            setStatus('listening')
-            await startCapture((chunk) => {
-                send(chunk)  // stream từng chunk 100ms trực tiếp lên gateway
-            })
-        } else {
-            setIsRecording(false)
-            // Đợi 200ms để capture thêm phần đuôi
-            padTimerRef.current = setTimeout(() => {
-                stopCapture()
-                send(JSON.stringify({ type: 'end_speech' }))
-                setStatus('thinking')
-            }, 200)
-        }
-    }, [status, isRecording, startCapture, stopCapture, send])
+    }, [callActive, connect, disconnect, stopCapture, send])
 
     // ── Audio file upload ─────────────────────────────────────────────
     const handleFileUpload = useCallback(async (e) => {
         const file = e.target.files?.[0]
         if (!file) return
-        e.target.value = ''  // reset để chọn lại cùng file được
+        e.target.value = ''
 
         setStatus('thinking')
 
-        // Decode audio file → resample về 16kHz mono qua OfflineAudioContext
         const arrayBuf = await file.arrayBuffer()
         const tmpCtx = new AudioContext()
         const decoded = await tmpCtx.decodeAudioData(arrayBuf)
@@ -129,7 +127,6 @@ function App() {
         src.start(0)
         const resampled = await offlineCtx.startRendering()
 
-        // Float32 → PCM Int16
         const channelData = resampled.getChannelData(0)
         const pcm = new Int16Array(channelData.length)
         for (let i = 0; i < channelData.length; i++) {
@@ -138,8 +135,6 @@ function App() {
 
         send(pcm.buffer)
     }, [send])
-
-    const isBusy = status === 'thinking' || status === 'speaking'
 
     return (
         <div className="app">
@@ -158,17 +153,9 @@ function App() {
 
                         <div className="input-row">
                             <button
-                                className={`mic-button ${isRecording ? 'recording' : ''}`}
-                                onClick={handleMicToggle}
-                                disabled={isBusy}
-                            >
-                                {isRecording ? '🔴 Đang nghe... (bấm để dừng)' : '🎙️ Bấm để nói'}
-                            </button>
-
-                            <button
                                 className="upload-button"
                                 onClick={() => fileInputRef.current?.click()}
-                                disabled={isBusy}
+                                disabled={status === 'thinking' || status === 'speaking'}
                                 title="Gửi file audio (.wav, .mp3, ...)"
                             >
                                 📎

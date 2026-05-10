@@ -3,6 +3,7 @@ import logging
 import asyncio
 from datetime import datetime
 
+import numpy as np
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 import uvicorn
 
@@ -64,6 +65,78 @@ async def ws_transcribe(websocket: WebSocket):
 
     except WebSocketDisconnect:
         logger.info("ASR WebSocket session disconnected")
+
+
+@app.get("/vad/status")
+async def vad_status():
+    return {
+        "available": handler._vad_available,
+        "model_path": config.vad_model_path,
+        "threshold": config.vad_threshold,
+        "min_silence_ms": config.vad_min_silence_ms,
+        "min_speech_ms": config.vad_min_speech_ms,
+    }
+
+
+@app.websocket("/ws/transcribe/vad")
+async def ws_transcribe_vad(websocket: WebSocket):
+    """
+    Streaming VAD endpoint.
+    Client gửi:
+      - binary: PCM int16 LE 16kHz mono (chunk bất kỳ kích thước)
+      - JSON {"type": "end"}: flush và đóng session
+
+    Server trả về JSON khi phát hiện xong một đoạn lời:
+      {"text": "...", "is_final": true, "confidence": 0.95}
+    """
+    await websocket.accept()
+
+    if not handler._vad_available:
+        await websocket.send_json({
+            "error": "VAD model not available",
+            "code": "NO_VAD",
+        })
+        await websocket.close()
+        return
+
+    vad = handler.create_vad_session()
+    logger.info("VAD streaming session started")
+
+    async def _transcribe_segment(samples: np.ndarray) -> dict | None:
+        pcm = (np.clip(samples, -1.0, 1.0) * 32767).astype(np.int16).tobytes()
+        result = await asyncio.to_thread(handler.transcriber.transcribe, pcm)
+        if result["text"]:
+            return {"text": result["text"], "is_final": True, "confidence": result["confidence"]}
+        return None
+
+    try:
+        while True:
+            message = await websocket.receive()
+
+            if message.get("bytes"):
+                segments = await asyncio.to_thread(vad.accept_chunk, message["bytes"])
+                for seg in segments:
+                    resp = await _transcribe_segment(seg)
+                    if resp:
+                        logger.info("VAD→ASR: %s", resp["text"][:80])
+                        await websocket.send_json(resp)
+
+            elif message.get("text"):
+                data = json.loads(message["text"])
+                if data.get("type") == "end":
+                    segments = await asyncio.to_thread(vad.flush)
+                    for seg in segments:
+                        resp = await _transcribe_segment(seg)
+                        if resp:
+                            logger.info("VAD flush: %s", resp["text"][:80])
+                            await websocket.send_json(resp)
+                    vad.reset()
+                    return
+
+    except WebSocketDisconnect:
+        logger.info("VAD WebSocket session disconnected")
+    finally:
+        vad.reset()
 
 
 if __name__ == "__main__":

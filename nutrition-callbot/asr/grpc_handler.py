@@ -6,6 +6,7 @@ Mỗi session duy trì một sherpa-onnx online stream riêng.
 Khi recognizer phát hiện endpoint (dứt lời) → yield is_final=True và reset stream.
 """
 import logging
+import os
 from typing import AsyncIterable, AsyncGenerator
 
 from core.transcriber import Transcriber
@@ -27,8 +28,32 @@ class ASRServiceHandler:
 
     def __init__(self):
         self.transcriber = Transcriber()
+        self._vad_available = self._check_vad()
         # session_id → sherpa online stream
         self._streams: dict = {}
+
+    def _check_vad(self) -> bool:
+        from config import config
+        exists = os.path.isfile(config.vad_model_path)
+        if exists:
+            logger.info("Silero VAD model found: %s", config.vad_model_path)
+        else:
+            logger.warning("Silero VAD model not found: %s", config.vad_model_path)
+        return exists
+
+    def create_vad_session(self):
+        """Return a fresh per-session VADDetector, or None if model missing."""
+        if not self._vad_available:
+            return None
+        from config import config
+        from core.vad import VADDetector
+        return VADDetector(
+            model_path=config.vad_model_path,
+            threshold=config.vad_threshold,
+            min_silence_ms=config.vad_min_silence_ms,
+            min_speech_ms=config.vad_min_speech_ms,
+            sample_rate=config.sample_rate,
+        )
 
     def _get_or_create_stream(self, session_id: str):
         if session_id not in self._streams:

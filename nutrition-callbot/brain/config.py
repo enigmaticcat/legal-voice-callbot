@@ -43,6 +43,8 @@ class BrainConfig:
     qdrant_snapshot_priority: str = os.getenv("QDRANT_SNAPSHOT_PRIORITY", "snapshot")
     qdrant_collection: str = "nutrition_articles"
     min_chunk_size: int = int(os.getenv("BRAIN_MIN_CHUNK_SIZE", "40"))
+    embedding_model: str = os.getenv("EMBEDDING_MODEL", "AITeamVN/Vietnamese_Embedding")
+    reranker_model: str = os.getenv("RERANKER_MODEL", "thanhtantran/Vietnamese_Reranker")
     rag_fetch_k: int = int(os.getenv("RAG_FETCH_K", "15"))
     rag_top_k: int = int(os.getenv("RAG_TOP_K", "5"))
     llm_max_output_tokens: int = int(os.getenv("LLM_MAX_OUTPUT_TOKENS", "1500"))

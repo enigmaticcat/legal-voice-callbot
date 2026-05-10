@@ -43,6 +43,8 @@ services:
       - LLM_BACKEND=openai
       - LLM_BASE_URL=http://llm:8000/v1
       - LLM_MODEL=Qwen/Qwen3-4B-Instruct-2507
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-AITeamVN/Vietnamese_Embedding}
+      - RERANKER_MODEL=${RERANKER_MODEL:-thanhtantran/Vietnamese_Reranker}
     depends_on:
       llm:
         condition: service_healthy
@@ -68,6 +70,9 @@ services:
     environment:
       - ASR_PROVIDER=cuda
       - ASR_REQUIRE_CUDA=true
+      - ASR_VAD_THRESHOLD=${ASR_VAD_THRESHOLD:-0.5}
+      - ASR_VAD_MIN_SILENCE_MS=${ASR_VAD_MIN_SILENCE_MS:-500}
+      - ASR_VAD_MIN_SPEECH_MS=${ASR_VAD_MIN_SPEECH_MS:-250}
 
   tts:
     build:

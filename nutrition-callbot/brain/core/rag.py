@@ -10,9 +10,12 @@ import httpx
 
 logger = logging.getLogger("brain.core.rag")
 
-QUERY_PREFIX = "Instruct: Tìm thông tin dinh dưỡng liên quan\nQuery: "
-MODEL_NAME = "intfloat/multilingual-e5-large-instruct"
-RERANKER_MODEL = "BAAI/bge-reranker-v2-m3"
+try:
+    from brain.config import config as _cfg
+except ImportError:
+    from config import config as _cfg
+MODEL_NAME = _cfg.embedding_model
+RERANKER_MODEL = _cfg.reranker_model
 
 
 class RAGPipeline:
@@ -146,7 +149,7 @@ class RAGPipeline:
 
         q_vec = await asyncio.to_thread(
             self.model.encode,
-            [QUERY_PREFIX + query],
+            [query],
             normalize_embeddings=True,
         )
         q_vec = q_vec[0].tolist()
