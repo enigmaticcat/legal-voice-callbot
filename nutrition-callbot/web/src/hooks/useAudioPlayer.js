@@ -96,6 +96,11 @@ export function useAudioSession() {
     }, [])
 
     const resetPlayback = useCallback(() => {
+        // Đóng AudioContext để dừng ngay audio đang phát (cần cho barge-in)
+        if (playCtxRef.current) {
+            playCtxRef.current.close()
+            playCtxRef.current = null
+        }
         nextPlayTimeRef.current = 0
     }, [])
 

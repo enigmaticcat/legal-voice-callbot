@@ -53,6 +53,12 @@ function App() {
                 setStatus('speaking')
                 break
 
+            case 'bot_interrupted':
+                resetPlayback()
+                currentBotTextRef.current = ''
+                setStatus('thinking')
+                break
+
             case 'vad_ready':
                 setStatus('listening')
                 break

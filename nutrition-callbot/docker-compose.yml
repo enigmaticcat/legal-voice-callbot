@@ -176,6 +176,8 @@ services:
       - "${WEB_PORT:-3000}:3000"
     environment:
       - VITE_GATEWAY_URL=http://localhost:${GATEWAY_PORT:-8000}
+    volumes:
+      - ./web/src:/app/src
     networks:
       - callbot-net
     restart: unless-stopped

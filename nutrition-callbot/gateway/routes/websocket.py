@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import json
 import logging
 from uuid import uuid4
@@ -52,25 +53,32 @@ async def voice_chat(websocket: WebSocket):
 
     async def _process_transcript(transcript: str):
         """Run Brain→TTS pipeline và stream events về client."""
-        ctx = await _get_ctx()
-        bot_text = ""
-        async for event in orchestrator.process_text(
-            session_id, transcript,
-            conversation_history=ctx["turns"],
-            conversation_summary=ctx["summary"],
-        ):
-            if event.get("type") == "transcript":
-                continue
-            if event.get("type") == "bot_response" and not event.get("is_final"):
-                bot_text += event.get("text", "")
-            if event.get("type") == "audio_chunk":
-                await websocket.send_bytes(event["audio"])
-            else:
-                await websocket.send_json(event)
-        await _save_turn(transcript, bot_text)
+        try:
+            ctx = await _get_ctx()
+            bot_text = ""
+            async for event in orchestrator.process_text(
+                session_id, transcript,
+                conversation_history=ctx["turns"],
+                conversation_summary=ctx["summary"],
+            ):
+                if event.get("type") == "transcript":
+                    continue
+                if event.get("type") == "bot_response" and not event.get("is_final"):
+                    bot_text += event.get("text", "")
+                if event.get("type") == "audio_chunk":
+                    await websocket.send_bytes(event["audio"])
+                else:
+                    await websocket.send_json(event)
+            await _save_turn(transcript, bot_text)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("[%s] _process_transcript error", session_id)
 
     # ── VAD worker: kết nối WebSocket tới ASR, forward audio ─────────
     async def _vad_worker(audio_q: asyncio.Queue):
+        current_process_task: asyncio.Task | None = None
+
         try:
             async with websockets.connect(
                 settings.asr_vad_ws_url,
@@ -115,24 +123,44 @@ async def voice_chat(websocket: WebSocket):
                         if data.get("is_final") and data.get("text"):
                             transcript = data["text"]
                             logger.info("[%s] VAD transcript: %s", session_id, transcript[:80])
+
+                            # Barge-in: huỷ response đang chạy nếu người dùng nói chen vào
+                            if current_process_task and not current_process_task.done():
+                                logger.info("[%s] Barge-in: cancelling current response", session_id)
+                                current_process_task.cancel()
+                                with contextlib.suppress(asyncio.CancelledError, Exception):
+                                    await current_process_task
+                                with contextlib.suppress(Exception):
+                                    await websocket.send_json({
+                                        "type": "bot_interrupted",
+                                        "session_id": session_id,
+                                    })
+
                             await websocket.send_json({
                                 "type": "transcript",
                                 "session_id": session_id,
                                 "text": transcript,
                                 "is_final": True,
                             })
-                            await _process_transcript(transcript)
+                            # Chạy non-blocking để VAD loop tiếp tục đọc từ ASR
+                            current_process_task = asyncio.create_task(
+                                _process_transcript(transcript)
+                            )
 
                         if sender_task.done():
                             break
                 finally:
                     sender_task.cancel()
-                    with asyncio.suppress(asyncio.CancelledError, Exception):
+                    with contextlib.suppress(asyncio.CancelledError, Exception):
                         await sender_task
+                    if current_process_task and not current_process_task.done():
+                        current_process_task.cancel()
+                        with contextlib.suppress(asyncio.CancelledError, Exception):
+                            await current_process_task
 
         except Exception as e:
             logger.exception("[%s] VAD worker error", session_id)
-            with asyncio.suppress(Exception):
+            with contextlib.suppress(Exception):
                 await websocket.send_json({
                     "type": "error",
                     "session_id": session_id,
@@ -286,5 +314,5 @@ async def voice_chat(websocket: WebSocket):
             await vad_audio_q.put(None)
         if vad_task is not None:
             vad_task.cancel()
-            with asyncio.suppress(asyncio.CancelledError, Exception):
+            with contextlib.suppress(asyncio.CancelledError, Exception):
                 await vad_task
