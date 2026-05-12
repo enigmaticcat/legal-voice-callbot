@@ -25,7 +25,8 @@ class Synthesizer:
         self.sample_rate = SAMPLE_RATE
         self._tts = None
         self._voice = None
-        self._cancel_event = threading.Event()
+        self._cancel_events: dict[str, threading.Event] = {}
+        self._cancel_lock = threading.Lock()
         logger.info(f"Synthesizer init: {backbone_repo}")
 
     def load_model(self):
@@ -90,7 +91,7 @@ class Synthesizer:
         self._voice = self._tts.get_preset_voice()
         logger.info("VieNeu-TTS loaded.")
 
-    def synthesize_stream(self, text: str, max_chars: int = 256) -> Iterator[bytes]:
+    def synthesize_stream(self, text: str, session_id: str | None = None, max_chars: int = 256) -> Iterator[bytes]:
         """
         Yields:
             bytes — PCM int16, 24kHz mono
@@ -99,24 +100,42 @@ class Synthesizer:
         if self._tts is None:
             self.load_model()
 
-        self._cancel_event.clear()
-        for audio_chunk in self._tts.infer_stream(
-            text=text,
-            voice=self._voice,
-            max_chars=max_chars,
-            temperature=1.0,
-            top_k=50,
-        ):
-            if self._cancel_event.is_set():
-                logger.info("TTS synthesis cancelled mid-stream")
-                return
-            # audio_chunk: np.ndarray float32, shape (N,)
-            audio_i16 = (audio_chunk * 32767).clip(-32768, 32767).astype(np.int16)
-            yield audio_i16.tobytes()
+        session_key = session_id or "default"
+        with self._cancel_lock:
+            cancel_event = self._cancel_events.get(session_key)
+            if cancel_event is None:
+                cancel_event = threading.Event()
+                self._cancel_events[session_key] = cancel_event
+            cancel_event.clear()
+
+        try:
+            for audio_chunk in self._tts.infer_stream(
+                text=text,
+                voice=self._voice,
+                max_chars=max_chars,
+                temperature=1.0,
+                top_k=50,
+            ):
+                if cancel_event.is_set():
+                    logger.info("TTS synthesis cancelled mid-stream")
+                    return
+                # audio_chunk: np.ndarray float32, shape (N,)
+                audio_i16 = (audio_chunk * 32767).clip(-32768, 32767).astype(np.int16)
+                yield audio_i16.tobytes()
+        finally:
+            with self._cancel_lock:
+                if self._cancel_events.get(session_key) is cancel_event:
+                    del self._cancel_events[session_key]
 
     def cancel(self, session_id: str):
         logger.info(f"Cancel requested: {session_id}")
-        self._cancel_event.set()
+        session_key = session_id or "default"
+        with self._cancel_lock:
+            cancel_event = self._cancel_events.get(session_key)
+            if cancel_event is None:
+                cancel_event = threading.Event()
+                self._cancel_events[session_key] = cancel_event
+            cancel_event.set()
 
     def close(self):
         if self._tts is not None:

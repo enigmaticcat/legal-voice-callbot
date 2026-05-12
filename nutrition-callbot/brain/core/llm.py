@@ -7,12 +7,9 @@ Chọn backend qua env LLM_BACKEND:
 
 LLMClient = factory function trả về đúng client theo config.
 """
-import asyncio
 import logging
 import time
 from typing import AsyncGenerator
-from google import genai
-from google.genai import types
 
 logger = logging.getLogger("brain.core.llm")
 
@@ -25,8 +22,15 @@ class GeminiLLMClient:
         if not api_key:
             raise ValueError("GEMINI_API_KEY is required. Set env GEMINI_API_KEY.")
 
+        try:
+            from google import genai
+            from google.genai import types as genai_types
+        except ImportError as e:
+            raise ImportError("google-genai is required for Gemini backend.") from e
+
         self.model = model
         self.client = genai.Client(api_key=api_key)
+        self._genai_types = genai_types
         logger.info(f"LLM client initialized (model: {model})")
 
     async def generate_stream(
@@ -41,10 +45,10 @@ class GeminiLLMClient:
 
         logger.debug(f"Generating response for: {prompt[:80]}...")
 
-        config = types.GenerateContentConfig(
+        config = self._genai_types.GenerateContentConfig(
             temperature=temperature,
             max_output_tokens=max_output_tokens,
-            thinking_config=types.ThinkingConfig(thinking_budget=0),  # Tắt thinking để giảm latency
+            thinking_config=self._genai_types.ThinkingConfig(thinking_budget=0),  # Tắt thinking để giảm latency
         )
         if system_instruction:
             config.system_instruction = system_instruction

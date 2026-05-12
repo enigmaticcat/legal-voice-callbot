@@ -23,6 +23,7 @@ class Orchestrator:
         self.brain_url = settings.brain_http_url
         self.tts_url = settings.tts_http_url
         self.http_timeout = httpx.Timeout(connect=10.0, read=120.0, write=30.0, pool=30.0)
+        self._client = httpx.AsyncClient(timeout=self.http_timeout)
 
     @staticmethod
     def _ready_for_tts(buffer: str, min_chars: int = 40) -> bool:
@@ -46,16 +47,18 @@ class Orchestrator:
         return text.strip()
 
     async def _asr_transcribe(self, session_id: str, audio_data: bytes) -> dict:
-        async with httpx.AsyncClient(timeout=self.http_timeout) as client:
-            response = await client.post(
-                f"{self.asr_url}/transcribe",
-                content=audio_data,
-                headers={"Content-Type": "application/octet-stream"},
-            )
-            response.raise_for_status()
-            result = response.json()
-            logger.info("[%s] ASR done: %s", session_id, (result.get("text") or "")[:120])
-            return result
+        response = await self._client.post(
+            f"{self.asr_url}/transcribe",
+            content=audio_data,
+            headers={"Content-Type": "application/octet-stream"},
+        )
+        response.raise_for_status()
+        result = response.json()
+        logger.info("[%s] ASR done: %s", session_id, (result.get("text") or "")[:120])
+        return result
+
+    async def asr_transcribe(self, session_id: str, audio_data: bytes) -> dict:
+        return await self._asr_transcribe(session_id, audio_data)
 
     async def _brain_stream(
         self,
@@ -71,28 +74,42 @@ class Orchestrator:
             "conversation_summary": conversation_summary,
         }
 
-        async with httpx.AsyncClient(timeout=self.http_timeout) as client:
-            async with client.stream("POST", f"{self.brain_url}/think/stream", json=payload) as response:
-                response.raise_for_status()
-                async for line in response.aiter_lines():
-                    if not line:
-                        continue
-                    try:
-                        yield json.loads(line)
-                    except json.JSONDecodeError:
-                        logger.warning("[%s] Invalid NDJSON chunk from brain", session_id)
+        async with self._client.stream("POST", f"{self.brain_url}/think/stream", json=payload) as response:
+            response.raise_for_status()
+            async for line in response.aiter_lines():
+                if not line:
+                    continue
+                try:
+                    yield json.loads(line)
+                except json.JSONDecodeError:
+                    logger.warning("[%s] Invalid NDJSON chunk from brain", session_id)
 
-    async def _tts_stream(self, text: str) -> AsyncGenerator[bytes, None]:
+    async def _tts_stream(self, session_id: str, text: str) -> AsyncGenerator[bytes, None]:
         saw_audio = False
-        async with httpx.AsyncClient(timeout=self.http_timeout) as client:
-            async with client.stream("POST", f"{self.tts_url}/speak/stream", json={"text": text}) as response:
-                response.raise_for_status()
-                async for chunk in response.aiter_bytes(chunk_size=4800):
-                    if chunk:
-                        saw_audio = True
-                        yield chunk
+        async with self._client.stream(
+            "POST",
+            f"{self.tts_url}/speak/stream",
+            json={"text": text, "session_id": session_id},
+        ) as response:
+            response.raise_for_status()
+            async for chunk in response.aiter_bytes(chunk_size=4800):
+                if chunk:
+                    saw_audio = True
+                    yield chunk
         if not saw_audio:
             raise RuntimeError("TTS returned empty audio stream")
+
+    async def cancel_tts(self, session_id: str) -> None:
+        try:
+            await self._client.post(
+                f"{self.tts_url}/cancel",
+                json={"session_id": session_id},
+            )
+        except Exception:
+            logger.exception("[%s] Failed to cancel TTS", session_id)
+
+    async def close(self) -> None:
+        await self._client.aclose()
 
     async def process_text(
         self,
@@ -121,9 +138,10 @@ class Orchestrator:
         # dict = event to yield, None = sentinel (all done)
         event_queue: asyncio.Queue = asyncio.Queue()
         saw_any_brain_chunk = False
+        brain_error_sent = False
 
         async def brain_producer():
-            nonlocal saw_any_brain_chunk
+            nonlocal saw_any_brain_chunk, brain_error_sent
             buffer = ""
             try:
                 async for brain_chunk in self._brain_stream(session_id, query, conversation_history, conversation_summary):
@@ -152,6 +170,7 @@ class Orchestrator:
 
             except Exception as e:
                 logger.exception("[%s] Brain streaming failed", session_id)
+                brain_error_sent = True
                 await event_queue.put({
                     "type": "error",
                     "session_id": session_id,
@@ -177,7 +196,7 @@ class Orchestrator:
                             "sample_rate": 24000,
                         })
                     try:
-                        async for pcm_chunk in self._tts_stream(segment):
+                        async for pcm_chunk in self._tts_stream(session_id, segment):
                             await event_queue.put({
                                 "type": "audio_chunk",
                                 "session_id": session_id,
@@ -216,7 +235,7 @@ class Orchestrator:
             with contextlib.suppress(asyncio.CancelledError):
                 await asyncio.gather(producer_task, consumer_task, return_exceptions=True)
 
-        if not saw_any_brain_chunk:
+        if not saw_any_brain_chunk and not brain_error_sent:
             yield {
                 "type": "error",
                 "session_id": session_id,
@@ -225,12 +244,13 @@ class Orchestrator:
             }
             return
 
-        yield {
-            "type": "bot_response",
-            "session_id": session_id,
-            "text": "",
-            "is_final": True,
-        }
+        if saw_any_brain_chunk:
+            yield {
+                "type": "bot_response",
+                "session_id": session_id,
+                "text": "",
+                "is_final": True,
+            }
 
     async def process_audio(
         self,

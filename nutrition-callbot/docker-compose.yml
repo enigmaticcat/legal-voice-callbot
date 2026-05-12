@@ -22,6 +22,10 @@ services:
         condition: service_healthy
       asr:
         condition: service_healthy
+      brain:
+        condition: service_healthy
+      tts:
+        condition: service_healthy
     networks:
       - callbot-net
     restart: unless-stopped
@@ -108,7 +112,9 @@ services:
       - "${BRAIN_PORT:-50052}:50052"
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - LLM_BACKEND=${LLM_BACKEND:-openai}
+      - LLM_BASE_URL=${LLM_BASE_URL:-http://llm:8000/v1}
+      - LLM_MODEL=${LLM_MODEL:-Qwen/Qwen3-4B-Instruct-2507}
       - QDRANT_HOST=qdrant
       - REDIS_HOST=redis
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-AITeamVN/Vietnamese_Embedding}
@@ -120,6 +126,12 @@ services:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://0.0.0.0:50052/health || exit 1" ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - callbot-net
     restart: unless-stopped
@@ -132,6 +144,12 @@ services:
       - "${TTS_PORT:-50053}:50053"
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://0.0.0.0:50053/health || exit 1" ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - callbot-net
     restart: unless-stopped

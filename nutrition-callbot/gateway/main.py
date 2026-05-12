@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 
 from config import settings
 from routes.health import router as health_router
-from routes.websocket import router as ws_router
+from routes.websocket import router as ws_router, close_http_clients
 import services.session_memory as session_memory
 
 # ─── Logging ─────────────────────────────────────────────
@@ -68,3 +68,4 @@ async def startup():
 async def shutdown():
     logger.info("Gateway shutting down...")
     await session_memory.close()
+    await close_http_clients()

@@ -114,8 +114,6 @@ function App() {
         if (!file) return
         e.target.value = ''
 
-        setStatus('thinking')
-
         const arrayBuf = await file.arrayBuffer()
         const tmpCtx = new AudioContext()
         const decoded = await tmpCtx.decodeAudioData(arrayBuf)

@@ -4,7 +4,6 @@ import json
 import logging
 from uuid import uuid4
 
-import httpx
 import websockets
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
@@ -15,8 +14,6 @@ import services.session_memory as session_memory
 router = APIRouter(tags=["voice"])
 logger = logging.getLogger("gateway.routes.websocket")
 orchestrator = Orchestrator()
-
-_ASR_TIMEOUT = httpx.Timeout(connect=10.0, read=60.0, write=30.0, pool=10.0)
 
 
 @router.websocket("/ws/voice")
@@ -127,6 +124,7 @@ async def voice_chat(websocket: WebSocket):
                             # Barge-in: huỷ response đang chạy nếu người dùng nói chen vào
                             if current_process_task and not current_process_task.done():
                                 logger.info("[%s] Barge-in: cancelling current response", session_id)
+                                await orchestrator.cancel_tts(session_id)
                                 current_process_task.cancel()
                                 with contextlib.suppress(asyncio.CancelledError, Exception):
                                     await current_process_task
@@ -181,8 +179,20 @@ async def voice_chat(websocket: WebSocket):
             if message.get("bytes") is not None:
                 chunk = message["bytes"]
                 if vad_active and vad_audio_q is not None:
-                    # VAD mode: forward thẳng tới VAD worker
-                    await vad_audio_q.put(chunk)
+                    # Nếu VAD worker đã chết, reset state và báo lỗi
+                    if vad_task is not None and vad_task.done():
+                        vad_active = False
+                        vad_audio_q = None
+                        logger.warning("[%s] VAD worker died unexpectedly", session_id)
+                        with contextlib.suppress(Exception):
+                            await websocket.send_json({
+                                "type": "error",
+                                "session_id": session_id,
+                                "code": "VAD_WORKER_DIED",
+                                "message": "VAD worker dừng bất ngờ.",
+                            })
+                    else:
+                        await vad_audio_q.put(chunk)
                 else:
                     # PTT mode: buffer cho đến khi end_speech
                     audio_buffer.append(chunk)
@@ -243,14 +253,7 @@ async def voice_chat(websocket: WebSocket):
                 logger.info("[%s] ASR batch: %d bytes", session_id, len(audio_data))
 
                 try:
-                    async with httpx.AsyncClient(timeout=_ASR_TIMEOUT) as client:
-                        response = await client.post(
-                            f"{settings.asr_http_url}/transcribe",
-                            content=audio_data,
-                            headers={"Content-Type": "application/octet-stream"},
-                        )
-                        response.raise_for_status()
-                        asr_result = response.json()
+                    asr_result = await orchestrator.asr_transcribe(session_id, audio_data)
                 except Exception as e:
                     logger.exception("[%s] ASR HTTP failed", session_id)
                     await websocket.send_json({
@@ -316,3 +319,7 @@ async def voice_chat(websocket: WebSocket):
             vad_task.cancel()
             with contextlib.suppress(asyncio.CancelledError, Exception):
                 await vad_task
+
+
+async def close_http_clients() -> None:
+    await orchestrator.close()

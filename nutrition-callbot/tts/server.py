@@ -2,8 +2,9 @@
 Nutrition CallBot — TTS Worker (FastAPI)
 Endpoints:
   GET  /health
-  POST /speak        → WAV bytes + X-TTFB-ms / X-RTF / X-Duration-s headers
-  POST /speak/stream → raw PCM int16 stream (24kHz mono)
+    POST /speak        → WAV bytes + X-TTFB-ms / X-RTF / X-Duration-s headers
+    POST /speak/stream → raw PCM int16 stream (24kHz mono)
+    POST /cancel       → cancel synthesis for session_id
 """
 import io
 import time
@@ -51,6 +52,7 @@ async def speak(request: Request):
     """Synthesize text → full WAV. Headers carry TTFB and RTF."""
     body = await request.json()
     text = (body.get("text", "") or "").strip()
+    session_id = (body.get("session_id", "") or "").strip() or "default"
     if not text:
         raise HTTPException(status_code=400, detail="text is required")
 
@@ -58,7 +60,7 @@ async def speak(request: Request):
     pcm_chunks = []
     first_byte_ms = None
 
-    async for chunk in handler.speak(text):
+    async for chunk in handler.speak(text, session_id=session_id):
         if first_byte_ms is None:
             first_byte_ms = (time.perf_counter() - t0) * 1000
         pcm_chunks.append(chunk)
@@ -93,10 +95,11 @@ async def speak_stream(request: Request):
     """Stream raw PCM int16 chunks as they are synthesized."""
     body = await request.json()
     text = (body.get("text", "") or "").strip()
+    session_id = (body.get("session_id", "") or "").strip() or "default"
     if not text:
         raise HTTPException(status_code=400, detail="text is required")
 
-    stream = handler.speak(text)
+    stream = handler.speak(text, session_id=session_id)
 
     try:
         first_chunk = await anext(stream)
@@ -122,6 +125,16 @@ async def speak_stream(request: Request):
         media_type="audio/pcm",
         headers={"X-Sample-Rate": str(synthesizer.sample_rate)},
     )
+
+
+@app.post("/cancel")
+async def cancel(request: Request):
+    body = await request.json()
+    session_id = (body.get("session_id", "") or "").strip()
+    if not session_id:
+        raise HTTPException(status_code=400, detail="session_id is required")
+    await handler.cancel(session_id)
+    return {"status": "ok", "session_id": session_id}
 
 
 if __name__ == "__main__":

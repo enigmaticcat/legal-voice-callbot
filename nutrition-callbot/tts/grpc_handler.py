@@ -19,7 +19,7 @@ class TTSServiceHandler:
     def __init__(self, synthesizer: Synthesizer):
         self.synthesizer = synthesizer
 
-    async def speak(self, text: str):
+    async def speak(self, text: str, session_id: str | None = None):
         """
         Text → PCM int16 bytes streaming.
         Yield mỗi frame ngay khi infer_stream sản xuất ra, không buffer toàn chunk.
@@ -37,9 +37,9 @@ class TTSServiceHandler:
         for chunk in chunks:
             q: asyncio.Queue = asyncio.Queue()
 
-            def _worker(c=chunk):
+            def _worker(c=chunk, s=session_id):
                 try:
-                    for frame in self.synthesizer.synthesize_stream(c):
+                    for frame in self.synthesizer.synthesize_stream(c, session_id=s):
                         loop.call_soon_threadsafe(q.put_nowait, frame)
                 except Exception as e:
                     logger.exception("TTS synthesis error")
