@@ -389,9 +389,9 @@ torchaudio
 
 ⚠️ **Critical Secrets in VCS:**
 ```
-GEMINI_API_KEY=AIzaSyDWLWkccPYlpVDXu4Ux6tDZC5IOpVzqCJ0  # EXPOSED
-QDRANT_API_KEY=eyJhbGc...o71Q4as9bYb8bwFBifjH2MJ5...     # EXPOSED
-QDRANT_URL=https://9e9ea076-4e38-45c4-bc43-dc8e92c31368.europe-west3-0.gcp.cloud.qdrant.io
+GEMINI_API_KEY=                      # EXPOSED
+QDRANT_API_KEY=
+QDRANT_URL=
 ```
 
 **Fix immediately:**
