@@ -24,17 +24,17 @@ async def chunk_llm_stream(text_stream, min_size: int = MIN_CHUNK_SIZE) -> Async
 
             if match:
                 cut_pos = match.end()
-                yield buffer[:cut_pos].strip()
-                buffer = buffer[cut_pos:].lstrip()
+                yield buffer[:cut_pos].rstrip()
+                buffer = buffer[cut_pos:]
             elif len(buffer) > min_size * 2:
                 space_pos = buffer.rfind(" ", min_size // 2, min_size * 2)
                 if space_pos > 0:
-                    yield buffer[:space_pos].strip()
-                    buffer = buffer[space_pos:].lstrip()
+                    yield buffer[:space_pos].rstrip()
+                    buffer = buffer[space_pos:]
                 else:
-                    break  
+                    break
             else:
-                break  
+                break
 
     if buffer.strip():
-        yield buffer.strip()
+        yield buffer.rstrip()
