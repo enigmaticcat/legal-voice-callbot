@@ -1,5 +1,5 @@
 """
-Voice Activity Detection — Silero VAD via sherpa-onnx VadModel.
+Voice Activity Detection — Silero VAD via silero-vad (PyTorch).
 
 Phân tích từng window 512 samples (32ms @ 16kHz), theo dõi trạng thái
 SILENCE → SPEECH → TRAILING_SILENCE để cắt ra các đoạn lời nói hoàn chỉnh.
@@ -7,6 +7,9 @@ SILENCE → SPEECH → TRAILING_SILENCE để cắt ra các đoạn lời nói h
 import logging
 
 import numpy as np
+import torch
+from silero_vad import load_silero_vad
+from silero_vad.utils_vad import VADIterator
 
 logger = logging.getLogger("asr.core.vad")
 
@@ -28,30 +31,26 @@ class VADDetector:
         min_speech_ms: int = 250,
         sample_rate: int = 16_000,
     ):
-        import sherpa_onnx
+        del model_path
 
-        s = sherpa_onnx.SileroVadModelConfig()
-        s.model = model_path
-        s.threshold = threshold
-        s.min_silence_duration = min_silence_ms / 1000.0
-        s.min_speech_duration = min_speech_ms / 1000.0
-        s.window_size = _WINDOW_SIZE
-
-        cfg = sherpa_onnx.VadModelConfig()
-        cfg.silero_vad = s
-        cfg.sample_rate = sample_rate
-
-        self._vad = sherpa_onnx.VadModel.create(cfg)
         self._sample_rate = sample_rate
-        # Silence threshold in samples (derived from model config)
-        self._silence_needed: int = self._vad.min_silence_duration_samples
-        self._speech_needed: int = self._vad.min_speech_duration_samples
+
+        self._min_speech_samples = int(sample_rate * min_speech_ms / 1000)
+        self._device = torch.device("cpu")
+        self._model = load_silero_vad()
+        self._model.to(self._device)
+        self._iterator = VADIterator(
+            self._model,
+            threshold=threshold,
+            sampling_rate=sample_rate,
+            min_silence_duration_ms=min_silence_ms,
+            speech_pad_ms=0,
+        )
 
         # Internal state
         self._remainder = np.zeros(0, dtype=np.float32)
         self._speech_frames: list[np.ndarray] = []
         self._in_speech = False
-        self._silence_samples = 0  # accumulated silence samples after speech
 
         logger.info(
             "Silero VAD loaded (threshold=%.2f, silence=%dms, speech=%dms)",
@@ -79,39 +78,36 @@ class VADDetector:
         """Force-emit any buffered speech (call when stream ends)."""
         completed: list[np.ndarray] = []
         if self._in_speech and self._speech_frames:
-            completed.append(np.concatenate(self._speech_frames))
+            segment = np.concatenate(self._speech_frames)
+            if segment.size >= self._min_speech_samples:
+                completed.append(segment)
             self._speech_frames = []
             self._in_speech = False
-            self._silence_samples = 0
         self._remainder = np.zeros(0, dtype=np.float32)
         return completed
 
     def reset(self):
         """Reset all state (new session)."""
-        self._vad.reset()
+        self._iterator.reset_states()
         self._remainder = np.zeros(0, dtype=np.float32)
         self._speech_frames = []
         self._in_speech = False
-        self._silence_samples = 0
 
     # ── Internal ──────────────────────────────────────────────────────
 
     def _process_window(self, window: np.ndarray, completed: list[np.ndarray]):
-        is_speech = self._vad.is_speech(window.tolist())
+        event = self._iterator(window, return_seconds=False)
 
-        if is_speech:
+        if event and "start" in event:
             self._in_speech = True
-            self._silence_samples = 0
-            self._speech_frames.append(window)
-        else:
-            if self._in_speech:
-                # Trailing silence — still buffer it (natural pause)
-                self._silence_samples += _WINDOW_SIZE
-                self._speech_frames.append(window)
+            self._speech_frames = []
 
-                if self._silence_samples >= self._silence_needed:
-                    segment = np.concatenate(self._speech_frames)
-                    completed.append(segment)
-                    self._speech_frames = []
-                    self._in_speech = False
-                    self._silence_samples = 0
+        if self._in_speech:
+            self._speech_frames.append(window)
+
+        if event and "end" in event and self._in_speech:
+            segment = np.concatenate(self._speech_frames)
+            if segment.size >= self._min_speech_samples:
+                completed.append(segment)
+            self._speech_frames = []
+            self._in_speech = False

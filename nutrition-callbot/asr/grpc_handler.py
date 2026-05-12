@@ -33,13 +33,13 @@ class ASRServiceHandler:
         self._streams: dict = {}
 
     def _check_vad(self) -> bool:
-        from config import config
-        exists = os.path.isfile(config.vad_model_path)
-        if exists:
-            logger.info("Silero VAD model found: %s", config.vad_model_path)
-        else:
-            logger.warning("Silero VAD model not found: %s", config.vad_model_path)
-        return exists
+        try:
+            import silero_vad  # noqa: F401
+            logger.info("Silero VAD (python) available")
+            return True
+        except Exception as e:
+            logger.warning("Silero VAD (python) not available: %s", e)
+            return False
 
     def create_vad_session(self):
         """Return a fresh per-session VADDetector, or None if model missing."""
