@@ -14,6 +14,9 @@ async def chunk_llm_stream(text_stream, min_size: int = MIN_CHUNK_SIZE) -> Async
     async for chunk in text_stream:
         text = chunk.get("text", "") if isinstance(chunk, dict) else chunk
         text = re.sub(r"\n+", " ", text)
+        if buffer and text:
+            if buffer[-1].isalnum() and text[0].isalnum():
+                buffer += " "
         buffer += text
 
         while len(buffer) >= min_size:

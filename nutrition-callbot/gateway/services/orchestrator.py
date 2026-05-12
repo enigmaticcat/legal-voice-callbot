@@ -32,6 +32,13 @@ class Orchestrator:
         return any(p in buffer for p in [".", "?", "!", "\n"])
 
     @staticmethod
+    def _normalize_spacing(text: str) -> str:
+        import re
+        text = re.sub(r"\s*([,.;:!?])\s*", r"\1 ", text)
+        text = re.sub(r"\s+", " ", text)
+        return text.strip()
+
+    @staticmethod
     def _clean_for_tts(text: str) -> str:
         import re
         # Strip markdown formatting
@@ -44,7 +51,7 @@ class Orchestrator:
         text = re.sub(r'_{1,2}([^_]+?)_{1,2}', r'\1', text)          # underscore italic/bold
         text = re.sub(r'\n+', ' ', text)
         text = re.sub(r' {2,}', ' ', text)
-        return text.strip()
+        return Orchestrator._normalize_spacing(text)
 
     async def _asr_transcribe(self, session_id: str, audio_data: bytes) -> dict:
         response = await self._client.post(
@@ -153,7 +160,7 @@ class Orchestrator:
                         await event_queue.put({
                             "type": "bot_response",
                             "session_id": session_id,
-                            "text": text,
+                            "text": self._normalize_spacing(text),
                             "is_final": False,
                         })
                         buffer += text
