@@ -15,6 +15,8 @@ router = APIRouter(tags=["voice"])
 logger = logging.getLogger("gateway.routes.websocket")
 orchestrator = Orchestrator()
 
+_MAX_FALLBACK_TURNS = 3
+
 
 @router.websocket("/ws/voice")
 async def voice_chat(websocket: WebSocket):
@@ -24,6 +26,7 @@ async def voice_chat(websocket: WebSocket):
 
     mem = session_memory.get()
     fallback_history: list = []
+    fallback_summary = ""
     audio_buffer: list[bytes] = []
 
     # VAD mode state
@@ -34,9 +37,10 @@ async def voice_chat(websocket: WebSocket):
     async def _get_ctx():
         if mem:
             return await mem.get_context(session_id)
-        return {"summary": "", "turns": fallback_history}
+        return {"summary": fallback_summary, "turns": fallback_history}
 
     async def _save_turn(user_text: str, bot_text: str):
+        nonlocal fallback_summary
         if bot_text:
             if mem:
                 await mem.append_turn(session_id, "user", user_text)
@@ -46,7 +50,13 @@ async def voice_chat(websocket: WebSocket):
                     {"role": "user", "text": user_text},
                     {"role": "assistant", "text": bot_text},
                 ])
-                fallback_history[:] = fallback_history[-6:]
+                if len(fallback_history) > _MAX_FALLBACK_TURNS:
+                    to_compress = fallback_history[:-2]
+                    fallback_history[:] = fallback_history[-2:]
+                    fallback_summary = await orchestrator.summarize(
+                        fallback_summary,
+                        to_compress,
+                    )
 
     async def _process_transcript(transcript: str):
         """Run Brain→TTS pipeline và stream events về client."""

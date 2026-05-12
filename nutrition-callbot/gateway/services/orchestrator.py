@@ -34,6 +34,18 @@ class Orchestrator:
     @staticmethod
     def _normalize_spacing(text: str) -> str:
         import re
+        def _collapse_letters(match: re.Match) -> str:
+            return match.group(0).replace(" ", "")
+
+        def _collapse_digits(match: re.Match) -> str:
+            return match.group(0).replace(" ", "")
+
+        text = re.sub(
+            r"\b(?:[A-Za-zÀ-ÖØ-öø-ÿ]|[\u0100-\u1ef9])(?:\s+(?:[A-Za-zÀ-ÖØ-öø-ÿ]|[\u0100-\u1ef9])){2,}\b",
+            _collapse_letters,
+            text,
+        )
+        text = re.sub(r"\b(?:\d\s+){2,}\d\b", _collapse_digits, text)
         text = re.sub(r"\s*([,.;:!?])\s*", r"\1 ", text)
         text = re.sub(r"\s+", " ", text)
         return text.strip()
@@ -114,6 +126,18 @@ class Orchestrator:
             )
         except Exception:
             logger.exception("[%s] Failed to cancel TTS", session_id)
+
+    async def summarize(self, summary: str, turns: list) -> str:
+        try:
+            response = await self._client.post(
+                f"{self.brain_url}/summarize",
+                json={"summary": summary, "turns": turns},
+            )
+            response.raise_for_status()
+            return response.json().get("summary", "")
+        except Exception:
+            logger.exception("Failed to summarize turns")
+            return summary
 
     async def close(self) -> None:
         await self._client.aclose()

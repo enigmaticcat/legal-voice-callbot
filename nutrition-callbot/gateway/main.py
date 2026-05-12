@@ -25,7 +25,7 @@ logger = logging.getLogger("gateway")
 # ─── App Factory ─────────────────────────────────────────
 app = FastAPI(
     title="Legal CallBot Gateway",
-    description="API Gateway cho hệ thống tư vấn pháp luật bằng giọng nói",
+    description="API Gateway cho hệ thống tư vấn dinh dưỡng bằng giọng nói",
     version="0.1.0",
 )
 
@@ -59,7 +59,11 @@ async def startup():
     logger.info(f"   Brain → {settings.brain_address}")
     logger.info(f"   TTS   → {settings.tts_address}")
     try:
-        await session_memory.init(settings.redis_url, settings.brain_http_url)
+        await session_memory.init(
+            settings.redis_url,
+            settings.brain_http_url,
+            session_ttl=settings.session_timeout_seconds,
+        )
     except Exception as e:
         logger.warning("Redis unavailable (%s) — falling back to in-memory history", e)
 

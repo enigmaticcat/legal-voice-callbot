@@ -17,17 +17,19 @@ import httpx
 
 logger = logging.getLogger("gateway.services.session_memory")
 
-MAX_RAW_TURNS = 3
-SESSION_TTL = 1800  # 30 phút
+DEFAULT_MAX_RAW_TURNS = 3
+DEFAULT_SESSION_TTL = 1800  # 30 phút
 
 _instance: Optional["SessionMemory"] = None
 
 
 class SessionMemory:
 
-    def __init__(self, redis, brain_url: str):
+    def __init__(self, redis, brain_url: str, max_raw_turns: int, session_ttl: int):
         self.redis = redis
         self.brain_url = brain_url
+        self.max_raw_turns = max_raw_turns
+        self.session_ttl = session_ttl
 
     async def get_context(self, session_id: str) -> dict:
         """Trả về {summary: str, turns: list} cho session này."""
@@ -49,7 +51,7 @@ class SessionMemory:
         turns = json.loads(raw) if raw else []
         turns.append({"role": role, "text": content})
 
-        if len(turns) > MAX_RAW_TURNS:
+        if len(turns) > self.max_raw_turns:
             to_compress = turns[:-2]
             turns = turns[-2:]
             asyncio.create_task(
@@ -57,8 +59,8 @@ class SessionMemory:
             )
 
         await asyncio.gather(
-            self.redis.setex(key_turns, SESSION_TTL, json.dumps(turns, ensure_ascii=False)),
-            self.redis.expire(key_summary, SESSION_TTL),
+            self.redis.setex(key_turns, self.session_ttl, json.dumps(turns, ensure_ascii=False)),
+            self.redis.expire(key_summary, self.session_ttl),
         )
 
     async def _compress(self, session_id: str, key_summary: str, turns: list):
@@ -75,18 +77,23 @@ class SessionMemory:
                 resp.raise_for_status()
                 new_summary = resp.json().get("summary", "")
 
-            await self.redis.setex(key_summary, SESSION_TTL, new_summary)
+            await self.redis.setex(key_summary, self.session_ttl, new_summary)
             logger.info("[%s] Summary updated (%d chars)", session_id, len(new_summary))
         except Exception:
             logger.exception("[%s] Summarization failed, keeping old summary", session_id)
 
 
-async def init(redis_url: str, brain_url: str) -> SessionMemory:
+async def init(
+    redis_url: str,
+    brain_url: str,
+    max_raw_turns: int = DEFAULT_MAX_RAW_TURNS,
+    session_ttl: int = DEFAULT_SESSION_TTL,
+) -> SessionMemory:
     global _instance
     import redis.asyncio as aioredis
     client = aioredis.from_url(redis_url, decode_responses=False)
     await client.ping()
-    _instance = SessionMemory(client, brain_url)
+    _instance = SessionMemory(client, brain_url, max_raw_turns, session_ttl)
     logger.info("SessionMemory connected to Redis: %s", redis_url)
     return _instance
 
