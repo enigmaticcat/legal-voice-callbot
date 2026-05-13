@@ -135,6 +135,8 @@ async def voice_chat(websocket: WebSocket):
                                 with contextlib.suppress(asyncio.CancelledError, Exception):
                                     await current_process_task
                                 with contextlib.suppress(Exception):
+                                    await orchestrator.cancel_tts(session_id)
+                                with contextlib.suppress(Exception):
                                     await websocket.send_json({
                                         "type": "bot_interrupted",
                                         "session_id": session_id,
