@@ -114,7 +114,9 @@ async def ws_transcribe_vad(websocket: WebSocket):
             message = await websocket.receive()
 
             if message.get("bytes"):
-                segments = await asyncio.to_thread(vad.accept_chunk, message["bytes"])
+                segments, speech_started = await asyncio.to_thread(vad.accept_chunk, message["bytes"])
+                if speech_started:
+                    await websocket.send_json({"type": "speech_start"})
                 for seg in segments:
                     resp = await _transcribe_segment(seg)
                     if resp:

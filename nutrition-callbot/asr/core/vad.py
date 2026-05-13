@@ -59,20 +59,27 @@ class VADDetector:
 
     # ── Public API ────────────────────────────────────────────────────
 
-    def accept_chunk(self, pcm_bytes: bytes) -> list[np.ndarray]:
-        """Process PCM int16 bytes; return completed speech segments (float32)."""
+    def accept_chunk(self, pcm_bytes: bytes) -> tuple[list[np.ndarray], bool]:
+        """Process PCM int16 bytes.
+
+        Returns:
+            (completed_segments, speech_just_started)
+            speech_just_started=True nếu chunk này chứa thời điểm bắt đầu nói.
+        """
         samples = np.frombuffer(pcm_bytes, dtype=np.int16).astype(np.float32) / 32768.0
         buf = np.concatenate([self._remainder, samples]) if self._remainder.size else samples
 
         completed: list[np.ndarray] = []
+        speech_started = False
 
         while buf.size >= _WINDOW_SIZE:
             window = buf[:_WINDOW_SIZE]
             buf = buf[_WINDOW_SIZE:]
-            self._process_window(window, completed)
+            if self._process_window(window, completed):
+                speech_started = True
 
         self._remainder = buf
-        return completed
+        return completed, speech_started
 
     def flush(self) -> list[np.ndarray]:
         """Force-emit any buffered speech (call when stream ends)."""
@@ -95,12 +102,15 @@ class VADDetector:
 
     # ── Internal ──────────────────────────────────────────────────────
 
-    def _process_window(self, window: np.ndarray, completed: list[np.ndarray]):
+    def _process_window(self, window: np.ndarray, completed: list[np.ndarray]) -> bool:
+        """Return True nếu window này chứa thời điểm speech start."""
         event = self._iterator(window, return_seconds=False)
+        speech_started = False
 
         if event and "start" in event:
             self._in_speech = True
             self._speech_frames = []
+            speech_started = True
 
         if self._in_speech:
             self._speech_frames.append(window)
@@ -111,3 +121,5 @@ class VADDetector:
                 completed.append(segment)
             self._speech_frames = []
             self._in_speech = False
+
+        return speech_started

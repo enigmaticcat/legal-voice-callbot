@@ -127,14 +127,26 @@ async def voice_chat(websocket: WebSocket):
                             })
                             break
 
+                        if data.get("type") == "speech_start":
+                            # Người dùng bắt đầu nói → dừng bot ngay, không cần chờ hết câu
+                            if current_process_task and not current_process_task.done():
+                                logger.info("[%s] Speech start: interrupting bot immediately", session_id)
+                                current_process_task.cancel()
+                                with contextlib.suppress(asyncio.CancelledError, Exception):
+                                    await current_process_task
+                                with contextlib.suppress(Exception):
+                                    await websocket.send_json({
+                                        "type": "bot_interrupted",
+                                        "session_id": session_id,
+                                    })
+
                         if data.get("is_final") and data.get("text"):
                             transcript = data["text"]
                             logger.info("[%s] VAD transcript: %s", session_id, transcript[:80])
 
-                            # Barge-in: huỷ response đang chạy nếu người dùng nói chen vào
+                            # Barge-in fallback: huỷ nếu vẫn còn chạy (ví dụ speech_start bị miss)
                             if current_process_task and not current_process_task.done():
-                                logger.info("[%s] Barge-in: cancelling current response", session_id)
-                                await orchestrator.cancel_tts(session_id)
+                                logger.info("[%s] Barge-in fallback: cancelling current response", session_id)
                                 current_process_task.cancel()
                                 with contextlib.suppress(asyncio.CancelledError, Exception):
                                     await current_process_task
