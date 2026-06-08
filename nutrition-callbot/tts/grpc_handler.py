@@ -9,11 +9,10 @@ import re
 import threading
 
 from core.synthesizer import Synthesizer
-from core.chunker import chunk_text
 
 logger = logging.getLogger("tts.grpc_handler")
 
-_CHUNK_MIN_CHARS = 80
+_CHUNK_MAX_CHARS = 256
 _NEWLINE_RE = re.compile(r"\n+")
 
 # Giới hạn số synthesis chạy đồng thời. vieneu.infer_stream() không thread-safe
@@ -39,9 +38,7 @@ class TTSServiceHandler:
         text = _NEWLINE_RE.sub(" ", text).strip()
 
         logger.info(f"Speak: {text[:60]}...")
-        chunks = chunk_text(text, min_size=_CHUNK_MIN_CHARS)
-        if not chunks:
-            raise RuntimeError("TTS chunker returned no chunks")
+        chunks = [text]
 
         loop = asyncio.get_running_loop()
 
@@ -50,7 +47,7 @@ class TTSServiceHandler:
 
             def _worker(c=chunk, s=session_id):
                 try:
-                    for frame in self.synthesizer.synthesize_stream(c, session_id=s):
+                    for frame in self.synthesizer.synthesize_stream(c, session_id=s, max_chars=_CHUNK_MAX_CHARS):
                         loop.call_soon_threadsafe(q.put_nowait, frame)
                 except Exception as e:
                     logger.exception("TTS synthesis error")

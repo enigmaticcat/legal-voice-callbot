@@ -4,8 +4,8 @@ from typing import AsyncGenerator
 
 logger = logging.getLogger("brain.core.chunker")
 
-PUNCTUATION = re.compile(r"[.!?;:,।।]")
-MIN_CHUNK_SIZE = 40
+PUNCTUATION = re.compile(r"[.!?]")  # chỉ split tại end-of-sentence, không split tại ; : ,
+MIN_CHUNK_SIZE = 20
 
 
 async def chunk_llm_stream(text_stream, min_size: int = MIN_CHUNK_SIZE) -> AsyncGenerator[str, None]:

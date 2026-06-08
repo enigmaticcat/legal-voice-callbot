@@ -8,11 +8,15 @@ import json
 import logging
 from typing import AsyncGenerator
 
+import re
+
 import httpx
 
 from config import settings
 
 logger = logging.getLogger("gateway.services.orchestrator")
+
+_PUNCT_SPACE = re.compile(r"[.!?,]\s")
 
 
 class Orchestrator:
@@ -26,10 +30,21 @@ class Orchestrator:
         self._client = httpx.AsyncClient(timeout=self.http_timeout)
 
     @staticmethod
-    def _ready_for_tts(buffer: str, min_chars: int = 40) -> bool:
-        if len(buffer.strip()) >= min_chars:
-            return True
-        return any(p in buffer for p in [".", "?", "!", "\n"])
+    def _find_flush_point(buffer: str, min_chars: int = 40, max_chars: int = 200):
+        """
+        Trả về vị trí cắt buffer để gửi TTS, hoặc None nếu chưa sẵn sàng.
+        Cắt tại dấu câu + space sau min_chars để TTS nối tại khoảng lặng tự nhiên.
+        Nếu buffer >= max_chars, flush toàn bộ dù chưa có dấu câu.
+        """
+        n = len(buffer.strip())
+        if n >= max_chars:
+            return len(buffer)
+        if n < min_chars:
+            return None
+        m = _PUNCT_SPACE.search(buffer, min_chars)
+        if m:
+            return m.end()  # cắt sau space
+        return None
 
     @staticmethod
     def _clean_for_tts(text: str) -> str:
@@ -170,9 +185,10 @@ class Orchestrator:
                         })
                         buffer += text
 
-                        if self._ready_for_tts(buffer):
-                            await tts_queue.put(self._clean_for_tts(buffer))
-                            buffer = ""
+                        cut = self._find_flush_point(buffer)
+                        if cut is not None:
+                            await tts_queue.put(self._clean_for_tts(buffer[:cut]))
+                            buffer = buffer[cut:]
 
                     if is_final:
                         break
@@ -186,9 +202,8 @@ class Orchestrator:
                 await event_queue.put({
                     "type": "error",
                     "session_id": session_id,
-                    "message": "Brain stream loi.",
+                    "message": "Hệ thống xử lý ngôn ngữ gặp sự cố.",
                     "code": "BRAIN_STREAM_ERROR",
-                    "detail": str(e),
                 })
             finally:
                 await tts_queue.put(None)
@@ -219,9 +234,8 @@ class Orchestrator:
                         await event_queue.put({
                             "type": "error",
                             "session_id": session_id,
-                            "message": "TTS khong tao duoc audio.",
+                            "message": "Hệ thống tổng hợp giọng nói gặp sự cố.",
                             "code": "TTS_STREAM_ERROR",
-                            "detail": str(e),
                         })
                         # drain remaining segments so brain_producer unblocks
                         while True:
@@ -251,7 +265,7 @@ class Orchestrator:
             yield {
                 "type": "error",
                 "session_id": session_id,
-                "message": "Brain khong tra ve noi dung.",
+                "message": "Xin lỗi, hệ thống không có phản hồi. Vui lòng thử lại.",
                 "code": "BRAIN_EMPTY",
             }
             return

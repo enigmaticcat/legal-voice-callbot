@@ -190,7 +190,7 @@ async def voice_chat(websocket: WebSocket):
                     "type": "error",
                     "session_id": session_id,
                     "code": "VAD_WORKER_ERROR",
-                    "message": str(e),
+                    "message": "Phát hiện giọng nói gặp sự cố. Vui lòng thử lại.",
                 })
         finally:
             logger.info("[%s] VAD worker stopped", session_id)
@@ -287,8 +287,7 @@ async def voice_chat(websocket: WebSocket):
                         "type": "error",
                         "session_id": session_id,
                         "code": "ASR_ERROR",
-                        "message": "ASR lỗi.",
-                        "detail": str(e),
+                        "message": "Nhận dạng giọng nói thất bại. Vui lòng thử lại.",
                     })
                     continue
 

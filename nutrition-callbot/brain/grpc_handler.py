@@ -18,12 +18,13 @@ class BrainServiceHandler:
 
     def __init__(self, llm: LLMClient, rag: RAGPipeline,
                  rag_fetch_k: int = 15, rag_top_k: int = 5,
-                 min_chunk_size: int = 40):
+                 min_chunk_size: int = 40, use_hyde: bool = False):
         self.llm = llm
         self.rag = rag
         self.rag_fetch_k = rag_fetch_k
         self.rag_top_k = rag_top_k
         self.min_chunk_size = min_chunk_size
+        self.use_hyde = use_hyde
 
     async def think(
         self,
@@ -44,7 +45,12 @@ class BrainServiceHandler:
             expand_ms = (time.time() - t0) * 1000
 
             t0 = time.time()
-            docs = await self.rag.search(expanded, top_k=self.rag_top_k, fetch_k=self.rag_fetch_k)
+            docs = await self.rag.search(
+                expanded,
+                top_k=self.rag_top_k,
+                fetch_k=self.rag_fetch_k,
+                use_hyde=self.use_hyde,
+            )
             rag_ms = (time.time() - t0) * 1000
             contexts = [d.get("content", "") for d in docs]
             context = "\n\n".join(

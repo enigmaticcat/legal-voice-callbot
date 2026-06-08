@@ -3,7 +3,7 @@ import asyncio
 import os
 import time
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer, CrossEncoder
 import httpx
@@ -30,6 +30,13 @@ MODEL_NAME = _cfg.embedding_model
 RERANKER_MODEL = _cfg.reranker_model
 
 
+_HYDE_PROMPT = (
+    "Bạn là chuyên gia dinh dưỡng. Viết một đoạn văn ngắn (~80 từ) "
+    "trả lời câu hỏi sau đây theo phong cách tài liệu y tế, "
+    "chỉ dùng thông tin dinh dưỡng phổ biến, không bịa đặt:\n\n{query}\n\nĐoạn văn:"
+)
+
+
 class RAGPipeline:
 
     def __init__(
@@ -42,11 +49,13 @@ class RAGPipeline:
         qdrant_snapshot_force_restore: bool = False,
         qdrant_snapshot_timeout_s: int = 600,
         qdrant_snapshot_priority: str = "snapshot",
+        llm_client=None,
     ):
         self.collection = collection
         self.qdrant_path = qdrant_path
         self.qdrant_url = qdrant_url
         self.qdrant_api_key = qdrant_api_key
+        self.llm_client = llm_client
 
         if qdrant_path:
             logger.info(f"Initializing Local QdrantClient at: {qdrant_path}")
@@ -159,16 +168,47 @@ class RAGPipeline:
             f"Qdrant HTTP snapshot restore timed out after {timeout_s}s"
         )
 
+    async def _generate_hyde_doc(self, query: str) -> str:
+        """Sinh đoạn văn giả định (HyDE) từ câu hỏi để cải thiện embedding search."""
+        if self.llm_client is None:
+            return query
+        try:
+            prompt = _HYDE_PROMPT.format(query=query)
+            hyde_doc = await asyncio.wait_for(
+                self.llm_client.generate(prompt, temperature=0.3),
+                timeout=8.0,
+            )
+            hyde_doc = hyde_doc.strip()
+            if not hyde_doc:
+                return query
+            logger.debug("HyDE doc: %s", hyde_doc[:100])
+            return hyde_doc
+        except Exception:
+            logger.warning("HyDE generation failed, falling back to original query", exc_info=True)
+            return query
+
     async def search(self, query: str, filters: dict = None,
-                     top_k: int = 5, fetch_k: int = 15) -> List[Dict]:
+                     top_k: int = 5, fetch_k: int = 8,
+                     use_hyde: bool = False) -> List[Dict]:
         logger.debug(f"RAG search: {query[:80]}...")
 
-        async with _get_semaphore():
-            q_vec = await asyncio.to_thread(
-                self.model.encode,
-                [query],
-                normalize_embeddings=True,
-            )
+        embed_text = query
+        if use_hyde and self.llm_client is not None:
+            t_hyde = time.time()
+            embed_text = await self._generate_hyde_doc(query)
+            logger.info("HyDE: %.0fms | doc[:80]=%s", (time.time() - t_hyde) * 1000, embed_text[:80])
+
+        try:
+            async with asyncio.timeout(30.0):
+                async with _get_semaphore():
+                    q_vec = await asyncio.to_thread(
+                        self.model.encode,
+                        [embed_text],
+                        normalize_embeddings=True,
+                    )
+        except asyncio.TimeoutError:
+            logger.error("RAG embedding timeout after 30s")
+            return []
         q_vec = q_vec[0].tolist()
 
         qfilter = None
@@ -204,8 +244,14 @@ class RAGPipeline:
 
         # Rerank with cross-encoder
         pairs = [[query, d["content"]] for d in docs]
-        async with _get_semaphore():
-            rerank_scores = await asyncio.to_thread(self.reranker.predict, pairs)
+        try:
+            async with asyncio.timeout(30.0):
+                async with _get_semaphore():
+                    rerank_scores = await asyncio.to_thread(self.reranker.predict, pairs)
+        except asyncio.TimeoutError:
+            logger.error("RAG reranking timeout after 30s, returning top-%d by embedding score", top_k)
+            return docs[:top_k]
+        rerank_scores = [float(s) if not (s != s) else -999.0 for s in rerank_scores]  # handle NaN
         docs_scored = sorted(zip(rerank_scores, docs), key=lambda x: -x[0])
         reranked = [d for _, d in docs_scored[:top_k]]
         logger.debug(f"Reranked {fetch_k} → {top_k} docs")

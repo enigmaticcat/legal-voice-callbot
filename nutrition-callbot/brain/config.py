@@ -47,6 +47,7 @@ class BrainConfig:
     reranker_model: str = os.getenv("RERANKER_MODEL", "thanhtantran/Vietnamese_Reranker")
     rag_fetch_k: int = int(os.getenv("RAG_FETCH_K", "15"))
     rag_top_k: int = int(os.getenv("RAG_TOP_K", "5"))
+    rag_use_hyde: bool = os.getenv("RAG_USE_HYDE", "false").strip().lower() in {"1", "true", "yes", "on"}
     llm_max_output_tokens: int = int(os.getenv("LLM_MAX_OUTPUT_TOKENS", "1500"))
     tts_url: str = os.getenv("TTS_URL", "http://localhost:50053")
 

@@ -43,25 +43,53 @@ class SessionMemory:
         }
 
     async def append_turn(self, session_id: str, role: str, content: str):
-        """Append turn, trigger summarization async nếu vượt ngưỡng."""
+        """Append turn atomic qua Lua script, trigger summarization async nếu vượt ngưỡng."""
         key_turns = f"session:{session_id}:turns"
         key_summary = f"session:{session_id}:summary"
 
-        raw = await self.redis.get(key_turns)
-        turns = json.loads(raw) if raw else []
-        turns.append({"role": role, "text": content})
-
-        if len(turns) > self.max_raw_turns:
-            to_compress = turns[:-2]
-            turns = turns[-2:]
-            asyncio.create_task(
-                self._compress(session_id, key_summary, to_compress)
-            )
-
-        await asyncio.gather(
-            self.redis.setex(key_turns, self.session_ttl, json.dumps(turns, ensure_ascii=False)),
-            self.redis.expire(key_summary, self.session_ttl),
+        # Lua script: get + append + trim atomic, trả về (n_turns, to_compress_json)
+        lua_script = """
+local key = KEYS[1]
+local ttl = tonumber(ARGV[1])
+local max_turns = tonumber(ARGV[2])
+local new_turn = ARGV[3]
+local raw = redis.call('GET', key)
+local turns
+if raw then
+    turns = cjson.decode(raw)
+else
+    turns = {}
+end
+table.insert(turns, cjson.decode(new_turn))
+local to_compress = {}
+if #turns > max_turns then
+    for i = 1, #turns - 2 do
+        table.insert(to_compress, turns[i])
+    end
+    local kept = {}
+    for i = #turns - 1, #turns do
+        table.insert(kept, turns[i])
+    end
+    turns = kept
+end
+redis.call('SETEX', key, ttl, cjson.encode(turns))
+return cjson.encode(to_compress)
+"""
+        new_turn_json = json.dumps({"role": role, "text": content}, ensure_ascii=False)
+        result = await self.redis.eval(
+            lua_script, 1, key_turns,
+            str(self.session_ttl), str(self.max_raw_turns), new_turn_json
         )
+
+        await self.redis.expire(key_summary, self.session_ttl)
+
+        to_compress = json.loads(result) if result else []
+        if to_compress:
+            task = asyncio.create_task(self._compress(session_id, key_summary, to_compress))
+            task.add_done_callback(
+                lambda t: logger.warning("[%s] Compression task failed: %s", session_id, t.exception())
+                if not t.cancelled() and t.exception() else None
+            )
 
     async def _compress(self, session_id: str, key_summary: str, turns: list):
         """Gọi Brain /summarize để nén turns cũ vào running summary."""

@@ -31,12 +31,14 @@ rag = RAGPipeline(
     qdrant_snapshot_force_restore=config.qdrant_snapshot_force_restore,
     qdrant_snapshot_timeout_s=config.qdrant_snapshot_timeout_s,
     qdrant_snapshot_priority=config.qdrant_snapshot_priority,
+    llm_client=llm,
 )
 handler = BrainServiceHandler(
     llm=llm, rag=rag,
     rag_fetch_k=config.rag_fetch_k,
     rag_top_k=config.rag_top_k,
     min_chunk_size=config.min_chunk_size,
+    use_hyde=config.rag_use_hyde,
 )
 
 app = FastAPI(title="Brain Worker", version="0.2.0")

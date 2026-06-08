@@ -7,6 +7,7 @@ Chọn backend qua env LLM_BACKEND:
 
 LLMClient = factory function trả về đúng client theo config.
 """
+import asyncio
 import logging
 import time
 from typing import AsyncGenerator
@@ -62,8 +63,14 @@ class GeminiLLMClient:
 
             ttfc_ms = None
             t0 = time.time()
+            CHUNK_TIMEOUT = 15.0  # timeout chờ chunk tiếp theo, tránh treo giữa stream
+            aiter = response.__aiter__()
 
-            async for chunk in response:
+            while True:
+                try:
+                    chunk = await asyncio.wait_for(aiter.__anext__(), timeout=CHUNK_TIMEOUT)
+                except StopAsyncIteration:
+                    break
                 if chunk.text:
                     if ttfc_ms is None:
                         ttfc_ms = (time.time() - t0) * 1000
@@ -78,6 +85,14 @@ class GeminiLLMClient:
                         first_token = False
                     yield result
 
+        except asyncio.TimeoutError:
+            logger.error("Gemini API timeout (no chunk received in time)")
+            yield {
+                "text": "Xin lỗi, hệ thống phản hồi quá chậm. Vui lòng thử lại sau.",
+                "is_final": True,
+                "error": True,
+            }
+            return
         except Exception as e:
             logger.error(f"Gemini API error: {e}")
             yield {
@@ -155,7 +170,7 @@ class OpenAILLMClient:
         except Exception as e:
             logger.error(f"OpenAI-compat LLM error: {e}")
             yield {
-                "text": "Xin loi, he thong dang gap su co. Vui long thu lai sau.",
+                "text": "Xin lỗi, hệ thống đang gặp sự cố. Vui lòng thử lại sau.",
                 "is_final": True,
                 "error": True,
             }
