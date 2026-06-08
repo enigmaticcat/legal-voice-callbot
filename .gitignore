@@ -11,8 +11,6 @@ env/
 *.onnx
 *.pt
 *.bin
-!nutrition-callbot/asr/data/*.onnx
-!nutrition-callbot/asr/data/config.json
 
 # Dữ liệu dạng thô (Raw Data)
 *.json
@@ -26,7 +24,6 @@ vietnamese_legal_parquet/
 !tsconfig.json
 !evaluation/thucuc_qa.json
 !evaluation/thucuc_qa.jsonl
-!nutrition-callbot/asr/data/config.json
 
 # Log & test audio
 *.log
