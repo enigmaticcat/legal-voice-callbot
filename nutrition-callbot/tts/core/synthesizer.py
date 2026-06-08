@@ -27,6 +27,7 @@ class Synthesizer:
         self._voice = None
         self._cancel_events: dict[str, threading.Event] = {}
         self._cancel_lock = threading.Lock()
+        self._load_lock = threading.Lock()
         logger.info(f"Synthesizer init: {backbone_repo}")
 
     def load_model(self):
@@ -98,7 +99,9 @@ class Synthesizer:
                     mỗi chunk là 1 np.ndarray float32 từ infer_stream() → convert sang int16 bytes
         """
         if self._tts is None:
-            self.load_model()
+            with self._load_lock:
+                if self._tts is None:
+                    self.load_model()
 
         session_key = session_id or "default"
         with self._cancel_lock:

@@ -258,3 +258,32 @@ States: `idle → connecting → listening → thinking → speaking → idle`
 | ASR input | 16kHz, mono, PCM int16 LE |
 | TTS output | 24kHz, mono, PCM int16 LE |
 | TTS chunk size | ~4800 bytes (~100ms audio) |
+
+---
+
+## Phân loại kiến trúc — lưu ý khi viết báo cáo
+
+**Kiến trúc này KHÔNG phải microservices.** Gọi đúng tên là **"pipeline đa tiến trình, container hóa"** (multi-process containerized pipeline).
+
+### Tại sao không phải microservices
+
+Microservices thực sự yêu cầu mỗi service độc lập hoàn toàn — deploy riêng, scale riêng, fail riêng, không biết nhau tồn tại. Project này vi phạm các nguyên tắc sau:
+
+| Tiêu chí microservices | Thực tế project |
+|---|---|
+| Giao tiếp qua message queue (async, decoupled) | HTTP synchronous — Gateway chờ từng bước ASR → Brain → TTS |
+| Mỗi service có thể fail độc lập | Brain chết → Gateway chết theo ngay lập tức |
+| Service discovery (Consul, K8s DNS) | Địa chỉ hardcode trong `.env` |
+| Mỗi service phục vụ được nhiều use case | ASR/Brain/TTS chỉ có nghĩa trong pipeline này |
+| Ownership dữ liệu rõ ràng | Redis được cả Gateway lẫn Brain truy cập trực tiếp |
+
+### Kiến trúc đúng là gì
+
+**Multi-process containerized pipeline** — 4 process riêng biệt (Gateway, ASR, Brain, TTS), mỗi process chạy trong container riêng, giao tiếp qua HTTP. Về mặt design là 1 ứng dụng được cắt theo chiều dọc của pipeline xử lý, không phải theo business capability độc lập.
+
+Ưu điểm so với monolith đơn thuần:
+- Mỗi service có thể scale độc lập (chạy nhiều TTS container hơn)
+- Isolation lỗi một phần (TTS crash không làm mất Gateway process)
+- Mỗi service có thể dùng dependency riêng (ASR cần sherpa-onnx, TTS cần vieneu)
+
+Nhưng đây là ưu điểm của **container hóa**, không phải microservices.

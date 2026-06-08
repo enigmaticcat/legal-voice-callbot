@@ -109,9 +109,22 @@ async def ws_transcribe_vad(websocket: WebSocket):
             return {"text": result["text"], "is_final": True, "confidence": result["confidence"]}
         return None
 
+    # Timeout: nếu không nhận được chunk nào trong 30s thì đóng session.
+    # Tránh coroutine treo khi gateway disconnect không clean (crash, network drop).
+    _RECEIVE_TIMEOUT_S = 30
+
     try:
         while True:
-            message = await websocket.receive()
+            try:
+                message = await asyncio.wait_for(
+                    websocket.receive(), timeout=_RECEIVE_TIMEOUT_S
+                )
+            except asyncio.TimeoutError:
+                logger.warning("VAD session timed out after %ds inactivity, closing", _RECEIVE_TIMEOUT_S)
+                break
+
+            if message.get("type") == "websocket.disconnect":
+                break
 
             if message.get("bytes"):
                 segments, speech_started = await asyncio.to_thread(vad.accept_chunk, message["bytes"])

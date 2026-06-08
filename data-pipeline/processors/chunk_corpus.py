@@ -6,12 +6,12 @@ Input: evaluation/full_docs.jsonl
   - Field: "text" (không phải "content")
   - 100% coverage với synthetic_qa.jsonl (360 câu hỏi eval)
 
-Strategy: Sentence-boundary chunking (v2)
-- Cắt tại ranh giới câu (.!?) thay vì cắt theo dòng → loại bỏ 36% truncated chunks
-- Max 300 chars / chunk → embedding tập trung vào 1 ý (cũ: 700)
-- Overlap 1 câu → ngữ cảnh liên đoạn, near-duplicate rate ~15% (cũ: 82%)
-- Giới hạn 15 chunks / doc → tránh 1 bài dài chiếm toàn bộ fetch_k
-- embed_text = "{title}. {chunk_text}"  (không prefix, vì AITeamVN model không cần)
+Strategy: Sentence-boundary chunking (v3) — Range [MIN_CHARS, MAX_CHARS]
+- Flush khi buffer >= MIN_CHARS VÀ câu tiếp sẽ vượt MAX_CHARS → chunk tự nhiên theo nội dung
+- Không overlap → loại bỏ near-duplicate flooding (cũ overlap=1: ~87% adjacent overlap)
+- Cắt tại ranh giới câu (.!?) → truncation thật ~0% (2.4% còn lại là danh sách/CTA)
+- Không giới hạn chunks/doc → tránh mất nội dung (cũ cap=15: 47% docs bị cắt)
+- embed_text = "{title}. {chunk_text}"  (title prefix giúp embedding biết ngữ cảnh bài)
 
 Output: nutrition_chunks_v2.jsonl
 Schema mỗi chunk:
@@ -34,10 +34,11 @@ from collections import defaultdict
 INPUT_FILE  = "../../evaluation/full_docs.jsonl"
 OUTPUT_FILE = "nutrition_chunks_v2.jsonl"
 
-MAX_CHARS        = 300      # target chars per chunk
+MIN_CHARS        = 150      # flush sớm nhất khi buffer đạt ngưỡng này
+MAX_CHARS        = 600      # flush muộn nhất — không để buffer vượt ngưỡng này
 MAX_CHUNKS_PER_DOC = 99999  # không giới hạn — diversity xử lý ở tầng retrieval
 MIN_CHUNK_CHARS  = 60       # bỏ chunk quá ngắn (tiêu đề lạc, footer...)
-OVERLAP_SENTENCES = 1       # số câu cuối chunk trước được lặp lại đầu chunk sau
+OVERLAP_SENTENCES = 0       # không overlap — tránh near-duplicate flooding
 
 # Nguồn y tế / dinh dưỡng được giữ lại
 # Các nguồn thương mại (shopee, tiki, dienmayxanh...) bị loại
@@ -119,47 +120,30 @@ def _sentences_to_chunks(sentences: list[str], max_chars: int,
                           max_chunks: int, min_chars: int,
                           overlap: int) -> list[str]:
     """
-    Gom sentences thành chunks với 1-sentence overlap.
-
-    - Gom câu cho đến max_chars → cắt tại ranh giới câu
-    - Câu đơn > max_chars → cắt tại ranh giới từ, ghi vào nhiều sub-chunk
-    - Chunk tiếp theo bắt đầu bằng `overlap` câu cuối của chunk trước
-    - Bỏ chunk < min_chars
+    Range-based chunking: flush khi buffer >= MIN_CHARS VÀ câu tiếp sẽ vượt MAX_CHARS.
+    Câu đơn > MAX_CHARS → chia tại ranh giới từ.
+    overlap không dùng (=0), giữ tham số để tương thích interface.
     """
     chunks: list[str] = []
-    # buffer_sents giữ các câu đã gom, dùng để tính overlap
-    buffer_sents: list[str] = []
-    buffer_len = 0
+    buf: list[str] = []
+    buf_len = 0
 
     def _flush():
-        nonlocal buffer_sents, buffer_len
-        text = " ".join(buffer_sents).strip()
+        nonlocal buf, buf_len
+        text = " ".join(buf).strip()
         if len(text) >= min_chars:
             chunks.append(text)
-        # Giữ lại `overlap` câu cuối làm đầu chunk kế
-        keep = buffer_sents[-overlap:] if overlap and len(buffer_sents) > overlap else []
-        buffer_sents = keep
-        buffer_len = sum(len(s) + 1 for s in buffer_sents)
+        buf.clear()
+        buf_len = 0
 
     for sent in sentences:
         if len(chunks) >= max_chunks:
             break
 
-        if len(sent) <= max_chars:
-            # Câu bình thường
-            add = len(sent) + (1 if buffer_sents else 0)
-            if buffer_sents and buffer_len + add > max_chars:
+        if len(sent) > max_chars:
+            # Câu quá dài → flush buffer trước, rồi chia theo từ
+            if buf:
                 _flush()
-                if len(chunks) >= max_chunks:
-                    break
-            buffer_sents.append(sent)
-            buffer_len += add
-        else:
-            # Câu quá dài → flush hiện tại, rồi chia câu đó theo từ
-            if buffer_sents:
-                _flush()
-                if len(chunks) >= max_chunks:
-                    break
             words = sent.split()
             sub_buf = ""
             for word in words:
@@ -172,14 +156,25 @@ def _sentences_to_chunks(sentences: list[str], max_chars: int,
                     if sub_buf and len(sub_buf) >= min_chars:
                         chunks.append(sub_buf)
                     sub_buf = word
-            if sub_buf and len(chunks) < max_chunks:
-                if len(sub_buf) >= min_chars:
-                    chunks.append(sub_buf)
-                buffer_sents = []
-                buffer_len = 0
+            if sub_buf and len(sub_buf) >= min_chars and len(chunks) < max_chunks:
+                chunks.append(sub_buf)
+            buf.clear()
+            buf_len = 0
+            continue
 
-    # Flush phần còn lại
-    if buffer_sents and len(chunks) < max_chunks:
+        add = len(sent) + (1 if buf else 0)
+        would_exceed = buf and (buf_len + add > max_chars)
+        already_enough = buf_len >= MIN_CHARS
+
+        if would_exceed and already_enough:
+            _flush()
+            if len(chunks) >= max_chunks:
+                break
+
+        buf.append(sent)
+        buf_len += add
+
+    if buf and len(chunks) < max_chunks:
         _flush()
 
     return chunks
@@ -190,14 +185,13 @@ def sentence_chunks(content: str, max_chars: int = MAX_CHARS,
                     min_chars: int = MIN_CHUNK_CHARS,
                     overlap: int = OVERLAP_SENTENCES) -> list[str]:
     """
-    Chia content thành chunks dựa theo ranh giới câu, với 1-sentence overlap.
+    Chia content thành chunks theo range [MIN_CHARS, MAX_CHARS].
 
     1. Làm phẳng dòng trắng
     2. Tách câu tại .!? + khoảng trắng
-    3. Gom câu cho đến max_chars → cắt tại ranh giới câu
-    4. Câu đơn > max_chars → cắt tại ranh giới từ
-    5. 1 câu cuối chunk N = câu đầu chunk N+1 (overlap ngữ cảnh)
-    6. Bỏ chunk < min_chars, giới hạn max_chunks
+    3. Tích lũy câu cho đến khi buffer >= MIN_CHARS, flush khi câu tiếp vượt MAX_CHARS
+    4. Câu đơn > MAX_CHARS → chia tại ranh giới từ
+    5. Bỏ chunk < MIN_CHUNK_CHARS, không giới hạn số chunks/doc
     """
     lines = [l.strip() for l in content.split("\n") if l.strip()]
     text = " ".join(lines)

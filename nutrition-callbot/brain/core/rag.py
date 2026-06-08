@@ -10,6 +10,18 @@ import httpx
 
 logger = logging.getLogger("brain.core.rag")
 
+# Giới hạn concurrent GPU inference (embed + rerank).
+# Mỗi request encode 1 query + rerank ~15 pairs — trên A100 có thể tăng lên 16-20.
+_RAG_MAX_CONCURRENT = int(os.getenv("RAG_MAX_CONCURRENT", "10"))
+_rag_semaphore: asyncio.Semaphore | None = None
+
+
+def _get_semaphore() -> asyncio.Semaphore:
+    global _rag_semaphore
+    if _rag_semaphore is None:
+        _rag_semaphore = asyncio.Semaphore(_RAG_MAX_CONCURRENT)
+    return _rag_semaphore
+
 try:
     from brain.config import config as _cfg
 except ImportError:
@@ -57,9 +69,13 @@ class RAGPipeline:
         import torch
         device = "cuda" if torch.cuda.is_available() else "cpu"
         logger.info(f"Loading embedding model: {MODEL_NAME} (device={device})")
-        self.model = SentenceTransformer(MODEL_NAME, device=device)
+        self.model = SentenceTransformer(
+            MODEL_NAME, device=device,
+            model_kwargs={"torch_dtype": torch.float16},
+        )
         logger.info(f"Loading reranker model: {RERANKER_MODEL} (device={device})")
-        self.reranker = CrossEncoder(RERANKER_MODEL, device=device)
+        self.reranker = CrossEncoder(RERANKER_MODEL, device=device,
+                                     model_kwargs={"torch_dtype": torch.float16})
         logger.info("RAGPipeline ready.")
 
     def _collection_has_data(self) -> bool:
@@ -147,11 +163,12 @@ class RAGPipeline:
                      top_k: int = 5, fetch_k: int = 15) -> List[Dict]:
         logger.debug(f"RAG search: {query[:80]}...")
 
-        q_vec = await asyncio.to_thread(
-            self.model.encode,
-            [query],
-            normalize_embeddings=True,
-        )
+        async with _get_semaphore():
+            q_vec = await asyncio.to_thread(
+                self.model.encode,
+                [query],
+                normalize_embeddings=True,
+            )
         q_vec = q_vec[0].tolist()
 
         qfilter = None
@@ -187,7 +204,8 @@ class RAGPipeline:
 
         # Rerank with cross-encoder
         pairs = [[query, d["content"]] for d in docs]
-        rerank_scores = await asyncio.to_thread(self.reranker.predict, pairs)
+        async with _get_semaphore():
+            rerank_scores = await asyncio.to_thread(self.reranker.predict, pairs)
         docs_scored = sorted(zip(rerank_scores, docs), key=lambda x: -x[0])
         reranked = [d for _, d in docs_scored[:top_k]]
         logger.debug(f"Reranked {fetch_k} → {top_k} docs")

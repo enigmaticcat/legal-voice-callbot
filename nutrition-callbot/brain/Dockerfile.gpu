@@ -12,7 +12,7 @@ RUN rm -f /etc/apt/sources.list.d/cuda*.list /etc/apt/sources.list.d/nvidia-ml.l
 
 WORKDIR /app
 COPY brain/requirements.txt .
-RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cu118
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cu124
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY brain/ ./brain/

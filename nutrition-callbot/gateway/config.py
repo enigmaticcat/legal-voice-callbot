@@ -1,5 +1,5 @@
 """
-Legal CallBot — Gateway Configuration
+Nutrition CallBot — Gateway Configuration
 Tập trung quản lý environment variables và settings.
 """
 import os

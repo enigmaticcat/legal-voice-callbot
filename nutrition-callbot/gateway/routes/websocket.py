@@ -172,6 +172,9 @@ async def voice_chat(websocket: WebSocket):
                         if sender_task.done():
                             break
                 finally:
+                    # Đảm bảo _sender thoát được dù queue rỗng khi bị cancel
+                    with contextlib.suppress(Exception):
+                        audio_q.put_nowait(None)
                     sender_task.cancel()
                     with contextlib.suppress(asyncio.CancelledError, Exception):
                         await sender_task
