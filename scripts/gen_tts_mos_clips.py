@@ -272,6 +272,22 @@ async def main():
                 wav_name   = f"{query_id}_{cond_name}.wav"
                 wav_path   = OUT_WAV_DIR / wav_name
 
+                # Resume: skip nếu WAV đã tồn tại và có dung lượng
+                if wav_path.exists() and wav_path.stat().st_size > 2000:
+                    print(f"  [{q_idx+1:03d}/{N_QUERIES}] {query_id}  [SKIP - already exists]")
+                    all_results.append({
+                        "condition":  cond_name,
+                        "query_id":   query_id,
+                        "question":   question,
+                        "n_chunks":   None,
+                        "ttft_ms":    None,
+                        "ttfa_ms":    None,
+                        "total_ms":   None,
+                        "duration_s": round(wav_path.stat().st_size / 2 / SAMPLE_RATE, 2),
+                        "wav_path":   str(wav_path),
+                    })
+                    continue
+
                 try:
                     result = await run_pipeline(session, question, min_size, session_id)
                     duration_s = save_wav(result["pcm_all"], wav_path)
