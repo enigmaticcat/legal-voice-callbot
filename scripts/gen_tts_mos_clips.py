@@ -9,12 +9,12 @@ Chạy:
   python scripts/gen_tts_mos_clips.py
 
 Output:
-  evaluation/mos_wav/chunk_20/  ← 250 WAV
-  evaluation/mos_wav/chunk_40/
-  evaluation/mos_wav/chunk_80/
-  evaluation/mos_wav/full/
-  evaluation/mos_clips/         ← 1000 WAV đã shuffle ẩn danh (clip_0001.wav ...)
-  evaluation/mos_mapping.json
+  evaluation/mos_wav/
+    syn_xxx_0001_chunk_20.wav
+    syn_xxx_0001_chunk_40.wav
+    syn_xxx_0001_chunk_80.wav
+    syn_xxx_0001_full.wav
+    ...
   evaluation/mos_latency.jsonl
 """
 
@@ -22,7 +22,6 @@ import asyncio
 import json
 import random
 import re
-import shutil
 import sys
 import time
 from pathlib import Path
@@ -34,10 +33,8 @@ import soundfile as sf
 # ── Paths & config ─────────────────────────────────────────────────────────────
 ROOT          = Path(__file__).resolve().parents[1]
 SYNTHETIC_QA  = ROOT / "evaluation" / "synthetic_qa.jsonl"
-OUT_WAV_DIR   = ROOT / "evaluation" / "mos_wav"
-MOS_CLIPS_DIR = ROOT / "evaluation" / "mos_clips"
-MAPPING_PATH  = ROOT / "evaluation" / "mos_mapping.json"
-LATENCY_PATH  = ROOT / "evaluation" / "mos_latency.jsonl"
+OUT_WAV_DIR  = ROOT / "evaluation" / "mos_wav"
+LATENCY_PATH = ROOT / "evaluation" / "mos_latency.jsonl"
 
 LLM_BASE_URL = "http://localhost:8080/v1"          # vLLM (docker-compose port)
 LLM_MODEL    = "Qwen/Qwen3-4B-Instruct-2507"
@@ -254,9 +251,7 @@ async def main():
     print(f"Loaded {len(queries)} queries")
 
     # Setup dirs
-    for cond_name, _ in CONDITIONS:
-        (OUT_WAV_DIR / cond_name).mkdir(parents=True, exist_ok=True)
-    MOS_CLIPS_DIR.mkdir(parents=True, exist_ok=True)
+    OUT_WAV_DIR.mkdir(parents=True, exist_ok=True)
 
     async with aiohttp.ClientSession() as session:
         print("\nChecking services...")
@@ -274,8 +269,8 @@ async def main():
                 query_id   = q["id"]
                 question   = q["question"]
                 session_id = f"{cond_name}_{query_id}"
-                wav_name   = f"{cond_name}_{query_id}.wav"
-                wav_path   = cond_dir / wav_name
+                wav_name   = f"{query_id}_{cond_name}.wav"
+                wav_path   = OUT_WAV_DIR / wav_name
 
                 try:
                     result = await run_pipeline(session, question, min_size, session_id)
@@ -312,37 +307,14 @@ async def main():
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
     print(f"\nLatency saved: {LATENCY_PATH}")
 
-    # Ẩn danh + shuffle clips
-    valid_clips = [
-        r for r in all_results
-        if Path(r["wav_path"]).exists() and Path(r["wav_path"]).stat().st_size > 2000
-    ]
-    print(f"Valid clips: {len(valid_clips)} / {len(all_results)}")
-
-    random.seed(SEED)
-    random.shuffle(valid_clips)
-
-    mapping = {}
-    for i, r in enumerate(valid_clips, 1):
-        anon = f"clip_{i:04d}.wav"
-        shutil.copy2(r["wav_path"], MOS_CLIPS_DIR / anon)
-        mapping[anon] = {
-            "condition": r["condition"],
-            "query_id":  r["query_id"],
-            "question":  r["question"],
-        }
-
-    with open(MAPPING_PATH, "w", encoding="utf-8") as f:
-        json.dump(mapping, f, ensure_ascii=False, indent=2)
-
-    print(f"MOS clips: {MOS_CLIPS_DIR}  ({len(mapping)} files)")
-    print(f"Mapping  : {MAPPING_PATH}")
-
     # Summary
     from collections import Counter
-    counts = Counter(v["condition"] for v in mapping.values())
+    total_ok = sum(1 for r in all_results if Path(r["wav_path"]).exists())
+    print(f"WAV files: {total_ok} / {len(all_results)}")
+    counts = Counter(r["condition"] for r in all_results)
     for c, _ in CONDITIONS:
         print(f"  {c}: {counts.get(c, 0)} clips")
+    print(f"Output dir: {OUT_WAV_DIR}")
 
 
 if __name__ == "__main__":
