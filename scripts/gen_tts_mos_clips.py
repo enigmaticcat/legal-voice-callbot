@@ -179,6 +179,7 @@ async def run_pipeline(session: aiohttp.ClientSession, query: str,
             pcm_all += pcm
             n_chunks += 1
 
+    t_llm_done = time.perf_counter()  # LLM stream thực sự xong
     full_text = _NEWLINE_RE.sub(" ", "".join(full_parts)).strip()
 
     # Flush phần còn lại (hoặc toàn bộ nếu full)
@@ -186,7 +187,8 @@ async def run_pipeline(session: aiohttp.ClientSession, query: str,
     if remaining:
         pcm, tfa = await tts_speak(session, remaining, session_id + "_tail")
         if ttfa_ms is None:
-            ttfa_ms = ttft_ms + tfa if ttft_ms else tfa
+            # full condition: TTFA = thời gian LLM xong + TTS first chunk
+            ttfa_ms = (t_llm_done - start) * 1000 + tfa
         pcm_all += pcm
         n_chunks += 1
 
