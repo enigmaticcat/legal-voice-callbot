@@ -1,36 +1,47 @@
-import os, sys
-from qdrant_client import QdrantClient
+import asyncio
+import os
+import sys
+from pathlib import Path
+
 from dotenv import load_dotenv
 
-import transformers.utils.import_utils
-if not hasattr(transformers.utils.import_utils, 'is_torch_fx_available'):
-    transformers.utils.import_utils.is_torch_fx_available = lambda: False
-from FlagEmbedding import BGEM3FlagModel
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 
-load_dotenv('/Users/nguyenthithutam/Desktop/Callbot/legal-callbot/.env')
-url = os.getenv('QDRANT_URL')
-api_key = os.getenv('QDRANT_API_KEY')
+from core.rag import RAGPipeline
 
-qdrant = QdrantClient(url=url, api_key=api_key)
-model = BGEM3FlagModel('BAAI/bge-m3', use_fp16=False)
 
-queries = [
-    'Xử phạt người điều khiển xe mô tô, xe gắn máy không chấp hành hiệu lệnh của đèn tín hiệu giao thông',
-    'Phạt tiền lỗi không chấp hành hiệu lệnh của đèn tín hiệu giao thông đối với xe máy',
-    'phạt tiền xe mô tô xe gắn máy không chấp hành hiệu lệnh của đèn tín hiệu giao thông'
-]
+async def main():
+    load_dotenv(ROOT.parent / ".env")
 
-for q in queries:
-    print(f'\n--- Query: {q} ---')
-    emb = model.encode([q], return_dense=True, return_sparse=True, return_colbert_vecs=False)
-    
-    res_child = qdrant.query_points(
-        collection_name='phap_dien_khoan',
-        query=emb['dense_vecs'][0].tolist(),
-        limit=3,
-        with_payload=True
+    qdrant_url = os.getenv("QDRANT_URL") or (
+        f"http://{os.getenv('QDRANT_HOST', 'localhost')}:{os.getenv('QDRANT_PORT', '6333')}"
     )
-    for i, p in enumerate(res_child.points):
-        print(f'   {i+1}. [{p.score:.4f}] {p.payload.get("ten_dieu")} - {p.payload.get("chunk_label", "Unknown")}')
-        text = p.payload.get("text", "")
-        print(f'      {text[:120]}...')
+    qdrant_api_key = os.getenv("QDRANT_API_KEY", "")
+    collection = os.getenv("QDRANT_COLLECTION", "nutrition_articles")
+
+    rag = RAGPipeline(
+        qdrant_url=qdrant_url,
+        qdrant_api_key=qdrant_api_key,
+        collection=collection,
+    )
+
+    queries = [
+        "Người bị tiểu đường nên ăn gì?",
+        "Bà bầu cần bổ sung canxi như thế nào?",
+        "Omega 3 có tác dụng gì với sức khỏe?",
+    ]
+
+    for query in queries:
+        print(f"\n--- Query: {query} ---")
+        docs = await rag.search(query, top_k=3, fetch_k=10)
+        if not docs:
+            print("No results")
+            continue
+        for index, doc in enumerate(docs, start=1):
+            print(f"{index}. [{doc.get('score', 0):.4f}] {doc.get('title', '')}")
+            print(f"   {doc.get('content', '')[:160]}...")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

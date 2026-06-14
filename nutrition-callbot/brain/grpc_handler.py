@@ -10,6 +10,14 @@ from .core.rag import RAGPipeline
 from .core.query_expander import expand_query
 from .core.prompt import build_prompt, NUTRITION_SYSTEM_PROMPT
 from .core.chunker import chunk_llm_stream
+from .core.safety import assess_safety
+from .core.safe_rag import (
+    assess_evidence,
+    assess_output_safety,
+    clean_retrieved_content,
+    clean_voice_output,
+    missing_disclaimer_suffix,
+)
 
 logger = logging.getLogger("brain.grpc_handler")
 
@@ -40,6 +48,34 @@ class BrainServiceHandler:
         rag_ms = 0.0
 
         try:
+            safety = assess_safety(query)
+            if safety.triggered:
+                total_ms = (time.time() - start_time) * 1000
+                logger.info(
+                    "[%s] Safety guardrail triggered: %s",
+                    session_id,
+                    safety.category,
+                )
+                yield {
+                    "text": safety.message,
+                    "is_final": False,
+                    "safety": {
+                        "triggered": True,
+                        "category": safety.category,
+                    },
+                }
+                yield {
+                    "text": "",
+                    "is_final": True,
+                    "contexts": [],
+                    "safety": {
+                        "triggered": True,
+                        "category": safety.category,
+                    },
+                    "timing": {"total_ms": round(total_ms, 1)},
+                }
+                return
+
             t0 = time.time()
             expanded = expand_query(query)
             expand_ms = (time.time() - t0) * 1000
@@ -53,8 +89,52 @@ class BrainServiceHandler:
             )
             rag_ms = (time.time() - t0) * 1000
             contexts = [d.get("content", "") for d in docs]
+
+            evidence = assess_evidence(docs)
+            if not evidence.sufficient:
+                total_ms = (time.time() - start_time) * 1000
+                message = (
+                    "Chào bạn, tôi chưa có đủ tài liệu dinh dưỡng đáng tin cậy để trả lời chính xác câu hỏi này. "
+                    "Bạn có thể hỏi lại cụ thể hơn về thực phẩm, khẩu phần, vi chất hoặc tình trạng dinh dưỡng. "
+                    "Để được tư vấn chính xác, bạn nên gặp bác sĩ dinh dưỡng."
+                )
+                logger.info(
+                    "[%s] Evidence insufficient: %s docs=%d chars=%d",
+                    session_id,
+                    evidence.reason,
+                    evidence.doc_count,
+                    evidence.total_chars,
+                )
+                yield {
+                    "text": message,
+                    "is_final": False,
+                    "evidence": {
+                        "sufficient": False,
+                        "reason": evidence.reason,
+                        "doc_count": evidence.doc_count,
+                        "total_chars": evidence.total_chars,
+                    },
+                }
+                yield {
+                    "text": "",
+                    "is_final": True,
+                    "contexts": contexts,
+                    "evidence": {
+                        "sufficient": False,
+                        "reason": evidence.reason,
+                        "doc_count": evidence.doc_count,
+                        "total_chars": evidence.total_chars,
+                    },
+                    "timing": {
+                        "expand_ms": round(expand_ms, 1),
+                        "rag_ms": round(rag_ms, 1),
+                        "total_ms": round(total_ms, 1),
+                    },
+                }
+                return
+
             context = "\n\n".join(
-                f"[Tài liệu {i+1}: {d.get('title','')}]\n{_SOURCE_TAG.sub('', d.get('content',''))}"
+                f"[Tài liệu {i+1}: {d.get('title','')}]\n{clean_retrieved_content(_SOURCE_TAG.sub('', d.get('content','')))}"
                 for i, d in enumerate(docs)
             )
             prompt = build_prompt(
@@ -67,6 +147,8 @@ class BrainServiceHandler:
             t_llm = time.time()
             first_chunk = True
             llm_ttft_ms = 0
+            emitted_text = ""
+            output_removed_url = False
 
             llm_stream = self.llm.generate_stream(
                 prompt=prompt,
@@ -81,6 +163,11 @@ class BrainServiceHandler:
                     yield chunk
 
             async for chunk_text in chunk_llm_stream(_llm_with_ttft(), min_size=self.min_chunk_size):
+                chunk_text, removed_url = clean_voice_output(chunk_text)
+                output_removed_url = output_removed_url or removed_url
+                if not chunk_text.strip():
+                    continue
+                emitted_text += chunk_text
                 result = {"text": chunk_text, "is_final": False}
 
                 if first_chunk:
@@ -95,6 +182,19 @@ class BrainServiceHandler:
                     }
                     first_chunk = False
                 yield result
+
+            output_safety = assess_output_safety(emitted_text)
+            if output_safety.needs_disclaimer:
+                suffix = missing_disclaimer_suffix(emitted_text)
+                emitted_text += suffix
+                yield {
+                    "text": suffix,
+                    "is_final": False,
+                    "output_safety": {
+                        "needs_disclaimer": True,
+                        "unsafe_claim_detected": output_safety.unsafe_claim_detected,
+                    },
+                }
 
         except Exception as e:
             total_ms = (time.time() - start_time) * 1000
@@ -121,5 +221,15 @@ class BrainServiceHandler:
             "text": "",
             "is_final": True,
             "contexts": contexts,
+            "evidence": {
+                "sufficient": True,
+                "reason": "sufficient",
+                "doc_count": len(contexts),
+                "total_chars": sum(len(context or "") for context in contexts),
+            },
+            "output_safety": {
+                "removed_url": output_removed_url,
+                "unsafe_claim_detected": assess_output_safety(emitted_text).unsafe_claim_detected,
+            },
             "timing": {"total_ms": round(total_ms, 1)},
         }

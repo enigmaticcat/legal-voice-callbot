@@ -18,7 +18,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from core.llm import LLMClient
-from core.prompt import build_prompt, LEGAL_SYSTEM_PROMPT
+from core.prompt import build_prompt, NUTRITION_SYSTEM_PROMPT
 from core.query_expander import expand_query
 from core.chunker import chunk_llm_stream
 
@@ -30,10 +30,10 @@ def test_query_expansion():
     print("=" * 60)
 
     test_cases = [
-        ("vượt đèn đỏ bị phạt bao nhiêu?", "vi phạm tín hiệu đèn giao thông"),
-        ("uống bia lái xe bị sao?", "nồng độ cồn điều khiển phương tiện"),
-        ("sổ đỏ là gì?", "Giấy chứng nhận quyền sử dụng đất"),
-        ("nghỉ việc có được BHXH không?", "bảo hiểm xã hội bắt buộc"),
+        ("Người bị tiểu đường nên ăn gì?", "đái tháo đường"),
+        ("Bà bầu cần bổ sung gì?", "phụ nữ mang thai"),
+        ("omega 3 có tác dụng gì?", "axit béo omega-3"),
+        ("canxi giúp ích gì cho xương?", "calcium"),
         ("câu bình thường không cần expand", None),  # Không thay đổi
     ]
 
@@ -58,23 +58,25 @@ def test_query_expansion():
 
 
 # ─── Test 2: Word-Safe Chunking ─────────────────────────
-def test_word_safe_chunking():
+async def test_word_safe_chunking():
     print("\n" + "=" * 60)
     print("Test 2: Word-Safe Chunking")
     print("=" * 60)
 
     # Mô phỏng LLM stream
     text_stream = [
-        "Theo Điều 5, ",
-        "Khoản 4a ",
-        "Nghị định 100/2019/NĐ-CP, ",
-        "xe ô tô vượt đèn đỏ bị phạt từ 4 đến 6 triệu đồng. ",
-        "Xe máy theo Khoản 3 cùng Điều, ",
-        "phạt từ 800 nghìn đến 1 triệu đồng. ",
-        "Đây chỉ là tham khảo.",
+        "Chào bạn, ",
+        "người bị đái tháo đường nên ưu tiên rau xanh, ",
+        "đạm nạc và tinh bột hấp thu chậm. ",
+        "Bạn cũng nên hạn chế nước ngọt, bánh kẹo và theo dõi đường huyết. ",
+        "Để được tư vấn chính xác, bạn nên gặp bác sĩ dinh dưỡng.",
     ]
 
-    chunks = list(chunk_llm_stream(text_stream, min_size=40))
+    async def stream():
+        for text in text_stream:
+            yield {"text": text, "is_final": False}
+
+    chunks = [chunk async for chunk in chunk_llm_stream(stream(), min_size=40)]
 
     print("  Chunks:")
     all_ok = True
@@ -105,8 +107,8 @@ def test_prompt_building():
     print("=" * 60)
 
     prompt = build_prompt(
-        query="vượt đèn đỏ bị phạt bao nhiêu?",
-        legal_context="Điều 5, Khoản 4: Phạt từ 4-6 triệu đồng...",
+        query="Người bị tiểu đường nên ăn gì?",
+        nutrition_context="Người bệnh đái tháo đường nên chọn thực phẩm giàu chất xơ, ít đường đơn.",
         conversation_history=[
             {"role": "user", "text": "Xin chào"},
             {"role": "assistant", "text": "Chào bạn, tôi có thể giúp gì?"},
@@ -116,10 +118,10 @@ def test_prompt_building():
 
     checks = [
         ("Ví dụ tư vấn" in prompt, "Có few-shot examples"),
-        ("Căn cứ pháp lý" in prompt, "Có RAG context"),
-        ("Lịch sử hội thoại" in prompt, "Có conversation history"),
+        ("Tài liệu dinh dưỡng" in prompt, "Có RAG context"),
+        ("Hội thoại gần nhất" in prompt, "Có conversation history"),
         ("bị ngắt giữa chừng" in prompt, "Có interrupted marker"),
-        ("vượt đèn đỏ" in prompt, "Có câu hỏi"),
+        ("tiểu đường" in prompt, "Có câu hỏi"),
     ]
 
     passed = 0
@@ -154,7 +156,7 @@ async def test_llm_streaming():
         return False
 
     # Test streaming
-    query = "Vượt đèn đỏ bị phạt bao nhiêu?"
+    query = "Người bị tiểu đường nên ăn gì?"
     prompt = build_prompt(query=query)
 
     print(f"  Query: {query}")
@@ -168,7 +170,7 @@ async def test_llm_streaming():
     try:
         async for chunk in llm.generate_stream(
             prompt=prompt,
-            system_instruction=LEGAL_SYSTEM_PROMPT,
+            system_instruction=NUTRITION_SYSTEM_PROMPT,
         ):
             chunks_received += 1
             full_text.append(chunk["text"])
@@ -217,14 +219,14 @@ async def test_llm_streaming():
 
 # ─── Main ───────────────────────────────────────────────
 async def main():
-    print("Legal CallBot — Brain Service Test")
+    print("Nutrition CallBot — Brain Service Test")
     print("Giai đoạn 1, Bước 1: LLM Streaming\n")
 
     results = {}
 
     # Offline tests (không cần API key)
     results["Query Expansion"] = test_query_expansion()
-    results["Word-Safe Chunking"] = test_word_safe_chunking()
+    results["Word-Safe Chunking"] = await test_word_safe_chunking()
     results["Prompt Building"] = test_prompt_building()
 
     # Online test (cần API key)

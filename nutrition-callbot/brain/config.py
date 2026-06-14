@@ -30,7 +30,7 @@ class BrainConfig:
     port: int = int(os.getenv("BRAIN_PORT", "50052"))
 
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
     llm_temperature: float = 0.3  
     qdrant_host: str = os.getenv("QDRANT_HOST", "qdrant")
     qdrant_port: int = int(os.getenv("QDRANT_PORT", "6333"))

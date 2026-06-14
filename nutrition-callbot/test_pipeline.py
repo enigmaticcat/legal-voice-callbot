@@ -58,7 +58,7 @@ async def run_pipeline():
     else:
         print(f"[ASR] Bạn nói: '{text}' (Mất {asr_time:.2f} s)")
 
-    print("\n[Brain] Đang suy nghĩ và tra cứu luật...")
+    print("\n[Brain] Đang suy nghĩ và tra cứu thông tin dinh dưỡng...")
     print("AI: ", end="", flush=True)
 
     start_llm = time.time()

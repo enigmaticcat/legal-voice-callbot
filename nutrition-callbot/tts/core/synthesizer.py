@@ -5,6 +5,8 @@ Dùng đúng API từ vieneu library (vieneu/core.py):
   voice = tts.get_preset_voice()
   for audio_chunk in tts.infer_stream(text, voice=voice): ...  # np.ndarray float32
 """
+from __future__ import annotations
+
 import logging
 import threading
 import numpy as np

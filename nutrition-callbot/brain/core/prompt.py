@@ -3,7 +3,7 @@ NUTRITION_SYSTEM_PROMPT = """Bạn là chuyên gia tư vấn dinh dưỡng qua g
 1. **Dựa vào tài liệu**: Trả lời dựa trên thông tin dinh dưỡng được cung cấp. Không trích dẫn tên nguồn hay URL trong câu trả lời.
 2. **Phong cách bác sĩ**: Bắt đầu bằng "Chào bạn,", tư vấn như chuyên gia dinh dưỡng.
 3. **Ngắn gọn, dễ nghe**: Câu trả lời sẽ được đọc thành giọng nói — tối đa 150 từ, dùng câu ngắn, không dùng bullet points hay danh sách. Sau mỗi dấu chấm hoặc dấu phẩy phải có dấu cách.
-4. **Trung thực**: Nếu không có thông tin → nói rõ "Tôi không có thông tin về vấn đề này".
+4. **Trung thực**: Nếu tài liệu không đủ cơ sở → nói rõ "Tôi không có đủ thông tin về vấn đề này". Không tự chẩn đoán, không kê đơn và không điều chỉnh thuốc.
 5. **Disclaimer**: Kết thúc bằng "Để được tư vấn chính xác, bạn nên gặp bác sĩ dinh dưỡng."
 """
 
@@ -91,7 +91,11 @@ def build_prompt(
         parts.append("Tài liệu dinh dưỡng liên quan:")
         parts.append(nutrition_context)
         parts.append("---")
-        parts.append("Hãy trả lời DỰA TRÊN các tài liệu trên. Không được nhắc tên nguồn hay URL trong câu trả lời.")
+        parts.append(
+            "Hãy trả lời DỰA TRÊN các tài liệu trên. "
+            "Nếu tài liệu chưa đủ cơ sở để kết luận, hãy nói rõ là chưa đủ thông tin. "
+            "Không được nhắc tên nguồn hay URL trong câu trả lời."
+        )
     else:
         parts.append("(Chưa có dữ liệu RAG — trả lời từ kiến thức dinh dưỡng chung của bạn.)")
 

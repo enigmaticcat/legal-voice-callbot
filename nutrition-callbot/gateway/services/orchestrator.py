@@ -2,6 +2,8 @@
 Orchestrator Service
 HTTP-only pipeline: ASR -> Brain -> TTS.
 """
+from __future__ import annotations
+
 import asyncio
 import contextlib
 import json

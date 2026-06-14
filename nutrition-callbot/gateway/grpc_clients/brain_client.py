@@ -24,4 +24,4 @@ class BrainClient:
         """
         logger.debug(f"Thinking via {self.address}: {query[:50]}")
         # Dummy
-        return {"text": "Tôi là bot pháp luật", "is_final": True}
+        return {"text": "Tôi là bot dinh dưỡng", "is_final": True}

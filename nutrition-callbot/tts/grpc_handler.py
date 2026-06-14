@@ -2,6 +2,8 @@
 TTS Service Handler
 Nhận text → word-safe chunking → synthesize_stream() → yield PCM bytes
 """
+from __future__ import annotations
+
 import asyncio
 import logging
 import os

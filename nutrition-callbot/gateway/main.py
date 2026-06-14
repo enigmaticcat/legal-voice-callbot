@@ -1,5 +1,5 @@
 """
-Legal CallBot — API Gateway
+Nutrition CallBot — API Gateway
 FastAPI application factory.
 Chỉ bootstrap + compose — không có business logic ở đây.
 """
@@ -24,7 +24,7 @@ logger = logging.getLogger("gateway")
 
 # ─── App Factory ─────────────────────────────────────────
 app = FastAPI(
-    title="Legal CallBot Gateway",
+    title="Nutrition CallBot Gateway",
     description="API Gateway cho hệ thống tư vấn dinh dưỡng bằng giọng nói",
     version="0.1.0",
 )

@@ -4,12 +4,26 @@ Model: ZipFormer-RNNT (hynt/Zipformer-30M-RNNT-6000h)
 Nhận toàn bộ audio PCM một lần → trả transcript tiếng Việt.
 """
 import logging
+import time
+from dataclasses import dataclass, field
+from typing import Optional
 
 import numpy as np
 
 logger = logging.getLogger("asr.core.transcriber")
 
 SAMPLE_RATE = 16_000
+
+
+@dataclass
+class _BufferedOfflineStream:
+    """Compatibility stream for callers that still use the old streaming API."""
+
+    sample_rate: int = SAMPLE_RATE
+    audio: bytearray = field(default_factory=bytearray)
+    started_at: float = field(default_factory=time.time)
+    first_text_at: Optional[float] = None
+    last_text: str = ""
 
 
 class Transcriber:
@@ -63,3 +77,43 @@ class Transcriber:
         text = stream.result.text.strip()
         logger.info("Transcribed (%d bytes → %d chars): %s", len(audio_pcm), len(text), text[:80])
         return {"text": text, "confidence": 0.95}
+
+    def create_stream(self) -> _BufferedOfflineStream:
+        """
+        Return a buffered stream compatible with older call sites.
+
+        The configured model is an offline recognizer, so this object accumulates
+        PCM chunks and decodes the accumulated utterance on each accept call.
+        Finalization is handled by callers when the stream ends.
+        """
+        return _BufferedOfflineStream(sample_rate=SAMPLE_RATE)
+
+    def accept_wave(self, stream: _BufferedOfflineStream, audio_pcm: bytes) -> str:
+        """Accept PCM bytes and return the latest transcript hypothesis."""
+        if not audio_pcm:
+            return stream.last_text
+
+        stream.audio.extend(audio_pcm)
+        result = self.transcribe(bytes(stream.audio), sample_rate=stream.sample_rate)
+        text = result["text"]
+        if text:
+            stream.last_text = text
+            if stream.first_text_at is None:
+                stream.first_text_at = time.time()
+        return stream.last_text
+
+    def accept_wave_with_ttft(
+        self,
+        stream: _BufferedOfflineStream,
+        audio_pcm: bytes,
+    ):
+        """Accept PCM bytes and return transcript plus time-to-first-text."""
+        text = self.accept_wave(stream, audio_pcm)
+        ttft = None
+        if stream.first_text_at is not None:
+            ttft = stream.first_text_at - stream.started_at
+        return text, ttft
+
+    def is_endpoint(self, stream: _BufferedOfflineStream) -> bool:
+        """Offline compatibility mode does not perform endpoint detection."""
+        return False

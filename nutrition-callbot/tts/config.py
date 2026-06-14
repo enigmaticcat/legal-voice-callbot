@@ -1,5 +1,5 @@
 """
-Legal CallBot — TTS Worker Configuration
+Nutrition CallBot — TTS Worker Configuration
 """
 import os
 from dataclasses import dataclass

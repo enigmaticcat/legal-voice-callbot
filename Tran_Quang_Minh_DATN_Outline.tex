@@ -1,0 +1,601 @@
+\documentclass[a4paper,13pt,oneside]{report}
+
+% ===================== GÓI CƠ BẢN =====================
+\usepackage[utf8]{inputenc}
+\usepackage[T5]{fontenc}
+\usepackage[vietnamese]{babel}
+\usepackage[top=2cm,bottom=2cm,left=3.5cm,right=2.5cm]{geometry}
+\usepackage{times}
+\usepackage{setspace}
+\usepackage{indentfirst}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{amsmath,amssymb}
+\usepackage{xcolor}
+\usepackage{xurl}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{titletoc}
+\usepackage{fancyhdr}
+\usepackage{caption}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage{ragged2e}
+
+% ===================== THIẾT LẬP CHUNG =====================
+\onehalfspacing
+\setlength{\parindent}{15pt}
+\setlength{\parskip}{6pt}
+\sloppy
+\justifying
+\hypersetup{
+    pdfborder={0 0 0},
+    pdftitle={HỆ THỐNG VOICEBOT TƯ VẤN DINH DƯỠNG THỜI GIAN THỰC DỰA TRÊN AI HỘI THOẠI},
+    pdfauthor={Trần Quang Minh}
+}
+
+\def\TITLE{HỆ THỐNG VOICEBOT TƯ VẤN DINH DƯỠNG THỜI GIAN THỰC DỰA TRÊN AI HỘI THOẠI}
+\def\AUTHOR{TRẦN QUANG MINH}
+\def\STUDENTID{20225047}
+\def\PROGRAM{Chương trình đào tạo: Khoa học máy tính}
+\def\FACULTY{Khoa học máy tính}
+\def\SCHOOL{Công nghệ thông tin và Truyền thông}
+\def\UNIVERSITY{ĐẠI HỌC BÁCH KHOA HÀ NỘI}
+\def\SUPERVISOR{Nguyễn Thị Thu Trang}
+
+\titleformat{\chapter}[hang]{\centering\bfseries}{CHƯƠNG \thechapter.\ }{0pt}{}
+\titlespacing*{\chapter}{0pt}{-20pt}{20pt}
+\titleformat{\section}[hang]{\bfseries}{\thechapter.\arabic{section}\quad}{0pt}{}
+\titleformat{\subsection}[hang]{\bfseries}{\thechapter.\arabic{section}.\arabic{subsection}\quad}{0pt}{}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{2}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\newcommand{\placeholderfigure}[2]{
+    \begin{figure}[H]
+        \centering
+        \fbox{\parbox[c][5cm][c]{0.85\textwidth}{\centering #2}}
+        \caption{#1}
+    \end{figure}
+}
+
+% ===================== TÀI LIỆU =====================
+\begin{document}
+
+% ===================== BÌA =====================
+\begin{titlepage}
+    \thispagestyle{empty}
+    \begin{center}
+        {\textbf{\Large \UNIVERSITY}}\\[4.2cm]
+
+        {\textbf{\fontsize{30}{36}\selectfont ĐỒ ÁN TỐT NGHIỆP}}\\[1.0cm]
+        {\textbf{\LARGE \TITLE}}\\[1.3cm]
+
+        {\textbf{\Large \AUTHOR}}\\[-0.1cm]
+        {\Large MSSV: \STUDENTID}\\[0.8cm]
+        {\textbf{\Large \PROGRAM}}\\[4.0cm]
+
+        {\Large
+        \begin{tabular}{p{6.0cm}p{8.0cm}}
+            \textbf{Giảng viên hướng dẫn:} & \SUPERVISOR \\[0.6cm]
+            \textbf{Khoa:}                 & \FACULTY    \\[0.6cm]
+            \textbf{Trường:}               & \SCHOOL     \\[3.8cm]
+        \end{tabular}
+        }
+
+        {\textbf{\Large HÀ NỘI, 06/2026}}
+    \end{center}
+\end{titlepage}
+
+% Tăng cỡ chữ cho toàn bộ nội dung sau trang bìa.
+% Trang bìa dùng cỡ chữ riêng ở trên nên không bị ảnh hưởng.
+\fontsize{15pt}{20pt}\selectfont
+\justifying
+
+% ===================== TÓM TẮT =====================
+\pagenumbering{roman}
+\chapter*{}
+\addcontentsline{toc}{chapter}{TÓM TẮT NỘI DUNG ĐỒ ÁN}
+\vspace*{-1.8cm}
+\begin{center}
+    {\textbf{\LARGE TÓM TẮT NỘI DUNG ĐỒ ÁN}}
+\end{center}
+\vspace{1.0cm}
+
+Tư vấn dinh dưỡng qua giọng nói là một bài toán có ý nghĩa thực tiễn trong các hệ thống chăm sóc sức khỏe thông minh, tổng đài tự động và trợ lý cá nhân. Người dùng có thể đặt câu hỏi bằng ngôn ngữ tự nhiên về chế độ ăn, vi chất, nhóm thực phẩm hoặc tình trạng sức khỏe thường gặp, sau đó nhận lại câu trả lời dưới dạng giọng nói. Tuy nhiên, bài toán này đặt ra nhiều thách thức hơn so với chatbot văn bản thông thường. Hệ thống cần nhận dạng chính xác tiếng nói tiếng Việt, truy xuất được tri thức dinh dưỡng phù hợp, sinh câu trả lời ngắn gọn, có căn cứ và tổng hợp âm thanh với độ trễ đủ thấp để hội thoại không bị ngắt quãng. Đặc biệt, do chủ đề dinh dưỡng liên quan đến sức khỏe, hệ thống cần tránh trả lời ngoài phạm vi, hạn chế suy diễn thiếu bằng chứng và không đưa ra khuyến nghị y tế quá mức.
+
+Đồ án này xây dựng một hệ thống voicebot tư vấn dinh dưỡng tiếng Việt theo kiến trúc pipeline mô-đun gồm Gateway, ASR, mô-đun xử lý hội thoại và TTS. ASR chuyển tín hiệu giọng nói thành transcript; mô-đun xử lý hội thoại thực hiện guardrail đầu vào, chuẩn hóa truy vấn, query expansion, truy xuất tài liệu từ Qdrant, reranking và sinh câu trả lời dựa trên Retrieval-Augmented Generation; TTS chuyển câu trả lời thành giọng nói và stream âm thanh về trình duyệt. Điểm đóng góp chính của đồ án là đề xuất hướng tối ưu Voice RAG thích nghi theo độ trễ cho chủ đề dinh dưỡng, trong đó hệ thống phân luồng câu hỏi, chuẩn hóa đầu vào sau ASR, điều chỉnh chiến lược truy xuất theo độ phức tạp của câu hỏi và kiểm soát mức đủ bằng chứng trước khi sinh câu trả lời. Cách tổ chức này giúp hệ thống không chỉ trả lời nhanh mà còn có cơ chế kiểm soát độ tin cậy của nội dung trong hội thoại.
+
+Kết quả thực nghiệm tập trung vào độ trễ phản hồi, đặc biệt là Time-to-First-Audio, tức thời gian từ khi có câu hỏi đến khi người dùng nghe được âm thanh đầu tiên. Thay vì chờ LLM sinh xong toàn bộ câu trả lời rồi mới gọi TTS, hệ thống sử dụng cơ chế streaming song song giữa LLM và TTS: văn bản được gom theo ngưỡng ký tự và điểm ngắt câu, sau đó gửi từng đoạn sang TTS ngay khi đủ điều kiện.
+
+\vspace{0.8cm}
+\begin{flushright}
+    Sinh viên thực hiện\\[0.2cm]
+    \textit{Trần Quang Minh}
+\end{flushright}
+
+\newpage
+\renewcommand{\contentsname}{MỤC LỤC}
+\tableofcontents
+\newpage
+
+% ===================== NỘI DUNG CHÍNH =====================
+\pagenumbering{arabic}
+
+\chapter{GIỚI THIỆU BÀI TOÁN}
+
+\section{Đặt vấn đề}
+
+Hệ thống hội thoại hỏi đáp tư vấn là hệ thống cho phép người dùng đặt câu hỏi bằng ngôn ngữ tự nhiên và nhận lại câu trả lời có tính hỗ trợ ra quyết định trong một phạm vi chuyên môn nhất định. Khác với công cụ tra cứu thông tin đơn thuần, hệ thống hội thoại cần hiểu ý định của câu hỏi, duy trì ngữ cảnh trao đổi, truy xuất hoặc suy luận từ nguồn tri thức phù hợp và diễn đạt câu trả lời theo cách dễ hiểu đối với người dùng cuối. Tùy theo kênh tương tác, hệ thống có thể tồn tại dưới dạng chatbot văn bản hoặc voicebot. Ví dụ, với câu hỏi ``người bị tiểu đường nên hạn chế thực phẩm nào'', chatbot văn bản nhận câu hỏi qua bàn phím và trả lời trên màn hình, trong khi voicebot nhận câu hỏi qua giọng nói và phản hồi lại bằng âm thanh.
+
+Các hệ thống hỏi đáp tư vấn có ý nghĩa thực tiễn lớn trong giáo dục, chăm sóc khách hàng, y tế, tài chính cá nhân và chăm sóc sức khỏe. Chúng giúp người dùng tiếp cận thông tin nhanh hơn, giảm tải cho nhân sự tư vấn trực tiếp và hỗ trợ phục vụ ngoài giờ hành chính. Trong bối cảnh các mô hình ngôn ngữ lớn phát triển mạnh, hệ thống hội thoại không chỉ trả lời theo kịch bản cố định mà có thể xử lý nhiều cách diễn đạt tự nhiên hơn, kết hợp với kho tri thức bên ngoài để tạo ra câu trả lời có căn cứ.
+
+Trong lĩnh vực dinh dưỡng, nhu cầu tư vấn thường xuyên có xu hướng tăng nhưng khả năng tiếp cận chuyên gia không phải lúc nào cũng sẵn có. Người dùng phổ thông, đặc biệt là người cao tuổi, người có bệnh nền hoặc người sống xa cơ sở y tế, có thể gặp rào cản khi tìm kiếm thông tin đáng tin cậy và dễ hiểu. Nếu chỉ dựa vào tra cứu thủ công trên Internet, người dùng dễ gặp thông tin rời rạc, khó kiểm chứng hoặc không phù hợp với tình huống cụ thể. Đây là bối cảnh thúc đẩy nhu cầu xây dựng các hệ thống tư vấn tự động có khả năng hỗ trợ ban đầu, giảm tải cho chuyên gia và giúp người dùng tiếp cận thông tin dinh dưỡng một cách thuận tiện hơn.
+
+Chatbot văn bản là hình thức phổ biến nhất của hệ thống hội thoại hỏi đáp. Ưu điểm của chatbot là dễ triển khai trên website, ứng dụng di động hoặc nền tảng nhắn tin; người dùng có thể đọc lại câu trả lời, sao chép thông tin và gửi câu hỏi chi tiết. Tuy nhiên, kênh văn bản cũng có các hạn chế rõ ràng. Người dùng cần có màn hình, bàn phím hoặc thao tác chạm; việc nhập câu hỏi dài có thể bất tiện; người cao tuổi, người thị lực kém hoặc người đang ở trong tình huống không thể dùng tay sẽ khó tương tác. Vì vậy, chatbot văn bản phù hợp với các tình huống người dùng đang chủ động nhìn màn hình và có đủ thời gian thao tác, nhưng chưa tối ưu cho các ngữ cảnh cần trao đổi nhanh, rảnh tay hoặc gần với hội thoại tự nhiên.
+
+Voicebot ra đời để khắc phục một phần các hạn chế trên bằng cách đưa kênh giọng nói vào quá trình hỏi đáp. Một voicebot thường gồm các thành phần chính: mô-đun nhận dạng giọng nói để chuyển audio thành văn bản; mô-đun xử lý hội thoại để hiểu câu hỏi, truy xuất tri thức và sinh câu trả lời; mô-đun tổng hợp giọng nói để chuyển câu trả lời thành âm thanh; và Gateway để điều phối luồng dữ liệu giữa người dùng với các mô-đun phía sau. Kênh voice đặc biệt hữu ích trong các tổng đài tự động, ứng dụng trợ lý giọng nói, hệ thống chăm sóc khách hàng, môi trường lái xe, hỗ trợ người mắt kém hoặc các tình huống người dùng không thuận tiện thao tác bằng tay. Nhờ đó, voicebot có tiềm năng đưa hệ thống tư vấn đến gần hơn với cách giao tiếp tự nhiên của con người.
+
+Tuy nhiên, kênh voice cũng đặt ra nhiều thách thức hơn so với kênh văn bản. Thứ nhất là độ chính xác: một hệ thống voice-to-voice phải đi qua nhiều bước liên tiếp như nhận dạng giọng nói, hiểu câu hỏi, truy xuất tri thức, sinh câu trả lời và tổng hợp giọng nói. Sai số ở bước trước có thể lan truyền sang bước sau; ví dụ transcript sai có thể làm truy xuất sai tài liệu, từ đó khiến câu trả lời không đúng trọng tâm. Thứ hai là độ trễ: thay vì chỉ sinh câu trả lời văn bản, hệ thống phải xử lý audio đầu vào, gọi mô hình ngôn ngữ, truy xuất dữ liệu và tổng hợp audio đầu ra. Nếu các bước này chạy tuần tự, tổng thời gian chờ sẽ dài và làm hội thoại bị đứt mạch. Thứ ba là trải nghiệm nghe: câu trả lời cần ngắn gọn, dễ nghe, không chứa định dạng khó đọc và không bị ngắt câu thiếu tự nhiên khi phát âm thanh.
+
+Trong chủ đề dinh dưỡng, nhu cầu tư vấn qua hội thoại càng rõ ràng. Người dùng thường có các câu hỏi thực tế như lựa chọn thực phẩm, chế độ ăn giảm cân, bổ sung vitamin, dinh dưỡng cho phụ nữ mang thai, trẻ biếng ăn, người cao tuổi hoặc người mắc các bệnh nền phổ biến. Đây là nhóm câu hỏi có tần suất cao, liên quan trực tiếp đến sinh hoạt hằng ngày và phù hợp với một hệ thống hỗ trợ tư vấn ban đầu. Tuy vậy, dinh dưỡng cũng là chủ đề liên quan đến sức khỏe nên hệ thống không được trả lời tùy tiện. Câu trả lời cần dựa trên nguồn tri thức đáng tin cậy, tránh khẳng định quá mức, không thay thế chẩn đoán hoặc điều trị y khoa và cần biết từ chối hoặc khuyến nghị gặp chuyên gia trong các trường hợp nhạy cảm.
+
+Từ các vấn đề trên, đồ án tập trung xây dựng một hệ thống voicebot tư vấn dinh dưỡng tiếng Việt thời gian thực. Hệ thống giải quyết bài toán tổ chức pipeline ASR--RAG--LLM--TTS để người dùng có thể đặt câu hỏi bằng giọng nói, hệ thống truy xuất tri thức dinh dưỡng phù hợp, sinh câu trả lời có căn cứ và phát phản hồi âm thanh với độ trễ đủ thấp cho hội thoại tự nhiên.
+
+\section{Mục tiêu và phạm vi}
+
+Phạm vi của đồ án được giới hạn trong bài toán tư vấn dinh dưỡng bằng tiếng Việt qua kênh thoại. Về ngôn ngữ, hệ thống tập trung xử lý tiếng Việt ở cả đầu vào giọng nói, câu hỏi văn bản trung gian và câu trả lời đầu ra. Về chủ đề, hệ thống chỉ xử lý các câu hỏi dinh dưỡng phổ biến như lựa chọn thực phẩm, chế độ ăn hằng ngày, vi chất, nhóm thực phẩm, kiểm soát cân nặng, dinh dưỡng cho phụ nữ mang thai, trẻ em, người cao tuổi và một số tình trạng sức khỏe thường gặp. Đồ án không đặt mục tiêu thay thế bác sĩ, chuyên gia dinh dưỡng hoặc hệ thống chẩn đoán y khoa.
+
+Về kênh tương tác, đồ án tập trung vào voicebot thay vì chatbot văn bản thuần túy. Người dùng đặt câu hỏi bằng giọng nói, hệ thống nhận dạng thành văn bản, truy xuất tri thức, sinh câu trả lời và phát lại bằng giọng nói. Giao diện văn bản nếu có chỉ đóng vai trò hỗ trợ hiển thị transcript, trạng thái xử lý hoặc thông tin debug; mục tiêu chính vẫn là trải nghiệm hội thoại thoại thời gian thực.
+
+Về dữ liệu, kho tri thức ban đầu được xây dựng từ 1060 bài viết dinh dưỡng thu thập từ Báo Sức khỏe và Đời sống, trang web của Viện Dinh dưỡng Quốc gia và Bệnh viện Đa khoa Quốc tế Thu Cúc. Các bài viết được làm sạch, chuẩn hóa và phân đoạn thành các chunk phục vụ embedding, truy xuất và reranking. Chất lượng dữ liệu được xem xét theo ba tiêu chí: nguồn thông tin có tính chuyên môn, nội dung phù hợp với chủ đề dinh dưỡng phổ biến và chunk sau xử lý đủ ngắn để truy xuất chính xác nhưng vẫn giữ đủ ngữ cảnh cho LLM sinh câu trả lời.
+
+Các mục tiêu cụ thể của đồ án gồm:
+\begin{enumerate}[label=\arabic*)]
+    \item Xây dựng pipeline voice-to-voice gồm ASR, mô-đun xử lý hội thoại và TTS, có khả năng xử lý một lượt hỏi đáp dinh dưỡng từ giọng nói đầu vào đến giọng nói đầu ra.
+    \item Tối ưu độ trễ phản hồi, trong đó chỉ số trọng tâm là Time-to-First-Audio. Hệ thống được đánh giá theo p50, p90 và p99 để phản ánh cả trường hợp trung bình và trường hợp chậm.
+    \item So sánh pipeline tuần tự với pipeline streaming LLM--TTS, đồng thời đánh giá ảnh hưởng của kích thước chunk đến Time-to-First-Audio, tổng thời gian phản hồi và độ tự nhiên của âm thanh.
+    \item Nâng cao độ chính xác nội dung bằng RAG trên kho tri thức dinh dưỡng, kết hợp query expansion, truy xuất vector, reranking và prompt ràng buộc theo ngữ cảnh.
+    \item Đánh giá chất lượng câu trả lời theo các tiêu chí: câu trả lời đúng trọng tâm câu hỏi, bám sát ngữ cảnh truy xuất, hạn chế suy diễn ngoài tài liệu và phù hợp với kênh thoại.
+    \item Thiết kế hệ thống theo pipeline mô-đun để dễ triển khai, kiểm thử và mở rộng, trong đó Gateway có nhiệm vụ điều phối luồng dữ liệu, hàng đợi text--audio và trạng thái phiên hội thoại.
+\end{enumerate}
+
+Các câu hỏi đánh giá xoay quanh các chủ đề như đái tháo đường, phụ nữ mang thai, trẻ biếng ăn, vitamin, khoáng chất, chế độ ăn giảm cân, omega-3, canxi và các nhóm thực phẩm thường gặp. Hệ thống không tự đưa ra chẩn đoán bệnh, không kê đơn thuốc và không thay đổi phác đồ điều trị. Với các câu hỏi vượt phạm vi hoặc có dấu hiệu rủi ro y tế, hệ thống cần từ chối mềm, khuyến nghị người dùng gặp chuyên gia phù hợp hoặc yêu cầu đặt lại câu hỏi trong phạm vi dinh dưỡng.
+
+Như vậy, đồ án không chỉ đánh giá hệ thống theo khả năng sinh câu trả lời đúng, mà còn theo khả năng vận hành trong tương tác giọng nói thời gian thực. Hai nhóm chỉ số chính là: nhóm độ trễ gồm Time-to-First-Audio, tổng thời gian phản hồi và độ trễ từng mô-đun; nhóm chất lượng gồm mức liên quan của tài liệu truy xuất, độ bám ngữ cảnh của câu trả lời và mức phù hợp của câu trả lời khi chuyển thành giọng nói.
+
+\section{Định hướng giải pháp}
+
+Định hướng giải pháp của đồ án là xây dựng một pipeline voice-to-voice cho tư vấn dinh dưỡng tiếng Việt. Khi người dùng đặt câu hỏi bằng giọng nói, hệ thống trước hết chuyển tín hiệu âm thanh thành transcript tiếng Việt, sau đó dùng khối xử lý hội thoại để hiểu câu hỏi, truy xuất tri thức liên quan và sinh câu trả lời. Câu trả lời cuối cùng được chuyển lại thành âm thanh để người dùng có thể nghe trực tiếp. Gateway đóng vai trò điều phối phiên hội thoại, kết nối các bước xử lý và giữ cho luồng dữ liệu giữa trình duyệt với các mô-đun phía sau diễn ra liên tục.
+
+Để hạn chế việc mô hình ngôn ngữ trả lời chỉ dựa trên kiến thức nền, hệ thống được định hướng theo Retrieval-Augmented Generation. Kho bài viết dinh dưỡng sau khi làm sạch được biểu diễn dưới dạng embedding và lưu trong vector database để phục vụ truy xuất ngữ nghĩa. Với mỗi câu hỏi, hệ thống tìm các tài liệu liên quan, lọc lại bằng reranking và đưa phần ngữ cảnh phù hợp vào LLM. Cách tiếp cận này giúp câu trả lời có cơ sở từ kho tri thức của hệ thống, đồng thời vẫn tận dụng khả năng diễn đạt tự nhiên của mô hình ngôn ngữ.
+
+Đối với kênh thoại, độ trễ là vấn đề trung tâm của giải pháp. Nếu hệ thống xử lý tuần tự, người dùng phải chờ nhận dạng giọng nói, truy xuất tài liệu, sinh toàn bộ câu trả lời và tổng hợp xong toàn bộ âm thanh rồi mới nghe được phản hồi. Vì vậy, đồ án định hướng tổ chức quá trình trả lời theo streaming: khi LLM sinh được một phần văn bản đủ điều kiện, phần văn bản đó được chuyển sớm sang TTS thay vì chờ toàn bộ câu trả lời hoàn tất. Chiến thuật word-safe chunking được sử dụng để chia văn bản tại các vị trí tương đối tự nhiên, nhằm giảm Time-to-First-Audio nhưng vẫn hạn chế việc TTS đọc bị ngắt nhịp.
+
+Các công cụ, mô hình, framework và thuật toán cụ thể để hiện thực định hướng trên sẽ được làm rõ ở các chương sau. Phần cơ sở lý thuyết trình bày các nền tảng cần thiết cho nhận dạng giọng nói, mô hình ngôn ngữ, truy xuất tăng cường sinh, truy xuất vector, reranking, tổng hợp giọng nói và streaming. Các chương tiếp theo trình bày cách những thành phần này được kết nối thành hệ thống hoàn chỉnh, cũng như cách đánh giá hệ thống theo chất lượng câu trả lời và độ trễ phản hồi.
+
+\section{Cấu trúc đồ án}
+
+Phần còn lại của báo cáo được tổ chức theo mạch từ bối cảnh, phát biểu bài toán, thách thức kỹ thuật đến giải pháp và đánh giá. Chương 1 giới thiệu bối cảnh thiếu hụt chuyên gia dinh dưỡng, rào cản tiếp cận thông tin của các nhóm người dùng như người cao tuổi, đồng thời phát biểu bài toán xây dựng hệ thống voice-to-voice có khả năng tư vấn dựa trên cơ sở tri thức thay vì chỉ dựa vào kiến thức chung của LLM. Chương này cũng nêu các thách thức chính của bài toán, gồm nút thắt độ trễ khi tích hợp nhiều mô hình AI và nguy cơ hallucination trong tư vấn sức khỏe.
+
+Chương 2 trình bày cơ sở lý thuyết liên quan đến nhận dạng giọng nói, mô hình ngôn ngữ, RAG, vector database, embedding, reranking, RAGAS và tổng hợp giọng nói. Các nội dung này cung cấp nền tảng để giải thích vì sao hệ thống cần kết hợp kho tri thức bên ngoài với LLM, cũng như vì sao độ trễ trở thành vấn đề quan trọng trong bài toán voicebot.
+
+Chương 3 mô tả giải pháp đề xuất, bao gồm kiến trúc tổng quan, các mô-đun xử lý tiếng nói, mô-đun xử lý hội thoại, quy trình RAG hai tầng và chiến thuật streaming. Đây là chương làm rõ cách hệ thống tổ chức pipeline voice-to-voice, cách câu trả lời được sinh dựa trên kho tri thức, và cách streaming song song giữa LLM với TTS được sử dụng để tối ưu Time-to-First-Audio.
+
+Chương 4 trình bày quá trình phát triển hệ thống, xây dựng kho tri thức, thiết kế đánh giá thực nghiệm và phân tích ablation study theo từng thành phần. Các thí nghiệm tập trung vào vai trò của truy xuất, reranking, chunking, streaming và các chỉ số độ trễ end-to-end; đồng thời đánh giá chất lượng câu trả lời bằng các tiêu chí của RAGAS ở mức chấp nhận được cho bài toán tư vấn dinh dưỡng.
+
+Chương 5 tổng kết kết quả đạt được và đối chiếu lại các đóng góp chính của đồ án. Các đóng góp này gồm pipeline streaming song song tối ưu hóa thời gian phản hồi âm thanh đầu tiên, quy trình RAG hai tầng cho tiếng Việt chuyên ngành dinh dưỡng, và bộ chỉ số đánh giá ablation study để phân tích vai trò của từng mô-đun. Chương này cũng nêu các hạn chế còn tồn tại và định hướng phát triển tiếp theo.
+
+\chapter{CƠ SỞ LÝ THUYẾT}
+
+\section{Nhận dạng giọng nói}
+
+Nhận dạng giọng nói tự động là nhiệm vụ chuyển đổi tín hiệu âm thanh thành chuỗi văn bản tương ứng. Trong các hệ thống hội thoại thời gian thực, mô hình ASR cần đáp ứng đồng thời hai yêu cầu: độ chính xác cao và khả năng sinh kết quả nhanh. Các hướng tiếp cận phổ biến gồm Connectionist Temporal Classification, mô hình attention-based encoder-decoder và Recurrent Neural Network Transducer.
+
+CTC có ưu điểm đơn giản và hiệu quả, nhưng thường cần hậu xử lý để cải thiện độ trôi chảy của kết quả. Các mô hình attention-based có khả năng học quan hệ ngữ cảnh tốt nhưng có thể không tối ưu cho streaming do phụ thuộc vào toàn bộ chuỗi đầu vào. RNN-Transducer phù hợp hơn với bài toán thời gian thực vì có thể xử lý audio theo từng khung, tạo kết quả từng phần và hỗ trợ phát hiện điểm kết thúc câu nói.
+
+Trong phạm vi đồ án, ASR được xem là thành phần đầu tiên của pipeline. Transcript sinh ra từ ASR là đầu vào cho các bước query expansion và truy xuất tri thức, vì vậy lỗi ASR có thể ảnh hưởng trực tiếp đến chất lượng câu trả lời cuối cùng. Điều này khiến tiền xử lý transcript và chuẩn hóa thuật ngữ dinh dưỡng trở thành một bước quan trọng.
+
+Trong hệ thống hiện thực, audio đầu vào được chuẩn hóa về PCM 16 kHz, mono, 16-bit little-endian. Trình duyệt thu âm qua Web Audio API, sau đó gửi các frame âm thanh qua WebSocket. Dịch vụ ASR sử dụng Sherpa-ONNX với bộ mô hình transducer gồm encoder, decoder, joiner và file token. Cấu hình của dịch vụ cho phép chọn backend CPU hoặc CUDA bằng biến môi trường, đồng thời điều chỉnh số luồng xử lý. Ngoài chế độ nhận dạng theo audio hoàn chỉnh, hệ thống còn có chế độ VAD streaming để phát hiện đoạn có tiếng nói và trả về transcript cuối cùng cho từng utterance.
+
+Một đặc điểm quan trọng của ASR trong pipeline là kết quả sai có thể làm giảm hiệu quả truy xuất. Ví dụ, nếu ASR nhận ``omega ba'' thay vì ``omega 3'', embedding truy vấn có thể lệch khỏi tài liệu liên quan. Vì vậy, ngoài query expansion ở LLM, hệ thống còn có lớp chuẩn hóa voice preprocessing cho một số lỗi nhận dạng phổ biến trong chủ đề dinh dưỡng.
+
+\section{Transformer và Retrieval-Augmented Generation}
+
+Transformer là kiến trúc nền tảng của nhiều mô hình ngôn ngữ hiện đại. Cơ chế self-attention cho phép mô hình học quan hệ giữa các token trong câu, từ đó biểu diễn ngữ nghĩa của văn bản một cách linh hoạt. Tuy nhiên, khi sử dụng trực tiếp mô hình ngôn ngữ lớn cho tư vấn sức khỏe, hệ thống có nguy cơ sinh thông tin thiếu căn cứ hoặc không phù hợp với dữ liệu chuyên ngành.
+
+Retrieval-Augmented Generation là phương pháp kết hợp mô hình ngôn ngữ với một kho tri thức bên ngoài. Thay vì chỉ dựa vào tham số đã học của LLM, hệ thống truy xuất các tài liệu liên quan đến câu hỏi, đưa chúng vào prompt như ngữ cảnh, rồi yêu cầu LLM sinh câu trả lời dựa trên ngữ cảnh đó. Cách tiếp cận này giúp giảm hiện tượng hallucination, tăng tính kiểm chứng và cho phép cập nhật tri thức mà không cần huấn luyện lại mô hình.
+
+Trong đồ án này, RAG được lựa chọn vì chủ đề tư vấn dinh dưỡng có tính nhạy cảm cao. Câu trả lời cần ngắn gọn để phù hợp với kênh thoại, nhưng vẫn phải dựa trên tài liệu đã truy xuất. Prompt hệ thống yêu cầu mô hình đóng vai chuyên gia dinh dưỡng, trả lời tối đa khoảng 150 từ, không dùng bullet point, không trích dẫn URL trong câu trả lời thoại, nói rõ khi không có thông tin và luôn thêm disclaimer. Thiết kế prompt này giúp cân bằng giữa tính dễ nghe và tính an toàn thông tin.
+
+Mô-đun LLM trong codebase hỗ trợ hai backend. Backend mặc định là Gemini, với mô hình \texttt{gemini-2.5-flash} và \texttt{thinking\_budget=0} để giảm latency. Backend thứ hai là OpenAI-compatible, dùng cho các server như vLLM, Ollama hoặc LM Studio. Việc đóng gói LLM dưới dạng factory giúp hệ thống thay đổi mô hình sinh câu trả lời mà không cần sửa pipeline Gateway hoặc RAG.
+
+\section{Vector Database, Embedding và Reranking}
+
+Để truy xuất tài liệu theo ngữ nghĩa, văn bản trong kho tri thức được chuyển thành vector embedding. Các vector này được lưu trong vector database, ví dụ Qdrant, nhằm hỗ trợ tìm kiếm lân cận nhanh trên không gian nhiều chiều. Chỉ mục HNSW thường được sử dụng để tăng tốc truy vấn gần đúng mà vẫn duy trì độ chính xác chấp nhận được.
+
+Trong hệ thống RAG, truy xuất một bước bằng bi-encoder có ưu điểm nhanh nhưng đôi khi chưa đủ chính xác với các câu hỏi chuyên ngành. Vì vậy, đồ án sử dụng chiến lược truy xuất hai bước. Ở bước đầu, bi-encoder lấy một tập ứng viên đủ rộng. Ở bước sau, cross-encoder đánh giá lại từng cặp câu hỏi--tài liệu để sắp xếp lại theo mức độ phù hợp. Reranking giúp tăng xác suất chọn đúng ngữ cảnh, đặc biệt với các thuật ngữ dinh dưỡng gần nghĩa hoặc có nhiều cách diễn đạt khác nhau.
+
+Codebase hiện tại cho phép cấu hình embedding model và reranker model qua biến môi trường. Cấu hình mặc định của khối truy xuất sử dụng một mô hình embedding tiếng Việt và một mô hình reranker tiếng Việt để phục vụ truy xuất tri thức. Khi truy vấn, hệ thống lấy 15 chunk ứng viên từ Qdrant, sau đó dùng reranker để chọn 5 chunk tốt nhất đưa vào đầu vào của LLM. Số lượng chunk ở hai bước này ảnh hưởng trực tiếp đến trade-off giữa chất lượng truy xuất và độ trễ. Nếu lấy nhiều chunk ứng viên hơn, reranker có thêm lựa chọn nhưng thời gian xử lý tăng; nếu đưa nhiều chunk hơn vào LLM, mô hình có nhiều ngữ cảnh hơn nhưng prompt dài hơn và thời gian sinh câu trả lời có thể tăng.
+
+Qdrant được dùng ở cả hai chế độ: local hoặc service độc lập trong Docker Compose. Khi chạy Docker, collection mặc định là \texttt{nutrition\_articles}; dữ liệu có thể được khôi phục từ snapshot trước khi worker LLM khởi động. Cơ chế snapshot giúp tái lập môi trường đánh giá và triển khai mà không cần crawl hoặc embedding lại toàn bộ dữ liệu.
+
+\section{Tổng hợp giọng nói}
+
+Tổng hợp giọng nói là bước chuyển câu trả lời dạng văn bản thành audio. Với tiếng Việt, TTS cần xử lý chính xác thanh điệu, ngắt nghỉ và phát âm các thuật ngữ chuyên ngành. Các mô hình như VITS hoặc các biến thể TTS neural hiện đại có khả năng sinh giọng nói tự nhiên hơn so với các phương pháp truyền thống.
+
+Trong bài toán hội thoại thời gian thực, TTS không chỉ cần chất lượng âm thanh tốt mà còn phải có thời gian phản hồi thấp. Nếu chờ toàn bộ văn bản trả lời rồi mới tổng hợp, người dùng sẽ cảm nhận hệ thống chậm. Vì vậy, chiến thuật chunking văn bản và streaming audio là yếu tố quan trọng để cải thiện trải nghiệm.
+
+Dịch vụ TTS trong hệ thống sử dụng VieNeu-TTS với backbone kích thước nhỏ và codec neural để tổng hợp giọng nói tiếng Việt. Audio đầu ra có sample rate 24 kHz, mono, PCM 16-bit. Để đảm bảo TTS không đọc markdown hoặc ký hiệu không tự nhiên, Gateway làm sạch văn bản trước khi gửi sang TTS: loại bỏ định dạng in đậm, heading, bullet, code block, link markdown và các dòng thừa. TTS handler chạy quá trình tổng hợp trong thread riêng và dùng hàng đợi bất đồng bộ để stream frame PCM về coroutine FastAPI.
+
+\section{Pipeline mô-đun và streaming bất đồng bộ}
+
+Trong phạm vi đồ án, hệ thống không được xem là một kiến trúc phân tán quy mô lớn với nhiều bounded context nghiệp vụ, cơ chế service discovery, autoscaling và vận hành độc lập phức tạp. Cách mô tả chính xác hơn là pipeline mô-đun theo hướng service-oriented cho bài toán voice-to-voice: các thành phần ASR, LLM và TTS được tách thành worker riêng để dễ thay thế mô hình, đo latency và cô lập lỗi, nhưng vẫn phục vụ một luồng nghiệp vụ duy nhất là tư vấn dinh dưỡng qua giọng nói.
+
+Trong hệ thống này, Gateway là điểm điều phối trung tâm. Gateway giữ WebSocket với trình duyệt, đồng thời gọi các worker phía sau bằng HTTP streaming hoặc WebSocket. Luồng dữ liệu bất đồng bộ được tổ chức theo mô hình producer-consumer: LLM producer sinh text chunk; TTS consumer nhận text chunk và sinh audio chunk; Gateway gom các event để gửi về client. Thiết kế này tránh blocking event loop, giúp nhiều bước xử lý chồng lấp thời gian với nhau và phù hợp hơn với mục tiêu giảm độ trễ cảm nhận.
+
+\chapter{GIẢI PHÁP ĐỀ XUẤT}
+
+\section{Kiến trúc tổng quan}
+
+Hệ thống được thiết kế theo kiến trúc pipeline mô-đun cho bài toán voice-to-voice. Thay vì để một tiến trình xử lý toàn bộ luồng hội thoại, hệ thống tách các chức năng chính thành các khối độc lập gồm Web Client, Gateway, ASR Service, LLM/RAG Service, TTS Service, Qdrant và Redis. Cách tổ chức này giúp từng thành phần có trách nhiệm rõ ràng: Web Client thu và phát audio, Gateway điều phối phiên hội thoại, ASR chuyển giọng nói thành transcript, LLM/RAG truy xuất tri thức và sinh câu trả lời, TTS chuyển văn bản thành âm thanh, Qdrant lưu chỉ mục vector của kho tri thức, còn Redis lưu trạng thái hội thoại theo session.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{Architecture.png}
+    \caption{Kiến trúc tổng quan của hệ thống}
+\end{figure}
+
+Luồng xử lý bắt đầu từ Web Client. Người dùng có thể nhập câu hỏi bằng văn bản hoặc nói trực tiếp qua micro. Với kênh thoại, client thu audio PCM, thực hiện một số bước xử lý ở phía trình duyệt như push-to-talk, VAD, ghi âm ở tần số lấy mẫu cao và chuyển đổi về 16 kHz trước khi gửi về Gateway. Gateway tiếp nhận audio, quản lý session và chuyển audio sang ASR Service để nhận transcript cuối cùng. Transcript sau đó được gửi sang LLM/RAG Service để thực hiện mở rộng truy vấn, HyDE, embedding, truy xuất trên Qdrant, reranking và sinh câu trả lời dạng streaming.
+
+Kho tri thức của hệ thống được lưu trong Qdrant dưới dạng khoảng 270.000 vector 1024 chiều, được tạo từ corpus dinh dưỡng tiếng Việt. Khi có câu hỏi, LLM/RAG Service không đưa trực tiếp toàn bộ dữ liệu vào LLM mà tiến hành truy xuất ngữ nghĩa trên Qdrant để lấy các chunk liên quan. Sau đó, reranker đánh giá lại các chunk ứng viên và chọn những chunk phù hợp nhất làm ngữ cảnh đầu vào cho LLM. Quy trình này giúp câu trả lời dựa trên cơ sở tri thức đã xây dựng thay vì chỉ dựa vào kiến thức chung của mô hình ngôn ngữ.
+
+Ở chiều đầu ra, LLM/RAG Service không chờ sinh xong toàn bộ câu trả lời. Các đoạn text được sinh dần dưới dạng streaming và chuyển về Gateway. Gateway gom văn bản thành các text chunk đủ điều kiện, sau đó gửi từng chunk sang TTS Service. TTS Service tổng hợp từng đoạn thành PCM 24 kHz và trả audio stream về Gateway để phát lại cho Web Client. Nhờ đó, quá trình sinh văn bản và tổng hợp giọng nói được chồng lấp thời gian, giúp giảm Time-to-First-Audio so với pipeline tuần tự.
+
+Redis được sử dụng như session store để lưu lịch sử hội thoại ngắn hạn, trạng thái phiên và dữ liệu phục vụ tóm tắt hội thoại khi cần. Thành phần này giúp hệ thống duy trì ngữ cảnh giữa các lượt hỏi đáp mà không phải đưa toàn bộ lịch sử dài vào prompt. Ngoài ra, Gateway còn xử lý barge-in: khi VAD phát hiện người dùng bắt đầu nói trong lúc bot đang trả lời, Gateway hủy luồng TTS hiện tại, reset hàng đợi liên quan đến session cũ và chuyển pipeline sang câu hỏi mới.
+
+Thiết kế pipeline mô-đun mang lại ba lợi ích chính. Thứ nhất, mỗi thành phần có thể được phát triển, kiểm thử và tối ưu độc lập. Thứ hai, hệ thống có thể triển khai linh hoạt trên CPU hoặc GPU tùy yêu cầu hiệu năng của từng mô hình. Thứ ba, khi cần thay đổi một mô hình hoặc thuật toán, ví dụ thay backend LLM, thay mô hình ASR hoặc điều chỉnh chiến lược reranking, các thành phần còn lại không phải thay đổi lớn. Điểm quan trọng là hệ thống vẫn có một Gateway điều phối trung tâm và các worker phục vụ cùng một luồng nghiệp vụ, do đó thuật ngữ pipeline mô-đun phản ánh đúng kiến trúc hiện tại hơn so với việc mô tả như một hệ thống phân tán độc lập phức tạp.
+
+Các thành phần chính của hệ thống được tổ chức như sau:
+
+\begin{table}[H]
+    \centering
+    \caption{Các thành phần chính trong hệ thống}
+    \begin{tabular}{|p{3cm}|p{2cm}|p{8cm}|}
+        \hline
+        \textbf{Thành phần} & \textbf{Cổng} & \textbf{Vai trò}                                                                                                             \\
+        \hline
+        Gateway             & 8000          & Điều phối phiên hội thoại, quản lý WebSocket, truyền audio, transcript, text chunk và audio chunk giữa client và các worker. \\
+        \hline
+        ASR                 & 50051         & Nhận audio PCM 16 kHz, thực hiện VAD và nhận dạng giọng nói tiếng Việt để tạo transcript.                                    \\
+        \hline
+        LLM/RAG             & 50052         & Thực hiện query expansion, HyDE, embedding, truy xuất Qdrant, reranking, xây dựng prompt và stream câu trả lời.              \\
+        \hline
+        TTS                 & 50053         & Nhận text chunk, tổng hợp giọng nói bằng VieNeu-TTS và stream PCM 24 kHz về Gateway.                                         \\
+        \hline
+        Qdrant              & 6333          & Lưu trữ khoảng 270.000 vector embedding của kho tri thức dinh dưỡng và phục vụ truy vấn ngữ nghĩa.                           \\
+        \hline
+        Redis               & 6379          & Lưu session memory, lịch sử hội thoại ngắn hạn và trạng thái phiên khi khả dụng.                                             \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Trong codebase, các thành phần Gateway, LLM/RAG, ASR, TTS và giao diện web được tách thành các module riêng. Docker Compose định nghĩa healthcheck cho từng worker, giúp Gateway chỉ khởi động khi các service phụ thuộc đã sẵn sàng. Cách tổ chức này cũng tạo điều kiện cho việc đo latency theo từng mô-đun, đánh giá nút thắt của pipeline và mở rộng từng worker theo nhu cầu thực tế.
+
+\section{Mô-đun xử lý tiếng nói}
+
+Mô-đun xử lý tiếng nói gồm hai hướng chuyển đổi: speech-to-text và text-to-speech. Ở chiều đầu vào, ASR nhận các chunk audio từ micro, chuẩn hóa về định dạng PCM 16 kHz mono và sinh transcript. Transcript này có thể chứa lỗi do nhiễu môi trường, cách phát âm hoặc thuật ngữ chuyên ngành. Vì vậy, hệ thống áp dụng bước chuẩn hóa truy vấn để sửa một số lỗi thường gặp, ví dụ chuẩn hóa ``omega ba'' thành ``omega 3'' hoặc ``can xi'' thành ``canxi''.
+
+Ở chiều đầu ra, TTS nhận các đoạn văn bản ngắn, đã được làm sạch khỏi markdown hoặc ký hiệu không phù hợp với giọng đọc. Các đoạn văn bản được tổng hợp thành PCM 24 kHz và stream về client. Để tránh ngắt giọng thiếu tự nhiên, hệ thống chỉ cắt văn bản tại các vị trí tương đối an toàn như dấu kết thúc câu hoặc khi buffer đạt kích thước tối đa.
+
+Luồng xử lý audio trong trình duyệt được tổ chức theo cơ chế streaming. Ở chiều gửi, client thu âm theo các frame ngắn, chuyển tín hiệu về định dạng PCM 16-bit phù hợp với ASR và gửi liên tục qua WebSocket. Ở chiều nhận, client nhận các chunk PCM 24 kHz từ Gateway, đưa vào bộ đệm phát âm thanh và lập lịch phát nối tiếp để các đoạn audio rời rạc được nghe gần như liên tục. Cách tổ chức này giúp giảm khoảng lặng giữa các đoạn, đồng thời phù hợp với việc TTS trả audio theo từng phần thay vì một file hoàn chỉnh.
+
+TTS còn hỗ trợ hủy tổng hợp theo session thông qua một API điều khiển riêng. Chức năng này phục vụ barge-in: khi người dùng bắt đầu nói trong lúc bot đang trả lời, Gateway có thể hủy audio đang phát, reset queue và chuyển sang xử lý câu hỏi mới. Đây là yêu cầu quan trọng đối với trải nghiệm hội thoại tự nhiên.
+
+\section{Mô-đun xử lý hội thoại}
+
+Mô-đun xử lý hội thoại chịu trách nhiệm biến transcript của người dùng thành câu trả lời có căn cứ. Trong hệ thống này, LLM không trả lời trực tiếp từ câu hỏi thô, mà được đặt trong một RAG pipeline gồm bước tiền xử lý truy vấn và ba bước chính tương ứng với Retrieval, Augmentation và Generation.
+
+\begin{enumerate}[label=\arabic*)]
+    \item \textbf{Tiền xử lý truy vấn:} transcript được chuẩn hóa bằng query expansion dựa trên từ điển thuật ngữ dinh dưỡng và các biến thể diễn đạt thường gặp. Ví dụ, các cách hỏi phổ thông như ``tiểu đường'', ``bà bầu'', ``omega 3'' hoặc ``béo phì'' được mở rộng sang các thuật ngữ liên quan như ``đái tháo đường'', ``phụ nữ mang thai'', ``axit béo omega-3'', ``BMI cao'' hoặc ``thừa cân''. Bước này giúp giảm khoảng cách giữa cách người dùng nói tự nhiên và cách thuật ngữ xuất hiện trong tài liệu chuyên ngành.
+    \item \textbf{Retrieval:} câu hỏi sau chuẩn hóa được mã hóa bằng Bi-Encoder E5 để truy xuất ngữ nghĩa trên Qdrant. Ở bước đầu, hệ thống lấy 15 chunk ứng viên từ kho tri thức. Sau đó, Cross-Encoder đánh giá lại từng cặp câu hỏi--chunk và reranking để chọn 5 chunk tốt nhất. Đây là quy trình truy xuất hai bước, trong đó Bi-Encoder ưu tiên tốc độ và độ phủ, còn Cross-Encoder giúp tăng độ chính xác của ngữ cảnh được chọn.
+    \item \textbf{Augmentation:} 5 chunk tốt nhất sau reranking được ghép vào prompt dưới dạng context cho LLM. Ngoài context truy xuất, prompt còn có câu hỏi hiện tại đã chuẩn hóa, hướng dẫn trả lời theo chủ đề dinh dưỡng và tóm tắt hội thoại gần nhất nếu có. Như vậy, LLM có context rõ ràng để sinh câu trả lời dựa trên tài liệu thay vì chỉ dựa vào kiến thức chung.
+    \item \textbf{Generation:} LLM sinh câu trả lời dựa trên prompt đã được bổ sung context. Câu trả lời cần đúng trọng tâm câu hỏi, bám sát ngữ cảnh truy xuất, ngắn gọn, dễ nghe khi chuyển sang giọng nói và không đọc trực tiếp URL hoặc metadata nguồn trong câu trả lời thoại.
+\end{enumerate}
+
+Ngoài query expansion dựa trên từ điển, hệ thống có thể sử dụng HyDE để tạo một biểu diễn truy vấn giàu ngữ nghĩa hơn trước khi truy xuất. Mục tiêu của bước này là tăng khả năng tìm được các chunk liên quan trong trường hợp câu hỏi người dùng ngắn, diễn đạt đời thường hoặc thiếu thuật ngữ chuyên môn.
+
+Luồng sinh câu trả lời được tổ chức theo streaming. LLM vừa sinh từng phần văn bản vừa trả kết quả về Gateway, thay vì đợi toàn bộ câu trả lời hoàn tất. Trên phần đầu tiên, hệ thống ghi nhận các thông tin timing như thời gian tiền xử lý truy vấn, thời gian truy xuất--reranking, thời gian nhận phần trả lời đầu tiên từ LLM và thời gian tổng thể đến phần đầu tiên. Những thông tin này được dùng để phân tích nút thắt latency của mô-đun xử lý hội thoại.
+
+Về bộ nhớ hội thoại, Gateway ưu tiên Redis nếu có kết nối. Mỗi session lưu các lượt gần nhất và một bản tóm tắt hội thoại cũ. Khi Redis không khả dụng, Gateway dùng fallback memory trong RAM. Điều này giúp hệ thống vẫn chạy trong môi trường phát triển cục bộ, đồng thời có khả năng mở rộng tốt hơn khi triển khai với Redis.
+
+\section{Tối ưu Voice RAG thích nghi theo độ trễ}
+
+RAG trong chatbot văn bản thường tập trung vào việc truy xuất đủ tài liệu và sinh câu trả lời chính xác. Với voicebot thời gian thực, bài toán có thêm một ràng buộc quan trọng: mọi bước xử lý đều ảnh hưởng trực tiếp đến thời gian người dùng phải chờ trước khi nghe được phản hồi. Vì vậy, đồ án không xem RAG là một chuỗi xử lý cố định cho mọi câu hỏi, mà tổ chức thành một pipeline thích nghi theo độ phức tạp truy vấn, mức rủi ro nội dung và trạng thái latency của hệ thống.
+
+Luồng xử lý được đề xuất có thể mô tả ở mức khái quát như sau:
+
+\begin{center}
+    \small
+    \begin{tabular}{c}
+        \textit{User speech $\rightarrow$ ASR $\rightarrow$ Query triage $\rightarrow$ ASR-aware normalization} \\
+        \textit{$\rightarrow$ Adaptive retrieval $\rightarrow$ Evidence control $\rightarrow$ LLM generation}   \\
+        \textit{$\rightarrow$ TTS streaming $\rightarrow$ Voice answer}
+    \end{tabular}
+\end{center}
+
+Trong đó, \textit{query triage} là bước phân luồng câu hỏi trước khi truy xuất. Các câu hỏi dinh dưỡng thông thường được đưa vào RAG; các câu hỏi có dấu hiệu khẩn cấp, yêu cầu chẩn đoán hoặc kê đơn được chuyển sang phản hồi an toàn; các câu hỏi quá mơ hồ có thể được xử lý bằng câu hỏi làm rõ ngắn thay vì truy xuất trên một giả định yếu. Cách làm này giúp tránh lãng phí latency cho những trường hợp không nên hoặc chưa nên gọi RAG.
+
+Sau phân luồng, \textit{ASR-aware normalization} chuẩn hóa câu hỏi sau nhận dạng giọng nói. Đây là bước xử lý nhẹ, không yêu cầu thêm lượt gọi LLM. Hệ thống loại bỏ một số từ đệm trong hội thoại, chuẩn hóa các cách nói phổ thông sang thuật ngữ dinh dưỡng và sửa một số lỗi nhận dạng thường gặp như ``omega ba'' thành ``omega 3'' hoặc ``can xi'' thành ``canxi''. Với các thuật ngữ có nhiều cách diễn đạt, hệ thống giữ cả câu hỏi gốc và câu hỏi đã chuẩn hóa để tăng độ ổn định khi truy xuất.
+
+Tiếp theo, \textit{adaptive retrieval} điều chỉnh cách truy xuất theo độ phức tạp của câu hỏi. Câu hỏi ngắn, rõ ràng có thể dùng số lượng tài liệu nhỏ để giảm thời gian rerank và giảm độ dài prompt. Câu hỏi phức tạp hoặc chứa nhiều điều kiện như bệnh nền, độ tuổi, mục tiêu giảm cân hoặc nhóm thực phẩm cụ thể cần số lượng ứng viên lớn hơn và reranking kỹ hơn. Nếu điểm truy xuất thấp hoặc tài liệu quá ít, hệ thống kích hoạt kiểm tra mức đủ bằng chứng và tránh để LLM trả lời chắc chắn trên ngữ cảnh yếu.
+
+Bảng dưới đây tóm tắt vai trò của từng cơ chế trong pipeline thích nghi.
+
+\begin{table}[H]
+    \centering
+    \caption{Các cơ chế tối ưu trong Voice RAG thích nghi}
+    \begin{tabular}{|p{4cm}|p{5cm}|p{5cm}|}
+        \hline
+        \textbf{Cơ chế}         & \textbf{Mục tiêu}                                & \textbf{Tác động đến hệ thống}                                        \\
+        \hline
+        Query triage            & Phân loại câu hỏi trước khi truy xuất            & Tránh gọi RAG cho câu hỏi nguy hiểm, ngoài phạm vi hoặc quá mơ hồ     \\
+        \hline
+        ASR-aware normalization & Giảm nhiễu từ transcript giọng nói               & Cải thiện truy xuất với câu hỏi tiếng Việt ngắn hoặc có lỗi nhận dạng \\
+        \hline
+        Adaptive retrieval      & Chọn số lượng tài liệu và mức rerank theo độ khó & Cân bằng giữa chất lượng bằng chứng và độ trễ                         \\
+        \hline
+        Evidence control        & Kiểm tra ngữ cảnh có đủ để trả lời không         & Giảm rủi ro LLM suy diễn khi tài liệu truy xuất yếu                   \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Điểm quan trọng của hướng tối ưu này là hạn chế thêm các chain LLM phụ. Các bước phân luồng, chuẩn hóa và điều chỉnh số lượng tài liệu đều có thể hiện thực bằng rule, cấu hình hoặc thống kê runtime nhẹ. Nhờ đó, hệ thống cải thiện khả năng vận hành thực tế mà không đánh đổi quá nhiều độ trễ.
+
+\section{Cơ chế streaming song song}
+
+Để tối ưu độ trễ, hệ thống không xử lý câu trả lời theo kiểu tuần tự mà sử dụng cơ chế streaming song song giữa LLM và TTS. Về nguyên tắc, LLM không cần sinh xong toàn bộ câu trả lời mới chuyển sang TTS. Thay vào đó, khi LLM sinh được một phần văn bản đủ điều kiện, Gateway có thể đưa phần văn bản này vào hàng đợi để TTS bắt đầu tổng hợp âm thanh. Nhờ vậy, thời gian sinh văn bản và thời gian tổng hợp giọng nói được chồng lấp, làm giảm thời gian người dùng phải chờ trước khi nghe được âm thanh đầu tiên.
+
+Cơ chế này được tổ chức theo mô hình producer-consumer. LLM đóng vai trò producer, liên tục sinh các đoạn văn bản mới. TTS đóng vai trò consumer, lấy từng đoạn văn bản từ hàng đợi bất đồng bộ và tổng hợp audio ngay khi có thể. Gateway nằm giữa hai thành phần này, vừa nhận text stream từ LLM, vừa quản lý hàng đợi text cho TTS và hàng đợi event trả về client. Trong hiện thực, hàng đợi bất đồng bộ có thể được triển khai bằng cấu trúc như \texttt{asyncio.Queue}, nhưng về mặt kiến trúc, điểm quan trọng là producer và consumer có thể chạy song song thay vì chờ nhau hoàn toàn.
+
+Kỹ thuật word-safe chunking được sử dụng để quyết định khi nào một phần văn bản đủ điều kiện gửi sang TTS. Nếu chunk quá ngắn, TTS có thể đọc bị ngắt nhịp hoặc tạo nhiều đoạn audio nhỏ làm tăng overhead. Nếu chunk quá dài, hệ thống phải chờ lâu hơn trước khi bắt đầu tổng hợp âm thanh, làm tăng Time-to-First-Audio. Vì vậy, hệ thống đặt ngưỡng ký tự tối thiểu, đồng thời ưu tiên cắt tại các vị trí tự nhiên như dấu chấm, dấu hỏi, dấu chấm than hoặc dấu phẩy. Trong cấu hình thực nghiệm, ngưỡng tối thiểu 40 ký tự được sử dụng như một điểm cân bằng giữa phản hồi nhanh và giữ ngữ điệu tương đối tự nhiên.
+
+Thuật toán streaming trong Gateway có thể mô tả như sau:
+
+\begin{enumerate}[label=\arabic*)]
+    \item Gateway khởi tạo hàng đợi text cho TTS và hàng đợi event để trả kết quả về client.
+    \item LLM sinh câu trả lời theo luồng, Gateway gửi phần text mới về client và đồng thời cộng dồn vào buffer.
+    \item Khi buffer đạt ngưỡng tối thiểu và gặp điểm ngắt tự nhiên, hoặc khi buffer vượt ngưỡng tối đa, Gateway cắt một text chunk an toàn theo ranh giới từ.
+    \item Text chunk được đưa vào hàng đợi TTS để tổng hợp thành audio mà không cần chờ toàn bộ câu trả lời hoàn tất.
+    \item Audio chunk từ TTS được đưa vào hàng đợi event và stream về trình duyệt theo WebSocket.
+\end{enumerate}
+
+Chiến thuật này làm thay đổi bản chất latency. Với pipeline tuần tự, thời gian nghe được âm thanh đầu tiên xấp xỉ tổng thời gian sinh toàn bộ câu trả lời cộng với thời gian TTS. Với pipeline streaming, thời gian này chỉ phụ thuộc vào thời gian sinh chunk đầu tiên đủ tốt và thời gian TTS tạo frame đầu tiên cho chunk đó. Vì vậy, tối ưu chunking là một trong các đóng góp quan trọng của đồ án.
+
+\section{Các tính năng để hệ thống có thể triển khai thực tế}
+
+Để dự án không chỉ dừng ở mức demo ghép nối mô hình, hệ thống cần có các tính năng bảo vệ trải nghiệm người dùng, giảm rủi ro tư vấn sai và hỗ trợ vận hành. Trong codebase hiện tại, các nhóm tính năng đã có nền tảng kỹ thuật rõ ràng gồm guardrail an toàn, bộ nhớ hội thoại, barge-in và khả năng quan sát latency.
+
+Tính năng thứ nhất là guardrail an toàn y tế ở khối LLM. Trước khi truy xuất và sinh câu trả lời, câu hỏi của người dùng được kiểm tra bằng một lớp luật nhẹ để phát hiện ba nhóm tình huống: dấu hiệu khẩn cấp như khó thở, đau ngực, ngất hoặc co giật; yêu cầu vượt thẩm quyền như chẩn đoán, kê đơn, đổi liều thuốc; và câu hỏi ngoài phạm vi dinh dưỡng. Khi guardrail được kích hoạt, hệ thống không truy xuất RAG và không để LLM tự sinh tư vấn chi tiết, mà trả về thông điệp an toàn, khuyến nghị người dùng liên hệ bác sĩ hoặc đặt lại câu hỏi trong phạm vi dinh dưỡng. Đây là yêu cầu quan trọng đối với lĩnh vực sức khỏe, vì lỗi nghiêm trọng không chỉ là trả lời sai mà còn là tạo cảm giác hệ thống có thể thay thế bác sĩ.
+
+Tính năng thứ hai là bộ nhớ hội thoại theo phiên. Một người dùng thực tế hiếm khi hỏi một câu độc lập; họ có thể hỏi tiếp ``vậy tôi nên ăn bao nhiêu'', ``còn trẻ em thì sao'' hoặc ``tôi bị tiểu đường thì có khác không''. Vì vậy, Gateway lưu các lượt hội thoại gần nhất và tóm tắt các lượt cũ hơn. Khi Redis khả dụng, lịch sử được lưu theo session với thời gian sống giới hạn; khi chạy cục bộ, hệ thống dùng fallback memory trong RAM. Cách thiết kế này giúp hội thoại có ngữ cảnh nhưng vẫn kiểm soát được độ dài prompt.
+
+Tính năng thứ ba là barge-in, tức khả năng người dùng cắt lời bot. Trong hội thoại thật, người dùng có thể nhận ra bot hiểu sai câu hỏi hoặc muốn hỏi thêm trước khi bot đọc xong. Gateway kết hợp VAD streaming và tín hiệu hủy TTS để dừng audio hiện tại khi phát hiện người dùng bắt đầu nói. Nếu không có barge-in, hệ thống sẽ giống một trình đọc văn bản hơn là một trợ lý hội thoại.
+
+Tính năng thứ tư là truy vết nguồn và quan sát hệ thống. RAG lưu metadata như tiêu đề, nguồn và URL cho mỗi chunk. Dù câu trả lời thoại không đọc URL để tránh gây khó nghe, metadata vẫn cần được giữ lại cho giao diện debug, đánh giá chất lượng và kiểm tra nguồn khi có phản hồi xấu. Bên cạnh đó, khối LLM trả timing cho các giai đoạn query expansion, RAG, token đầu tiên và tổng thời gian xử lý. Các số liệu này là cơ sở để xác định nút thắt khi triển khai trên máy thật.
+
+Để hệ thống tiến gần hơn tới sản phẩm hoàn chỉnh, các tính năng tiếp theo nên được ưu tiên theo thứ tự thực dụng. Trước hết là giao diện hiển thị nguồn tham khảo ở dạng thẻ sau câu trả lời, chỉ dùng cho người đọc màn hình chứ không đọc qua TTS. Tiếp theo là cơ chế người dùng phản hồi theo mức hữu ích hoặc không hữu ích để thu thập lỗi RAG và lỗi ASR. Sau đó là trang quản trị corpus cho phép thêm tài liệu mới, rebuild embedding và kiểm tra câu hỏi nào không tìm được ngữ cảnh phù hợp. Cuối cùng là logging theo session với các trường transcript, tài liệu truy xuất, câu trả lời, mã guardrail và latency từng bước. Những tính năng này không làm thay đổi thuật toán cốt lõi, nhưng quyết định việc hệ thống có thể được vận hành, kiểm tra và cải thiện liên tục trong thực tế hay không.
+
+\chapter{PHÁT TRIỂN HỆ THỐNG, THỰC NGHIỆM VÀ ĐÁNH GIÁ}
+
+\section{Xây dựng kho tri thức}
+
+Kho tri thức dinh dưỡng được xây dựng từ các nguồn thông tin uy tín, sau đó trải qua các bước thu thập, làm sạch, chuẩn hóa và phân đoạn văn bản. Mục tiêu của quá trình này là tạo ra các chunk vừa đủ nhỏ để truy xuất chính xác, nhưng vẫn đủ ngữ cảnh để LLM sinh câu trả lời có ý nghĩa. Đây là bước nền tảng của hệ thống vì chất lượng RAG phụ thuộc trực tiếp vào độ tin cậy của nguồn dữ liệu và chất lượng phân đoạn văn bản.
+
+Quy trình xử lý dữ liệu gồm các bước: loại bỏ nội dung nhiễu, chuẩn hóa unicode và khoảng trắng, tách câu hoặc đoạn theo ngữ nghĩa, tạo embedding cho từng chunk và lưu vào Qdrant. Với các tài liệu dài, chiến lược chunking cần tránh cắt giữa các ý quan trọng. Kích thước chunk là một tham số quan trọng vì ảnh hưởng đồng thời đến chất lượng truy xuất, chi phí embedding và độ chính xác của câu trả lời.
+
+Corpus hiện tại gồm 1060 bài viết dinh dưỡng từ ba nguồn công khai có tính chuyên môn: Báo Sức khỏe và Đời sống, trang web của Viện Dinh dưỡng Quốc gia và Bệnh viện Đa khoa Quốc tế Thu Cúc. Mỗi bản ghi trong kho dữ liệu có các trường: nguồn, URL, tiêu đề, nội dung, chuyên mục và thời điểm thu thập. Nội dung được dùng để tạo kho tri thức cho các chủ đề như tăng chiều cao, chế độ ăn cho bệnh nền, vitamin, khoáng chất, dinh dưỡng cho trẻ em và phụ nữ mang thai. Sau khi thu thập, dữ liệu được làm sạch để loại bỏ nhiễu HTML, chuẩn hóa xuống dòng và ghép các đoạn rời rạc thành văn bản liền mạch.
+
+Trong quá trình embedding, mỗi chunk được lưu cùng metadata như tiêu đề, nguồn và URL. Metadata không được đọc trực tiếp trong câu trả lời thoại, nhưng vẫn có ích cho debug, đánh giá và truy vết nguồn dữ liệu. Khi triển khai bằng Docker, Qdrant có volume lưu trữ riêng và có cơ chế khôi phục snapshot. Điều này giúp hệ thống có thể tái lập collection mà không cần chạy lại toàn bộ pipeline thu thập, làm sạch và embedding dữ liệu.
+
+\section{Phát triển hệ thống}
+
+\subsection{Thiết kế hệ thống}
+
+Thiết kế hệ thống trong giai đoạn phát triển bám theo giải pháp đã trình bày ở Chương 3. Hệ thống được tổ chức thành các khối độc lập gồm Web Client, Gateway, ASR, LLM/RAG, TTS, Qdrant và Redis. Gateway là điểm điều phối trung tâm, chịu trách nhiệm nhận audio từ client, gửi audio sang ASR, chuyển transcript sang LLM/RAG, nhận text stream từ LLM/RAG, chia văn bản thành các chunk phù hợp và gửi sang TTS để tổng hợp âm thanh.
+
+Về công nghệ, Gateway và các worker phía sau được xây dựng bằng FastAPI để thuận tiện triển khai các luồng HTTP/WebSocket và streaming. Web Client được xây dựng bằng React để phục vụ thu âm, hiển thị trạng thái hội thoại và phát audio trả về. Qdrant được dùng làm vector database cho kho tri thức dinh dưỡng, Redis được dùng để lưu trạng thái phiên và lịch sử hội thoại ngắn hạn. Các mô hình AI được tách thành các worker riêng để thuận tiện kiểm thử, thay thế mô hình và đo latency theo từng thành phần.
+
+Thiết kế này cho phép hệ thống chạy cục bộ trong quá trình phát triển, đồng thời có thể đóng gói bằng Docker để tái lập môi trường triển khai. Với môi trường có GPU, các thành phần nặng như ASR, embedding, reranking hoặc TTS có thể được tăng tốc bằng CUDA. Với môi trường CPU, hệ thống vẫn có thể chạy nhưng cần điều chỉnh mô hình, số luồng xử lý và mức đồng thời phù hợp.
+
+\placeholderfigure{Luồng xử lý voice-to-voice}{Audio từ client được stream đến ASR; transcript được gửi đến LLM; LLM stream text sang TTS; TTS stream audio về Gateway và trả về client.}
+
+Các nhóm giao tiếp quan trọng trong hệ thống gồm:
+
+\begin{itemize}
+    \item Gateway cung cấp kênh hội thoại thời gian thực, kiểm tra trạng thái hệ thống và điều phối session.
+    \item ASR hỗ trợ nhận dạng theo audio hoàn chỉnh và nhận dạng theo luồng có VAD.
+    \item LLM/RAG hỗ trợ query expansion, HyDE, truy xuất hai bước, sinh câu trả lời đầy đủ, sinh câu trả lời dạng streaming và nén lịch sử hội thoại.
+    \item TTS hỗ trợ tổng hợp audio đầy đủ, tổng hợp PCM dạng streaming và hủy tổng hợp để phục vụ barge-in.
+\end{itemize}
+
+Việc tách chế độ batch và streaming giúp quá trình phát triển thuận tiện hơn. Chế độ batch phù hợp cho kiểm thử nhanh hoặc xử lý audio hoàn chỉnh; chế độ streaming phù hợp cho hội thoại trực tiếp. Trong đánh giá latency, các luồng streaming là trọng tâm vì chúng phản ánh trải nghiệm người dùng thực tế.
+
+\subsection{Xây dựng hệ thống}
+
+Quá trình xây dựng hệ thống được thực hiện theo hướng phát triển và kiểm thử từng mô-đun trước khi tích hợp end-to-end. ASR được kiểm tra với audio mẫu và audio thu trực tiếp để đánh giá khả năng tạo transcript tiếng Việt. LLM/RAG được kiểm tra bằng các câu hỏi dinh dưỡng phổ biến nhằm đánh giá query expansion, HyDE, truy xuất tài liệu, reranking và khả năng sinh câu trả lời dựa trên context. TTS được kiểm tra bằng các đoạn văn bản có độ dài khác nhau để đánh giá thời gian tạo audio đầu tiên và độ tự nhiên khi đọc.
+
+Sau khi từng thành phần hoạt động ổn định, hệ thống được tích hợp thành pipeline hoàn chỉnh từ Web Client đến Gateway, ASR, LLM/RAG, TTS và trả audio về trình duyệt. Các kịch bản kiểm thử đơn vị tập trung vào hàm xử lý văn bản, guardrail, query expansion, lựa chọn context và các logic streaming. Các kịch bản kiểm thử tích hợp tập trung vào luồng hỏi đáp hoàn chỉnh, khả năng phát audio liên tục, barge-in và việc giữ session memory giữa các lượt hội thoại.
+
+Hệ thống hỗ trợ chạy cục bộ và triển khai bằng Docker. Docker Compose định nghĩa các thành phần Gateway, ASR, LLM/RAG, TTS, Qdrant, Redis và Web. Gateway phụ thuộc vào ASR, LLM/RAG, TTS và Redis. Worker LLM/RAG phụ thuộc vào Qdrant và cơ chế khôi phục dữ liệu vector. Mỗi worker AI có healthcheck riêng để phát hiện lỗi khởi động. Bản cấu hình GPU override cho phép tăng tốc phần cứng bằng CUDA khi máy chủ có GPU phù hợp.
+
+Kết quả minh họa của giai đoạn xây dựng là hệ thống có thể thực hiện một lượt demo voice-to-voice: người dùng nói câu hỏi dinh dưỡng, hệ thống nhận dạng transcript, truy xuất tri thức, sinh câu trả lời dạng streaming, chuyển từng đoạn sang TTS và phát âm thanh phản hồi trên trình duyệt. Kết quả này là cơ sở để chuyển sang phần thực nghiệm và đánh giá độ trễ, chất lượng RAG cũng như vai trò của từng mô-đun trong pipeline.
+
+Các tham số đáng chú ý trong hệ thống gồm:
+
+\begin{table}[H]
+    \centering
+    \caption{Một số tham số cấu hình chính}
+    \begin{tabular}{|p{4cm}|p{3cm}|p{6cm}|}
+        \hline
+        \textbf{Tham số}                & \textbf{Giá trị mặc định} & \textbf{Ý nghĩa}                                             \\
+        \hline
+        \texttt{ASR\_NUM\_THREADS}      & 4                         & Số luồng CPU cho Sherpa-ONNX.                                \\
+        \hline
+        \texttt{MIN\_TEXT\_CHUNK\_SIZE} & 40                        & Kích thước tối thiểu của text chunk trước khi gửi TTS.       \\
+        \hline
+        Số chunk ứng viên từ Qdrant     & 15                        & Số chunk được lấy ở bước truy xuất ban đầu trước rerank.     \\
+        \hline
+        Số chunk đưa vào LLM            & 5                         & Số chunk tốt nhất sau rerank được đưa vào đầu vào của LLM.   \\
+        \hline
+        \texttt{LLM\_BACKEND}           & gemini                    & Backend sinh câu trả lời, có thể đổi sang OpenAI-compatible. \\
+        \hline
+        \texttt{TTS\_DEVICE}            & auto                      & Thiết bị chạy TTS, tự chọn CPU hoặc CUDA tùy môi trường.     \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\section{Thiết lập thực nghiệm}
+
+Các thực nghiệm được thiết kế nhằm đánh giá hai khía cạnh chính của hệ thống: chất lượng câu trả lời dựa trên RAG và độ trễ trong tương tác giọng nói. Hệ thống được chạy trong môi trường Docker để tái lập cấu hình giữa các lần đo. Các thành phần Gateway, ASR, LLM/RAG, TTS, Qdrant, Redis và Web được khởi động như các service độc lập, trong đó các mô hình AI có thể sử dụng tăng tốc phần cứng bằng CUDA/GPU khi môi trường hỗ trợ.
+
+Với đánh giá chất lượng RAG, mỗi mẫu đánh giá gồm câu hỏi, câu trả lời sinh bởi hệ thống và các ngữ cảnh được truy xuất từ kho tri thức. Các câu hỏi được chọn xoay quanh các chủ đề dinh dưỡng phổ biến như chế độ ăn cho bệnh nền, vitamin, khoáng chất, giảm cân, dinh dưỡng cho trẻ em và phụ nữ mang thai. Với đánh giá độ trễ, hệ thống được đo trên nhiều cấu hình chunking khác nhau để phân tích ảnh hưởng của kích thước đoạn văn bản đến Time-to-First-Audio và tổng thời gian phản hồi.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.82\textwidth]{report_figures/image1.png}
+    \caption{Phân bố độ dài audio trong tập đánh giá}
+\end{figure}
+
+Hình trên cho thấy phần lớn các mẫu audio trong tập đánh giá có độ dài ngắn đến trung bình, tập trung chủ yếu quanh vùng dưới 15 giây. Giá trị trung bình khoảng 9.56 giây và trung vị khoảng 7.95 giây, cho thấy tập đánh giá phản ánh khá đúng kiểu câu hỏi thoại ngắn trong một hệ thống tư vấn. Tuy nhiên, phân bố vẫn có một số mẫu dài hơn 15 giây, thậm chí kéo dài tới khoảng một phút. Nhóm mẫu dài này quan trọng vì chúng giúp kiểm tra khả năng xử lý của ASR và pipeline streaming trong các trường hợp người dùng nói dài, đặt câu hỏi phức tạp hoặc mô tả nhiều điều kiện sức khỏe cùng lúc.
+
+\section{Đánh giá chất lượng RAG}
+
+Chất lượng của hệ thống được đánh giá bằng RAGAS, tập trung vào quan hệ giữa câu hỏi, câu trả lời và ngữ cảnh truy xuất. Các chỉ số quan trọng gồm:
+
+\begin{itemize}
+    \item \textbf{Faithfulness:} mức độ câu trả lời bám sát ngữ cảnh được truy xuất.
+    \item \textbf{Context Recall:} khả năng truy xuất đúng tài liệu cần thiết cho câu hỏi.
+    \item \textbf{Answer Relevancy:} mức độ câu trả lời tập trung vào câu hỏi của người dùng.
+\end{itemize}
+
+Framework đánh giá chất lượng được xây dựng quanh RAGAS. Bộ dữ liệu đánh giá gồm câu hỏi, câu trả lời tham chiếu và ngữ cảnh liên quan. Với mỗi mẫu, hệ thống sinh câu trả lời và lưu lại context được truy xuất. Sau đó, RAGAS tính các chỉ số như faithfulness, answer relevancy, context precision và context recall. Cách đánh giá này phù hợp với hệ thống RAG vì nó không chỉ kiểm tra câu trả lời cuối cùng mà còn đánh giá chất lượng truy xuất ngữ cảnh.
+
+Bên cạnh RAGAS, đồ án sử dụng ablation study để phân tích vai trò của từng thành phần trong pipeline. Cụ thể, hệ thống có thể so sánh kết quả khi có và không có reranker để đo ảnh hưởng của reranking đến độ phù hợp của ngữ cảnh; so sánh khi có và không có query expansion để đánh giá tác động của chuẩn hóa thuật ngữ đến độ phủ tri thức; đồng thời thay đổi kích thước chunk để phân tích trade-off giữa độ trễ, chất lượng giọng nói và tính đầy đủ của câu trả lời.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.32\textwidth]{report_figures/image4.png}
+    \includegraphics[width=0.32\textwidth]{report_figures/image5.png}
+    \includegraphics[width=0.32\textwidth]{report_figures/image6.png}
+    \caption{Phân bố thời gian RAG và thời gian sinh phần trả lời đầu tiên theo các cấu hình truy xuất}
+\end{figure}
+
+Ba biểu đồ trên minh họa ảnh hưởng của cấu hình truy xuất đến thời gian xử lý của khối LLM/RAG. Mỗi cấu hình gồm hai nhóm thời gian chính: thời gian RAG, tức thời gian mở rộng truy vấn, truy xuất và reranking; và thời gian sinh phần trả lời đầu tiên của LLM. Khi tăng số lượng chunk ứng viên và số chunk đưa vào LLM, thời gian RAG có xu hướng tăng vì hệ thống phải xử lý nhiều ứng viên hơn ở bước reranking và đưa nhiều ngữ cảnh hơn vào prompt. Ngược lại, thời gian sinh phần trả lời đầu tiên của LLM biến động ít hơn, do phần này phụ thuộc nhiều vào backend LLM và độ dài prompt sau khi đã chọn context.
+
+Các biểu đồ này giúp giải thích lý do đồ án không chỉ chọn cấu hình có nhiều tài liệu nhất. Cấu hình truy xuất lớn hơn có thể cải thiện độ phủ ngữ cảnh, nhưng cũng làm tăng độ trễ trước khi LLM bắt đầu sinh câu trả lời. Vì voicebot cần phản hồi nhanh, cấu hình truy xuất phải cân bằng giữa chất lượng RAG và độ trễ cảm nhận của người dùng.
+
+Bên cạnh chất lượng RAG, đồ án còn đánh giá các thành phần riêng lẻ. ASR có thể được đo bằng WER và CER khi có transcript chuẩn. TTS được đánh giá bằng real-time factor, thời gian tạo chunk đầu tiên và đánh giá chủ quan MOS. Pipeline tổng thể được đo bằng thời gian từ lúc kết thúc câu nói đến audio đầu tiên. Việc tách các chỉ số theo module giúp xác định thành phần nào là nút thắt trong từng cấu hình.
+
+\section{Đánh giá độ trễ}
+
+Độ trễ là tiêu chí cốt lõi của một hệ thống voicebot thời gian thực. Đồ án tập trung đo các thành phần chính: thời gian ASR sinh transcript, thời gian RAG truy xuất và rerank, thời gian LLM sinh token đầu tiên, thời gian TTS tạo audio đầu tiên và thời gian end-to-end từ lúc người dùng nói xong đến lúc nghe phản hồi.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.82\textwidth]{report_figures/image2.png}
+    \caption{So sánh kết quả nhận dạng tiếng nói trên các tập đánh giá tiếng Việt}
+\end{figure}
+
+Hình trên so sánh lỗi nhận dạng tiếng nói của nhiều mô hình ASR trên các tập đánh giá tiếng Việt khác nhau. Kết quả cho thấy chất lượng ASR thay đổi đáng kể theo mô hình và theo tập dữ liệu. Điều này phản ánh đặc điểm quan trọng của pipeline voicebot: transcript đầu vào không phải lúc nào cũng hoàn hảo, và lỗi ASR có thể lan truyền sang bước truy xuất tri thức. Vì vậy, hệ thống cần có các bước giảm tác động của lỗi nhận dạng, chẳng hạn chuẩn hóa thuật ngữ dinh dưỡng, query expansion và truy xuất dựa trên nhiều biến thể câu hỏi.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.82\textwidth]{report_figures/asr_rtf_bar_comparison.png}
+    \caption{So sánh real-time factor của các mô hình ASR}
+\end{figure}
+
+Biểu đồ real-time factor cho thấy sự khác biệt rõ giữa các mô hình ASR về tốc độ xử lý. Đường tham chiếu RTF bằng 1 biểu thị ngưỡng real-time: nếu RTF nhỏ hơn 1, mô hình xử lý nhanh hơn thời lượng audio đầu vào. ZipFormer-RNNT và ZipFormer-VI-70k có RTF rất thấp ở cả p50 và p95, cho thấy khả năng xử lý nhanh và ổn định hơn cho bài toán hội thoại thời gian thực. ChunkFormer-CTC vẫn nằm dưới ngưỡng real-time nhưng có p95 cao hơn, nghĩa là trong một số trường hợp chậm hệ thống có thể mất nhiều thời gian hơn. PhoWhisper-Large có p95 gần 1, tức là các trường hợp chậm gần sát ngưỡng real-time. Kết quả này cho thấy lựa chọn mô hình ASR ảnh hưởng trực tiếp đến độ trễ đầu vào của toàn bộ pipeline.
+
+Các chỉ số được báo cáo theo percentile như p50, p90 và p99 để phản ánh cả trải nghiệm trung bình và trải nghiệm trong các trường hợp chậm. Trong đó, Time-to-First-Audio là chỉ số đặc biệt quan trọng vì quyết định cảm nhận phản hồi tức thời của người dùng. Cơ chế streaming song song giữa LLM và TTS được kỳ vọng giúp giảm đáng kể chỉ số này so với pipeline tuần tự.
+
+Thí nghiệm độ trễ được thực hiện trên bốn cấu hình: không chunking, chunk 80, chunk 40 và chunk 20. Mỗi cấu hình gồm 250 lượt đo. Kết quả thống kê cho thấy chunking làm giảm mạnh Time-to-First-Audio so với pipeline full. Bảng dưới đây tóm tắt một số kết quả chính:
+
+\begin{table}[H]
+    \centering
+    \caption{Kết quả đánh giá độ trễ theo cấu hình chunk}
+    \begin{tabular}{|p{2.5cm}|p{2cm}|p{2.5cm}|p{2.5cm}|p{2.5cm}|}
+        \hline
+        \textbf{Cấu hình} & \textbf{Số mẫu} & \textbf{TTFA mean} & \textbf{TTFA p50} & \textbf{TTFA p90} \\
+        \hline
+        Full              & 250             & 1614.2 ms          & 1523.0 ms         & 1760.9 ms         \\
+        \hline
+        Chunk 80          & 250             & 1059.5 ms          & 1055.1 ms         & 1179.4 ms         \\
+        \hline
+        Chunk 40          & 250             & 748.8 ms           & 746.7 ms          & 821.6 ms          \\
+        \hline
+        Chunk 20          & 250             & 603.9 ms           & 603.4 ms          & 660.0 ms          \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Kết quả này cho thấy chiến thuật streaming có tác động rõ rệt đến độ trễ cảm nhận. Cấu hình full có p50 khoảng 1523 ms, gần sát ngưỡng mục tiêu 1.5 giây và có p90 vượt ngưỡng. Khi giảm kích thước chunk xuống 40 ký tự, p50 TTFA giảm còn khoảng 747 ms và p90 còn khoảng 822 ms. Với chunk 20, TTFA tiếp tục giảm nhưng có nguy cơ làm giọng nói bị ngắt đoạn nhiều hơn. Vì vậy, chunk 40 là lựa chọn cân bằng hơn giữa độ trễ và độ tự nhiên của audio.
+
+Ngoài TTFA, tổng thời gian xử lý cũng giảm khi dùng chunking. Trung bình cấu hình full cần khoảng 4333.5 ms, trong khi chunk 40 cần khoảng 1508.9 ms và chunk 20 cần khoảng 1258.8 ms. Điều này phản ánh lợi ích của việc chồng lấp thời gian sinh văn bản và thời gian tổng hợp giọng nói. Tuy nhiên, kết quả latency cần được phân tích cùng với đánh giá MOS hoặc nghe thử để tránh tối ưu quá mức theo số liệu mà làm giảm trải nghiệm âm thanh.
+
+\chapter{KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN}
+
+\section{Kết luận}
+
+Đồ án đã đề xuất và xây dựng một hệ thống tư vấn dinh dưỡng thời gian thực qua giọng nói dựa trên pipeline mô-đun, streaming bất đồng bộ và RAG. Hệ thống kết hợp các mô-đun ASR, LLM và TTS để tạo thành pipeline voice-to-voice hoàn chỉnh. Điểm trọng tâm của giải pháp là tối ưu Voice RAG dưới ràng buộc độ trễ: câu hỏi được phân luồng và chuẩn hóa trước khi truy xuất, tài liệu được chọn theo mức phù hợp, câu trả lời được sinh dựa trên ngữ cảnh truy xuất, và luồng LLM--TTS được điều phối để giảm thời gian phản hồi âm thanh đầu tiên.
+
+Các đóng góp chính của đồ án gồm: thiết kế pipeline voice-to-voice mô-đun cho voicebot dinh dưỡng tiếng Việt; đề xuất cơ chế Voice RAG thích nghi theo độ phức tạp câu hỏi và độ trễ hệ thống; áp dụng query expansion, truy xuất tài liệu và reranking để cải thiện chất lượng bằng chứng; đề xuất chiến thuật word-safe chunking kết hợp streaming song song giữa LLM và TTS; bổ sung guardrail an toàn cho các tình huống nhạy cảm; xây dựng bộ tiêu chí đánh giá kết hợp giữa chất lượng RAG, Time-to-First-Audio và độ trễ end-to-end.
+
+Về mặt hiện thực, đồ án đã xây dựng được một codebase có đầy đủ các lớp cần thiết cho hệ thống: frontend React để thu và phát audio; Gateway FastAPI để điều phối WebSocket; ASR worker cho nhận dạng tiếng nói; LLM worker cho RAG và streaming câu trả lời; TTS worker cho tổng hợp giọng nói; Docker Compose để triển khai nhiều dịch vụ; các script đánh giá RAGAS, ASR, TTS và latency. Các thành phần này tạo thành một nền tảng thử nghiệm hoàn chỉnh cho bài toán tối ưu voicebot theo cả chất lượng và độ trễ.
+
+Kết quả đánh giá chunking cho thấy kiến trúc streaming song song là hướng đi hiệu quả. Khi chuyển từ pipeline full sang chunk 40, p50 Time-to-First-Audio giảm từ khoảng 1523 ms xuống khoảng 747 ms. Điều này chứng minh rằng không cần thay đổi mô hình nền, chỉ cần tổ chức lại luồng xử lý, kiểm soát kích thước chunk và chồng lấp LLM với TTS cũng có thể cải thiện đáng kể trải nghiệm hội thoại.
+
+\section{Hạn chế}
+
+Hệ thống vẫn tồn tại một số hạn chế. Chất lượng nhận dạng giọng nói có thể giảm trong môi trường nhiễu hoặc khi người dùng nói quá nhanh. Kho tri thức dinh dưỡng cần tiếp tục được mở rộng và cập nhật để bao phủ nhiều tình huống hơn. Ngoài ra, pipeline nhiều mô-đun tuy linh hoạt nhưng vẫn có chi phí vận hành và độ phức tạp triển khai cao hơn so với một mô hình end-to-end.
+
+Một hạn chế khác là chất lượng cuối cùng phụ thuộc mạnh vào dữ liệu corpus. Nếu câu hỏi nằm ngoài phạm vi các bài viết đã thu thập, RAG có thể truy xuất ngữ cảnh không đủ thông tin, khiến LLM phải dựa nhiều hơn vào kiến thức nền. Bên cạnh đó, các mô hình embedding và reranking có chi phí tính toán đáng kể, đặc biệt khi chạy CPU. TTS cũng có trade-off giữa thời gian tạo audio đầu tiên và độ mượt khi đọc: chunk nhỏ giúp phản hồi nhanh hơn nhưng có thể tạo cảm giác ngắt câu.
+
+Trong triển khai hiện tại, một số tham số vẫn cần tuning theo môi trường chạy thực tế, ví dụ số chunk ứng viên lấy từ Qdrant, số chunk tốt nhất đưa vào LLM, kích thước chunk văn bản cho TTS, backend LLM, thiết bị chạy ASR và TTS, cũng như mức concurrency. Vì vậy, kết quả trên một máy cụ thể không nên được xem là kết quả tuyệt đối cho mọi môi trường triển khai.
+
+\section{Hướng phát triển}
+
+Trong tương lai, hệ thống có thể được phát triển theo các hướng sau:
+\begin{enumerate}[label=\arabic*)]
+    \item Tiếp tục mở rộng kho tri thức với nhiều nguồn y tế và dinh dưỡng được kiểm chứng hơn.
+    \item Hoàn thiện query triage để nhận biết câu hỏi ngoài phạm vi dinh dưỡng, câu hỏi mơ hồ và các tình huống cần khuyến nghị gặp bác sĩ.
+    \item Mở rộng truy xuất thích nghi bằng hybrid retrieval, context compression nhẹ và semantic cache cho các câu hỏi phổ biến.
+    \item Cải thiện khả năng xử lý đồng thời bằng cách đo real-time factor của TTS, giới hạn số yêu cầu tổng hợp và hủy phản hồi cũ theo session.
+    \item Cải thiện khả năng xử lý tiếng nói trong môi trường nhiễu bằng VAD và ASR streaming tốt hơn.
+    \item Cá nhân hóa tư vấn dựa trên lịch sử hội thoại, độ tuổi, bệnh nền và mục tiêu dinh dưỡng của người dùng.
+\end{enumerate}
+
+Ngoài các hướng trên, hệ thống có thể được mở rộng theo hướng đánh giá liên tục trong quá trình vận hành. Mỗi phiên hội thoại có thể ghi lại transcript, context truy xuất, câu trả lời, thời gian từng module và phản hồi người dùng. Dữ liệu này giúp phát hiện các câu hỏi corpus gap, bổ sung tài liệu mới vào kho tri thức và cải thiện từ điển query expansion. Khi số lượng dữ liệu thực tế đủ lớn, hệ thống có thể chuyển từ tuning thủ công sang tối ưu dựa trên thống kê sử dụng.
+
+\begin{thebibliography}{9}
+    \bibitem{rag}
+    Patrick Lewis et al. Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks. NeurIPS, 2020.
+
+    \bibitem{transformer}
+    Ashish Vaswani et al. Attention Is All You Need. NeurIPS, 2017.
+
+    \bibitem{qdrant}
+    Qdrant Documentation. Vector similarity search engine and vector database.
+
+    \bibitem{ragas}
+    RAGAS Documentation. Evaluation framework for Retrieval-Augmented Generation systems.
+\end{thebibliography}
+
+\end{document}

@@ -113,7 +113,7 @@ async def main(args):
         print(f"⚠️ Không tìm thấy file {data_path}. Sử dụng các câu hỏi mặc định.")
         queries = [
             "Công ty tôi Cổ phần có 3 người, giờ muốn thêm 1 người nữa thì hồ sơ thay đổi ra sao?",
-            "Vợ chồng em ly hôn mà có tranh chấp tài sản là căn nhà đứng tên chồng trước khi cưới thì chia sao luật sư?",
+            "Người bị tiểu đường type 2 nên ăn tinh bột như thế nào để kiểm soát đường huyết?",
             "Tôi chạy xe máy bị cảnh sát giao thông phạt lỗi không gương chiếu hậu, mức phạt hiện hành là bao nhiêu?"
         ]
 
@@ -205,7 +205,7 @@ async def main(args):
         
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Load testing script for Legal CallBot Latency")
+    parser = argparse.ArgumentParser(description="Load testing script for Nutrition CallBot Latency")
     parser.add_argument("--host", type=str, default="127.0.0.1", help="Host của Brain Server")
     parser.add_argument("--port", type=int, default=50052, help="Port của Brain Server")
     parser.add_argument("-u", "--users", type=int, default=5, help="Số lượng người dùng gọi ĐỒNG THỜI (Concurrency)")

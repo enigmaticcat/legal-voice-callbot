@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import asyncio
 import os
@@ -77,14 +79,15 @@ class RAGPipeline:
 
         import torch
         device = "cuda" if torch.cuda.is_available() else "cpu"
+        model_kwargs = {"torch_dtype": torch.float16} if device == "cuda" else {}
         logger.info(f"Loading embedding model: {MODEL_NAME} (device={device})")
         self.model = SentenceTransformer(
             MODEL_NAME, device=device,
-            model_kwargs={"torch_dtype": torch.float16},
+            model_kwargs=model_kwargs,
         )
         logger.info(f"Loading reranker model: {RERANKER_MODEL} (device={device})")
         self.reranker = CrossEncoder(RERANKER_MODEL, device=device,
-                                     model_kwargs={"torch_dtype": torch.float16})
+                                     model_kwargs=model_kwargs)
         logger.info("RAGPipeline ready.")
 
     def _collection_has_data(self) -> bool:

@@ -4,6 +4,8 @@ Voice Activity Detection — Silero VAD via silero-vad (PyTorch).
 Phân tích từng window 512 samples (32ms @ 16kHz), theo dõi trạng thái
 SILENCE → SPEECH → TRAILING_SILENCE để cắt ra các đoạn lời nói hoàn chỉnh.
 """
+from __future__ import annotations
+
 import logging
 
 import numpy as np

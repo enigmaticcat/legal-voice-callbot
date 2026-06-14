@@ -1,6 +1,6 @@
-# Legal CallBot
+# Nutrition CallBot
 
-> Hệ thống tư vấn pháp luật Việt Nam bằng giọng nói AI
+> Hệ thống tư vấn dinh dưỡng bằng giọng nói AI
 
 ## Kiến Trúc
 
@@ -12,7 +12,7 @@ Client (Web) → WebSocket → Gateway (FastAPI) → gRPC → ASR / Brain / TTS
 |:--------|:-----|:-------|
 | **Gateway** | 8000 | API Gateway + WebSocket Orchestrator |
 | **ASR** | 50051 | Nhận diện giọng nói (Faster-Whisper) |
-| **Brain** | 50052 | Suy luận pháp lý (Gemini + RAG) |
+| **Brain** | 50052 | Suy luận dinh dưỡng (Gemini + RAG) |
 | **TTS** | 50053 | Tổng hợp giọng nói (VieNeu-TTS) |
 | **Web** | 3000 | Giao diện cuộc gọi (React) |
 
@@ -34,10 +34,18 @@ curl localhost:8000   # → {"status": "ok"}
 make down
 ```
 
+## Development Checks
+
+```bash
+python3 -m pip install -r requirements-dev.txt
+python3 -m pytest tests/test_unit.py -q
+npm --prefix web run build
+```
+
 ## Cấu Trúc Thư Mục
 
 ```
-legal-callbot/
+nutrition-callbot/
 ├── gateway/             # API Gateway (FastAPI)
 │   ├── routes/          # HTTP/WS endpoints
 │   ├── services/        # Business logic

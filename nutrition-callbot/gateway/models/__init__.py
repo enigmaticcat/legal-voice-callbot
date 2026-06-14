@@ -1,3 +1,3 @@
 """
-Legal CallBot — Gateway Data Models Package
+Nutrition CallBot — Gateway Data Models Package
 """
