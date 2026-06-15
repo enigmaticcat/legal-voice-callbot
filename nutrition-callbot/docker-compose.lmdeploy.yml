@@ -1,0 +1,52 @@
+# LMDeploy TTS override — chạy từ thư mục nutrition-callbot/:
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml -f docker-compose.lmdeploy.yml up --build -d tts-lmdeploy tts
+#
+# Ghi chú:
+# - Không dùng model GGUF cho LMDeploy.
+# - TTS service chỉ giữ codec local và gọi LMDeploy OpenAI-compatible API.
+
+services:
+  tts-lmdeploy:
+    build:
+      context: .
+      dockerfile: tts/Dockerfile.lmdeploy
+    container_name: callbot-tts-lmdeploy
+    ports:
+      - "${TTS_LMDEPLOY_PORT:-23333}:23333"
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN:-}
+      - LMDEPLOY_MODEL=${TTS_LMDEPLOY_MODEL:-pnnbao-ump/VieNeu-TTS}
+      - LMDEPLOY_MODEL_NAME=${TTS_LMDEPLOY_MODEL:-pnnbao-ump/VieNeu-TTS}
+      - LMDEPLOY_TP=${LMDEPLOY_TP:-1}
+      - LMDEPLOY_CACHE_MAX_ENTRY_COUNT=${LMDEPLOY_CACHE_MAX_ENTRY_COUNT:-0.3}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:23333/v1/models >/dev/null || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 240s
+    networks:
+      - callbot-net
+    restart: unless-stopped
+
+  tts:
+    environment:
+      - TTS_BACKEND=lmdeploy
+      - TTS_LMDEPLOY_API_BASE=http://tts-lmdeploy:23333/v1
+      - TTS_LMDEPLOY_MODEL=${TTS_LMDEPLOY_MODEL:-pnnbao-ump/VieNeu-TTS}
+      - TTS_CODEC_DEVICE=${TTS_CODEC_DEVICE:-cuda}
+      - TTS_REQUIRE_CUDA=${TTS_REQUIRE_CUDA:-false}
+      - TTS_MAX_CONCURRENT=${TTS_MAX_CONCURRENT:-4}
+    depends_on:
+      tts-lmdeploy:
+        condition: service_healthy

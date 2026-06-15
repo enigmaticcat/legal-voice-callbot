@@ -1,6 +1,7 @@
 FROM python:3.12-slim
 
 WORKDIR /app
+ENV PYTHONPATH=/app
 # espeak-ng cần cho phonemizer
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl espeak-ng libespeak-ng-dev build-essential \
@@ -15,6 +16,7 @@ RUN pip install --no-cache-dir llama-cpp-python \
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY tts/ .
+COPY observability/ ./observability/
 
 EXPOSE 50053
 CMD ["python", "server.py"]

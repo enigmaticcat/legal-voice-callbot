@@ -9,6 +9,7 @@ RUN npm run build
 # ── Stage 2: Gateway ────────────────────────────────────────────────────
 FROM python:3.12-slim
 WORKDIR /app/gateway
+ENV PYTHONPATH=/app
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
@@ -17,6 +18,7 @@ COPY gateway/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY gateway/ .
+COPY observability/ /app/observability/
 # Web dist được serve tại /app/web/dist (Path(__file__).parent.parent / "web" / "dist")
 COPY --from=web-builder /web/dist /app/web/dist
 

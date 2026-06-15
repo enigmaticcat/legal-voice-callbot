@@ -22,6 +22,7 @@ RUN pip uninstall -y torchao || true
 RUN pip uninstall -y torchtune || true
 
 COPY tts/ .
+COPY observability/ ./observability/
 
 EXPOSE 50053
 CMD ["python", "server.py"]

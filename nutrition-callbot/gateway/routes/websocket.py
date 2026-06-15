@@ -10,6 +10,7 @@ import websockets
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from config import settings
+from metrics_state import metrics
 from services.orchestrator import Orchestrator
 import services.session_memory as session_memory
 
@@ -24,6 +25,7 @@ _MAX_FALLBACK_TURNS = 3
 async def voice_chat(websocket: WebSocket):
     session_id = str(uuid4())
     await websocket.accept()
+    metrics.add_gauge("callbot_gateway_ws_sessions", 1, endpoint="voice")
     logger.info("[%s] Client connected", session_id)
 
     mem = session_memory.get()
@@ -340,6 +342,7 @@ async def voice_chat(websocket: WebSocket):
     except WebSocketDisconnect:
         logger.info("[%s] Client disconnected", session_id)
     finally:
+        metrics.add_gauge("callbot_gateway_ws_sessions", -1, endpoint="voice")
         # Cleanup VAD worker khi session kết thúc
         if vad_active and vad_audio_q is not None:
             await vad_audio_q.put(None)

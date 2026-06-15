@@ -5,7 +5,7 @@ import time
 
 import httpx
 from fastapi import FastAPI, Request
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import StreamingResponse, JSONResponse, Response
 import uvicorn
 
 from brain.config import config
@@ -13,12 +13,14 @@ from brain.core.llm import LLMClient
 from brain.core.rag import RAGPipeline
 from brain.core.chunker import chunk_llm_stream
 from brain.grpc_handler import BrainServiceHandler
+from observability.metrics import ActiveRequest, MetricsRegistry
 
 logging.basicConfig(
     level=config.log_level,
     format="%(asctime)s | %(name)s | %(levelname)s | %(message)s",
 )
 logger = logging.getLogger("brain")
+metrics = MetricsRegistry("brain")
 
 llm = LLMClient(api_key=config.gemini_api_key, model=config.gemini_model)
 qdrant_url = config.qdrant_url or f"http://{config.qdrant_host}:{config.qdrant_port}"
@@ -49,6 +51,11 @@ async def health():
     return {"status": "healthy", "service": "brain"}
 
 
+@app.get("/metrics")
+async def prometheus_metrics():
+    return Response(metrics.render(), media_type="text/plain; version=0.0.4")
+
+
 @app.get("/")
 async def root():
     return {
@@ -69,13 +76,26 @@ async def think(request: Request):
     full_text = []
     timing = {}
     contexts = []
-    async for chunk in handler.think(query, session_id, history):
-        if chunk["text"]:
-            full_text.append(chunk["text"])
-        if "timing" in chunk:
-            timing.update(chunk["timing"])
-        if "contexts" in chunk:
-            contexts = chunk["contexts"]
+    started = time.perf_counter()
+    with ActiveRequest(metrics, "callbot_brain_active_requests", endpoint="think"):
+        try:
+            async for chunk in handler.think(query, session_id, history):
+                if chunk["text"]:
+                    full_text.append(chunk["text"])
+                if "timing" in chunk:
+                    timing.update(chunk["timing"])
+                if "contexts" in chunk:
+                    contexts = chunk["contexts"]
+            metrics.inc("callbot_brain_requests_total", endpoint="think", status="ok")
+        except Exception:
+            metrics.inc("callbot_brain_requests_total", endpoint="think", status="error")
+            raise
+        finally:
+            metrics.observe(
+                "callbot_brain_request_duration_seconds",
+                time.perf_counter() - started,
+                endpoint="think",
+            )
 
     return {
         "text": " ".join(full_text),
@@ -118,11 +138,23 @@ async def think_stream(request: Request):
 
     async def generate():
         started = time.time()
+        perf_started = time.perf_counter()
+        first_chunk_seen = False
         try:
-            async for chunk in handler.think(query, session_id, history, summary):
-                yield json.dumps(chunk, ensure_ascii=False) + "\n"
+            with ActiveRequest(metrics, "callbot_brain_active_requests", endpoint="think_stream"):
+                async for chunk in handler.think(query, session_id, history, summary):
+                    if not first_chunk_seen and chunk.get("text"):
+                        first_chunk_seen = True
+                        metrics.observe(
+                            "callbot_brain_time_to_first_text_seconds",
+                            time.perf_counter() - perf_started,
+                            endpoint="think_stream",
+                        )
+                    yield json.dumps(chunk, ensure_ascii=False) + "\n"
+                metrics.inc("callbot_brain_requests_total", endpoint="think_stream", status="ok")
         except Exception as e:
             logger.exception("[%s] think/stream failed", session_id)
+            metrics.inc("callbot_brain_requests_total", endpoint="think_stream", status="error")
             error_chunk = {
                 "text": "Xin lỗi, Brain đang gặp lỗi xử lý. Vui lòng thử lại.",
                 "is_final": True,
@@ -131,6 +163,12 @@ async def think_stream(request: Request):
                 "timing": {"total_ms": round((time.time() - started) * 1000, 1)},
             }
             yield json.dumps(error_chunk, ensure_ascii=False) + "\n"
+        finally:
+            metrics.observe(
+                "callbot_brain_request_duration_seconds",
+                time.perf_counter() - perf_started,
+                endpoint="think_stream",
+            )
 
     return StreamingResponse(
         generate(),

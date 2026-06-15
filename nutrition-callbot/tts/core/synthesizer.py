@@ -35,6 +35,8 @@ class Synthesizer:
     def load_model(self):
         from vieneu import Vieneu
 
+        backend = (config.backend or "local").strip().lower()
+
         def _normalize_backbone_device(value: str) -> str:
             v = (value or "").strip().lower()
             if v in {"gpu", "cuda"}:
@@ -57,6 +59,31 @@ class Synthesizer:
             has_cuda = torch.cuda.is_available()
         except ImportError:
             pass
+
+        if backend == "lmdeploy":
+            codec_device = _normalize_codec_device(config.codec_device or config.tts_device)
+            if config.require_cuda and (codec_device != "cuda" or not has_cuda):
+                raise RuntimeError(
+                    "TTS_REQUIRE_CUDA=true with LMDeploy backend requires local codec on CUDA."
+                )
+
+            logger.info(
+                "Loading VieNeu-TTS remote backend "
+                f"(api_base={config.lmdeploy_api_base}, model={config.lmdeploy_model}, codec={codec_device})..."
+            )
+            self._tts = Vieneu(
+                mode="remote",
+                api_base=config.lmdeploy_api_base,
+                model_name=config.lmdeploy_model,
+                codec_repo=self.codec_repo,
+                codec_device=codec_device or "cpu",
+            )
+            self._voice = self._tts.get_preset_voice()
+            logger.info("VieNeu-TTS LMDeploy backend loaded.")
+            return
+
+        if backend != "local":
+            raise ValueError(f"Unsupported TTS_BACKEND={config.backend!r}. Use 'local' or 'lmdeploy'.")
 
         if config.require_cuda and not has_cuda:
             raise RuntimeError(

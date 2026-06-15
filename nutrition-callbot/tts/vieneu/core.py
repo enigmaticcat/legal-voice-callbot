@@ -1557,6 +1557,166 @@ class RemoteVieNeuTTS(VieNeuTTS):
             
         return final_wav    
 
+    def infer_stream(
+        self,
+        text: str,
+        ref_audio: str | Path = None,
+        ref_codes: np.ndarray | torch.Tensor = None,
+        ref_text: str = None,
+        max_chars: int = 256,
+        voice: dict = None,
+        temperature: float = 1.0,
+        top_k: int = 50,
+    ) -> Generator[np.ndarray, None, None]:
+        """
+        Remote LMDeploy streaming inference.
+
+        LMDeploy streams speech tokens through the OpenAI-compatible
+        /chat/completions SSE API. This method incrementally decodes enough
+        speech tokens into waveform chunks so the caller can stream PCM audio.
+        """
+        if voice is not None:
+            ref_codes = voice.get('codes', ref_codes)
+            ref_text = voice.get('text', ref_text)
+
+        if ref_audio is not None and ref_codes is None:
+            ref_codes = self.encode_reference(ref_audio)
+        elif self._default_voice and (ref_codes is None or ref_text is None):
+            try:
+                voice_data = self.get_preset_voice(None)
+                ref_codes = voice_data['codes']
+                ref_text = voice_data['text']
+            except Exception:
+                pass
+
+        if ref_codes is None or ref_text is None:
+            raise ValueError("Must provide either 'voice' dict or both 'ref_codes' and 'ref_text'.")
+
+        chunks = split_text_into_chunks(text, max_chars=max_chars)
+        for chunk in chunks:
+            yield from self._infer_stream_chunk(
+                chunk=chunk,
+                ref_codes=ref_codes,
+                ref_text=ref_text,
+                temperature=temperature,
+                top_k=top_k,
+            )
+
+    def _infer_stream_chunk(
+        self,
+        chunk: str,
+        ref_codes: np.ndarray | torch.Tensor | list[int],
+        ref_text: str,
+        temperature: float,
+        top_k: int,
+    ) -> Generator[np.ndarray, None, None]:
+        if isinstance(ref_codes, torch.Tensor):
+            ref_codes_list = ref_codes.cpu().numpy().flatten().tolist()
+        elif isinstance(ref_codes, np.ndarray):
+            ref_codes_list = ref_codes.flatten().tolist()
+        else:
+            ref_codes_list = ref_codes
+
+        prompt = self._format_prompt(ref_codes_list, ref_text, chunk)
+        payload = {
+            "model": self.model_name,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 2048,
+            "temperature": temperature,
+            "top_k": top_k,
+            "stop": ["<|SPEECH_GENERATION_END|>"],
+            "stream": True,
+        }
+
+        audio_cache: list[np.ndarray] = []
+        token_cache: list[str] = [f"<|speech_{idx}|>" for idx in ref_codes_list]
+        n_decoded_samples = 0
+        n_decoded_tokens = len(ref_codes_list)
+
+        try:
+            with requests.post(
+                f"{self.api_base}/chat/completions",
+                json=payload,
+                stream=True,
+                timeout=60,
+            ) as response:
+                response.raise_for_status()
+                for line in response.iter_lines():
+                    if not line:
+                        continue
+                    line_str = line.decode("utf-8")
+                    if not line_str.startswith("data: "):
+                        continue
+                    data_str = line_str[6:]
+                    if data_str == "[DONE]":
+                        break
+                    try:
+                        content = json.loads(data_str)["choices"][0]["delta"].get("content", "")
+                    except (KeyError, IndexError, json.JSONDecodeError):
+                        continue
+                    if not content:
+                        continue
+
+                    token_cache.append(content)
+                    if len(token_cache[n_decoded_tokens:]) < self.streaming_frames_per_chunk + self.streaming_lookforward:
+                        continue
+
+                    tokens_start = max(
+                        n_decoded_tokens - self.streaming_lookback - self.streaming_overlap_frames,
+                        0,
+                    )
+                    tokens_end = (
+                        n_decoded_tokens
+                        + self.streaming_frames_per_chunk
+                        + self.streaming_lookforward
+                        + self.streaming_overlap_frames
+                    )
+                    sample_start = (n_decoded_tokens - tokens_start) * self.hop_length
+                    sample_end = (
+                        sample_start
+                        + (self.streaming_frames_per_chunk + 2 * self.streaming_overlap_frames)
+                        * self.hop_length
+                    )
+                    curr_codes = token_cache[tokens_start:tokens_end]
+                    recon = self._decode("".join(curr_codes))
+                    recon = recon[sample_start:sample_end]
+                    audio_cache.append(recon)
+
+                    processed_recon = _linear_overlap_add(
+                        audio_cache,
+                        stride=self.streaming_stride_samples,
+                    )
+                    new_samples_end = len(audio_cache) * self.streaming_stride_samples
+                    processed_recon = processed_recon[n_decoded_samples:new_samples_end]
+                    n_decoded_samples = new_samples_end
+                    n_decoded_tokens += self.streaming_frames_per_chunk
+                    yield processed_recon
+        except Exception as e:
+            print(f"Error during remote streaming inference: {e}")
+            return
+
+        remaining_tokens = len(token_cache) - n_decoded_tokens
+        if remaining_tokens > 0:
+            tokens_start = max(
+                len(token_cache)
+                - (self.streaming_lookback + self.streaming_overlap_frames + remaining_tokens),
+                0,
+            )
+            sample_start = (
+                len(token_cache)
+                - tokens_start
+                - remaining_tokens
+                - self.streaming_overlap_frames
+            ) * self.hop_length
+            curr_codes = token_cache[tokens_start:]
+            recon = self._decode("".join(curr_codes))
+            recon = recon[sample_start:]
+            audio_cache.append(recon)
+
+            processed_recon = _linear_overlap_add(audio_cache, stride=self.streaming_stride_samples)
+            processed_recon = processed_recon[n_decoded_samples:]
+            yield processed_recon
+
 
 def Vieneu(mode="standard", **kwargs):
     """

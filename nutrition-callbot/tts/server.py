@@ -21,12 +21,14 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from config import config
 from core.synthesizer import Synthesizer
 from grpc_handler import TTSServiceHandler
+from observability.metrics import ActiveRequest, MetricsRegistry
 
 logging.basicConfig(
     level=config.log_level,
     format="%(asctime)s | %(name)s | %(levelname)s | %(message)s",
 )
 logger = logging.getLogger("tts")
+metrics = MetricsRegistry("tts")
 
 synthesizer = Synthesizer(
     backbone_repo=config.backbone_repo,
@@ -40,6 +42,11 @@ app = FastAPI(title="TTS Worker", version="0.3.0")
 @app.get("/health")
 async def health():
     return {"status": "healthy", "service": "tts"}
+
+
+@app.get("/metrics")
+async def prometheus_metrics():
+    return Response(metrics.render(), media_type="text/plain; version=0.0.4")
 
 
 @app.get("/")
@@ -60,10 +67,21 @@ async def speak(request: Request):
     pcm_chunks = []
     first_byte_ms = None
 
-    async for chunk in handler.speak(text, session_id=session_id):
-        if first_byte_ms is None:
-            first_byte_ms = (time.perf_counter() - t0) * 1000
-        pcm_chunks.append(chunk)
+    with ActiveRequest(metrics, "callbot_tts_active_requests", endpoint="speak"):
+        try:
+            async for chunk in handler.speak(text, session_id=session_id):
+                if first_byte_ms is None:
+                    first_byte_ms = (time.perf_counter() - t0) * 1000
+                    metrics.observe(
+                        "callbot_tts_time_to_first_audio_seconds",
+                        first_byte_ms / 1000,
+                        endpoint="speak",
+                    )
+                pcm_chunks.append(chunk)
+            metrics.inc("callbot_tts_requests_total", endpoint="speak", status="ok")
+        except Exception:
+            metrics.inc("callbot_tts_requests_total", endpoint="speak", status="error")
+            raise
 
     pcm = b"".join(pcm_chunks)
     if not pcm:
@@ -71,6 +89,9 @@ async def speak(request: Request):
 
     synth_s = time.perf_counter() - t0
     duration_s = len(pcm) / 2 / synthesizer.sample_rate  # int16 = 2 bytes/sample
+    metrics.observe("callbot_tts_request_duration_seconds", synth_s, endpoint="speak")
+    if duration_s > 0:
+        metrics.observe("callbot_tts_rtf", synth_s / duration_s, endpoint="speak")
 
     buf = io.BytesIO()
     with wave.open(buf, "wb") as w:
@@ -99,26 +120,50 @@ async def speak_stream(request: Request):
     if not text:
         raise HTTPException(status_code=400, detail="text is required")
 
+    t0 = time.perf_counter()
     stream = handler.speak(text, session_id=session_id)
+    metrics.add_gauge("callbot_tts_active_requests", 1, endpoint="speak_stream")
 
     try:
         first_chunk = await anext(stream)
     except StopAsyncIteration:
+        metrics.add_gauge("callbot_tts_active_requests", -1, endpoint="speak_stream")
         raise HTTPException(status_code=502, detail="TTS returned empty audio stream")
     except Exception as e:
         logger.exception("TTS stream preflight failed")
+        metrics.inc("callbot_tts_requests_total", endpoint="speak_stream", status="error")
+        metrics.add_gauge("callbot_tts_active_requests", -1, endpoint="speak_stream")
         raise HTTPException(status_code=502, detail=f"TTS stream failed: {e}")
 
+    first_audio_s = time.perf_counter() - t0
+    metrics.observe(
+        "callbot_tts_time_to_first_audio_seconds",
+        first_audio_s,
+        endpoint="speak_stream",
+    )
+
     async def generate():
+        pcm_bytes = len(first_chunk)
+        status = "ok"
         # Emit chunk dau tien da preflight de dam bao response khong bi chunked read loi.
         yield first_chunk
         try:
             async for chunk in stream:
+                pcm_bytes += len(chunk)
                 yield chunk
         except Exception:
             # Da bat dau stream thi khong duoc raise tiep; chi log va dong stream sach.
             logger.exception("TTS stream interrupted after first chunk")
+            status = "error"
             return
+        finally:
+            elapsed = time.perf_counter() - t0
+            duration_s = pcm_bytes / 2 / synthesizer.sample_rate
+            metrics.inc("callbot_tts_requests_total", endpoint="speak_stream", status=status)
+            metrics.observe("callbot_tts_request_duration_seconds", elapsed, endpoint="speak_stream")
+            if duration_s > 0:
+                metrics.observe("callbot_tts_rtf", elapsed / duration_s, endpoint="speak_stream")
+            metrics.add_gauge("callbot_tts_active_requests", -1, endpoint="speak_stream")
 
     return StreamingResponse(
         generate(),

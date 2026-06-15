@@ -11,11 +11,13 @@ RUN rm -f /etc/apt/sources.list.d/cuda*.list /etc/apt/sources.list.d/nvidia-ml.l
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+ENV PYTHONPATH=/app
 COPY brain/requirements.txt .
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cu124
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY brain/ ./brain/
+COPY observability/ ./observability/
 
 EXPOSE 50052
 CMD ["python", "-m", "brain.server"]

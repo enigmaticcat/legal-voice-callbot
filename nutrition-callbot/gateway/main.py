@@ -4,13 +4,16 @@ FastAPI application factory.
 Chỉ bootstrap + compose — không có business logic ở đây.
 """
 import logging
+from time import perf_counter
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 
 from config import settings
+from metrics_state import metrics
 from routes.health import router as health_router
 from routes.websocket import router as ws_router, close_http_clients
 import services.session_memory as session_memory
@@ -38,9 +41,44 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def metrics_middleware(request, call_next):
+    if request.url.path == "/metrics":
+        return await call_next(request)
+
+    started = perf_counter()
+    status = "500"
+    try:
+        response = await call_next(request)
+        status = str(response.status_code)
+        return response
+    finally:
+        elapsed = perf_counter() - started
+        metrics.inc(
+            "callbot_http_requests_total",
+            service="gateway",
+            method=request.method,
+            path=request.url.path,
+            status=status,
+        )
+        metrics.observe(
+            "callbot_http_request_duration_seconds",
+            elapsed,
+            service="gateway",
+            method=request.method,
+            path=request.url.path,
+            status=status,
+        )
+
 # ─── Routes ──────────────────────────────────────────────
 app.include_router(health_router)
 app.include_router(ws_router)
+
+
+@app.get("/metrics")
+async def prometheus_metrics():
+    return Response(metrics.render(), media_type="text/plain; version=0.0.4")
 
 # ─── Static files — React frontend ───────────────────────
 # Serve web/dist nếu đã được build (Colab / production).

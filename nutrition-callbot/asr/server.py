@@ -3,23 +3,32 @@ from __future__ import annotations
 import json
 import logging
 import asyncio
+from time import perf_counter
 from datetime import datetime
 
 import numpy as np
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
+from fastapi.responses import Response
 import uvicorn
 
 from config import config
 from grpc_handler import ASRServiceHandler
+from observability.metrics import ActiveRequest, MetricsRegistry
 
 logging.basicConfig(
     level=config.log_level,
     format="%(asctime)s | %(name)s | %(levelname)s | %(message)s",
 )
 logger = logging.getLogger("asr")
+metrics = MetricsRegistry("asr")
 
 handler = ASRServiceHandler()
 app = FastAPI()
+
+
+@app.get("/metrics")
+async def prometheus_metrics():
+    return Response(metrics.render(), media_type="text/plain; version=0.0.4")
 
 
 @app.get("/health")
@@ -35,7 +44,20 @@ async def health():
 @app.post("/transcribe")
 async def transcribe(request: Request):
     audio_pcm = await request.body()
-    result = await asyncio.to_thread(handler.transcriber.transcribe, audio_pcm)
+    started = perf_counter()
+    with ActiveRequest(metrics, "callbot_asr_active_requests", endpoint="transcribe"):
+        try:
+            result = await asyncio.to_thread(handler.transcriber.transcribe, audio_pcm)
+            metrics.inc("callbot_asr_requests_total", endpoint="transcribe", status="ok")
+        except Exception:
+            metrics.inc("callbot_asr_requests_total", endpoint="transcribe", status="error")
+            raise
+        finally:
+            metrics.observe(
+                "callbot_asr_transcribe_duration_seconds",
+                perf_counter() - started,
+                endpoint="transcribe",
+            )
     return {"text": result["text"], "is_final": True, "confidence": result["confidence"]}
 
 
@@ -43,6 +65,7 @@ async def transcribe(request: Request):
 async def ws_transcribe(websocket: WebSocket):
     """Buffer all audio chunks, transcribe in one shot when 'end' is received."""
     await websocket.accept()
+    metrics.add_gauge("callbot_asr_ws_sessions", 1, endpoint="ws_transcribe")
     audio_chunks: list[bytes] = []
     logger.info("ASR WebSocket session started")
 
@@ -67,6 +90,8 @@ async def ws_transcribe(websocket: WebSocket):
 
     except WebSocketDisconnect:
         logger.info("ASR WebSocket session disconnected")
+    finally:
+        metrics.add_gauge("callbot_asr_ws_sessions", -1, endpoint="ws_transcribe")
 
 
 @app.get("/vad/status")
@@ -92,6 +117,7 @@ async def ws_transcribe_vad(websocket: WebSocket):
       {"text": "...", "is_final": true, "confidence": 0.95}
     """
     await websocket.accept()
+    metrics.add_gauge("callbot_asr_ws_sessions", 1, endpoint="ws_transcribe_vad")
 
     if not handler._vad_available:
         await websocket.send_json({
@@ -106,7 +132,20 @@ async def ws_transcribe_vad(websocket: WebSocket):
 
     async def _transcribe_segment(samples: np.ndarray) -> dict | None:
         pcm = (np.clip(samples, -1.0, 1.0) * 32767).astype(np.int16).tobytes()
-        result = await asyncio.to_thread(handler.transcriber.transcribe, pcm)
+        started = perf_counter()
+        with ActiveRequest(metrics, "callbot_asr_active_requests", endpoint="vad_segment"):
+            try:
+                result = await asyncio.to_thread(handler.transcriber.transcribe, pcm)
+                metrics.inc("callbot_asr_requests_total", endpoint="vad_segment", status="ok")
+            except Exception:
+                metrics.inc("callbot_asr_requests_total", endpoint="vad_segment", status="error")
+                raise
+            finally:
+                metrics.observe(
+                    "callbot_asr_transcribe_duration_seconds",
+                    perf_counter() - started,
+                    endpoint="vad_segment",
+                )
         if result["text"]:
             return {"text": result["text"], "is_final": True, "confidence": result["confidence"]}
         return None
@@ -154,6 +193,7 @@ async def ws_transcribe_vad(websocket: WebSocket):
         logger.info("VAD WebSocket session disconnected")
     finally:
         vad.reset()
+        metrics.add_gauge("callbot_asr_ws_sessions", -1, endpoint="ws_transcribe_vad")
 
 
 if __name__ == "__main__":

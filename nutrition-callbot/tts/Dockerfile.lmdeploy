@@ -4,22 +4,14 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN rm -f /etc/apt/sources.list.d/cuda*.list /etc/apt/sources.list.d/nvidia-ml.list || true \
     && apt-get update -o Acquire::Retries=5 \
     && apt-get install -y --no-install-recommends \
-    python3 python3-dev curl libasound2t64 \
+    python3 python3-dev curl git \
     && rm -f /usr/lib/python3.*/EXTERNALLY-MANAGED \
     && curl -sS https://bootstrap.pypa.io/get-pip.py | python3 \
     && ln -sf /usr/bin/python3 /usr/bin/python \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
-ENV PYTHONPATH=/app
-COPY asr/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install --no-cache-dir --no-index \
-    -f https://k2-fsa.github.io/sherpa/onnx/cuda.html \
-    "sherpa-onnx==1.12.39+cuda12.cudnn9"
+RUN pip install --no-cache-dir lmdeploy
 
-COPY asr/ .
-COPY observability/ ./observability/
+EXPOSE 23333
 
-EXPOSE 50051
-CMD ["python", "server.py"]
+CMD ["sh", "-c", "lmdeploy serve api_server ${LMDEPLOY_MODEL:-pnnbao-ump/VieNeu-TTS} --server-name 0.0.0.0 --server-port ${LMDEPLOY_PORT:-23333} --tp ${LMDEPLOY_TP:-1} --cache-max-entry-count ${LMDEPLOY_CACHE_MAX_ENTRY_COUNT:-0.3} --model-name ${LMDEPLOY_MODEL_NAME:-pnnbao-ump/VieNeu-TTS}"]

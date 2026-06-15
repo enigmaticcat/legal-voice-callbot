@@ -10,8 +10,15 @@ class TTSConfig:
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
     port: int = int(os.getenv("TTS_PORT", "50053"))
 
+    # Backend:
+    # - local: bundled VieNeu-TTS GGUF/PyTorch in this service
+    # - lmdeploy: local codec + remote LMDeploy OpenAI-compatible server
+    backend: str = os.getenv("TTS_BACKEND", "local").strip().lower()
+    lmdeploy_api_base: str = os.getenv("TTS_LMDEPLOY_API_BASE", "http://tts-lmdeploy:23333/v1").rstrip("/")
+    lmdeploy_model: str = os.getenv("TTS_LMDEPLOY_MODEL", "pnnbao-ump/VieNeu-TTS")
+
     # VieNeu-TTS settings (Bước 4)
-    backbone_repo: str = "pnnbao-ump/VieNeu-TTS-0.3B-q4-gguf"
+    backbone_repo: str = os.getenv("TTS_BACKBONE_REPO", "pnnbao-ump/VieNeu-TTS-0.3B-q4-gguf")
     codec_repo: str = "neuphonic/distill-neucodec"
     streaming_frames_per_chunk: int = 15  # TTFC ~300ms
     streaming_lookforward: int = 5
