@@ -36,6 +36,18 @@ export function useAudioSession() {
     // ── Playback refs ─────────────────────────────────────────────────
     const playCtxRef = useRef(null)
     const nextPlayTimeRef = useRef(0)
+    const scheduledSourcesRef = useRef(new Set())
+
+    const unlockPlayback = useCallback(async () => {
+        let ctx = playCtxRef.current
+        if (!ctx || ctx.state === 'closed') {
+            ctx = new AudioContext({ sampleRate: 24000 })
+            playCtxRef.current = ctx
+        }
+        if (ctx.state === 'suspended') {
+            await ctx.resume()
+        }
+    }, [])
 
     // ── Mic capture ───────────────────────────────────────────────────
     const startCapture = useCallback(async (onChunk) => {
@@ -76,9 +88,9 @@ export function useAudioSession() {
     }, [])
 
     // ── PCM playback (gapless scheduling) ────────────────────────────
-    const playPcm = useCallback((arrayBuffer) => {
-        const ctx = playCtxRef.current || new AudioContext({ sampleRate: 24000 })
-        playCtxRef.current = ctx
+    const playPcm = useCallback(async (arrayBuffer) => {
+        await unlockPlayback()
+        const ctx = playCtxRef.current
 
         const pcm = new Int16Array(arrayBuffer)
         const audioBuf = ctx.createBuffer(1, pcm.length, 24000)
@@ -88,21 +100,28 @@ export function useAudioSession() {
         const src = ctx.createBufferSource()
         src.buffer = audioBuf
         src.connect(ctx.destination)
+        scheduledSourcesRef.current.add(src)
+        src.onended = () => {
+            scheduledSourcesRef.current.delete(src)
+            src.disconnect()
+        }
 
         const now = ctx.currentTime
         const startAt = Math.max(now, nextPlayTimeRef.current)
         src.start(startAt)
         nextPlayTimeRef.current = startAt + audioBuf.duration
-    }, [])
+    }, [unlockPlayback])
 
     const resetPlayback = useCallback(() => {
-        // Đóng AudioContext để dừng ngay audio đang phát (cần cho barge-in)
-        if (playCtxRef.current) {
-            playCtxRef.current.close()
-            playCtxRef.current = null
+        for (const source of scheduledSourcesRef.current) {
+            try {
+                source.stop()
+            } catch {}
+            source.disconnect()
         }
+        scheduledSourcesRef.current.clear()
         nextPlayTimeRef.current = 0
     }, [])
 
-    return { startCapture, stopCapture, playPcm, resetPlayback }
+    return { startCapture, stopCapture, playPcm, resetPlayback, unlockPlayback }
 }

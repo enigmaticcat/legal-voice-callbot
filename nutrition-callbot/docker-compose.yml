@@ -144,12 +144,13 @@ services:
       - "${TTS_PORT:-50053}:50053"
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - TTS_PRELOAD_MODEL=${TTS_PRELOAD_MODEL:-true}
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://0.0.0.0:50053/health || exit 1" ]
       interval: 15s
       timeout: 5s
-      retries: 5
-      start_period: 30s
+      retries: 20
+      start_period: 300s
     networks:
       - callbot-net
     restart: unless-stopped

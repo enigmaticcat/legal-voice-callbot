@@ -25,6 +25,7 @@ class TTSConfig:
     backbone_device: str = os.getenv("TTS_BACKBONE_DEVICE", "").strip().lower()
     codec_device: str = os.getenv("TTS_CODEC_DEVICE", "").strip().lower()
     require_cuda: bool = os.getenv("TTS_REQUIRE_CUDA", "false").strip().lower() in {"1", "true", "yes", "on"}
+    preload_model: bool = os.getenv("TTS_PRELOAD_MODEL", "true").strip().lower() in {"1", "true", "yes", "on"}
 
 
 config = TTSConfig()

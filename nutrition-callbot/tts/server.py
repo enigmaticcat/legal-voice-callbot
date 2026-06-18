@@ -12,6 +12,8 @@ import wave
 import logging
 import os
 import sys
+import asyncio
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse, Response
@@ -34,12 +36,26 @@ synthesizer = Synthesizer(
 )
 handler = TTSServiceHandler(synthesizer=synthesizer)
 
-app = FastAPI(title="TTS Worker", version="0.3.0")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    if config.preload_model:
+        logger.info("Preloading VieNeu-TTS before accepting requests...")
+        await asyncio.to_thread(synthesizer.load_model)
+    yield
+    await asyncio.to_thread(synthesizer.close)
+
+
+app = FastAPI(title="TTS Worker", version="0.3.0", lifespan=lifespan)
 
 
 @app.get("/health")
 async def health():
-    return {"status": "healthy", "service": "tts"}
+    return {
+        "status": "healthy",
+        "service": "tts",
+        "model_loaded": synthesizer.is_loaded,
+    }
 
 
 @app.get("/")

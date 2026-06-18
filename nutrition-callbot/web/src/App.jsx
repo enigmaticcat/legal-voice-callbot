@@ -15,11 +15,11 @@ function App() {
     const fileInputRef = useRef(null)
     const vadStartedRef = useRef(false)
 
-    const { startCapture, stopCapture, playPcm, resetPlayback } = useAudioSession()
+    const { startCapture, stopCapture, playPcm, resetPlayback, unlockPlayback } = useAudioSession()
 
     // ── Xử lý sự kiện từ WS ──────────────────────────────────────────
     const handleBinary = useCallback((buf) => {
-        playPcm(buf)
+        void playPcm(buf)
     }, [playPcm])
 
     const handleJson = useCallback((event) => {
@@ -102,11 +102,12 @@ function App() {
             setMessages([])
             currentBotTextRef.current = ''
         } else {
+            await unlockPlayback()
             setStatus('connecting')
             connect(getWebSocketUrl())
             setCallActive(true)
         }
-    }, [callActive, connect, disconnect, stopCapture, send])
+    }, [callActive, connect, disconnect, stopCapture, send, unlockPlayback])
 
     // ── Audio file upload ─────────────────────────────────────────────
     const handleFileUpload = useCallback(async (e) => {

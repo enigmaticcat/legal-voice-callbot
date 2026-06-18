@@ -32,7 +32,14 @@ class Synthesizer:
         self._load_lock = threading.Lock()
         logger.info(f"Synthesizer init: {backbone_repo}")
 
+    @property
+    def is_loaded(self) -> bool:
+        return self._tts is not None and self._voice is not None
+
     def load_model(self):
+        if self.is_loaded:
+            return
+
         from vieneu import Vieneu
 
         def _normalize_backbone_device(value: str) -> str:
@@ -85,13 +92,16 @@ class Synthesizer:
             )
 
         logger.info(f"Loading VieNeu-TTS (backbone={backbone_device}, codec={codec_device})...")
-        self._tts = Vieneu(
-            backbone_repo=self.backbone_repo,
-            backbone_device=backbone_device,
-            codec_repo=self.codec_repo,
-            codec_device=codec_device,
-        )
-        self._voice = self._tts.get_preset_voice()
+        with self._load_lock:
+            if self.is_loaded:
+                return
+            self._tts = Vieneu(
+                backbone_repo=self.backbone_repo,
+                backbone_device=backbone_device,
+                codec_repo=self.codec_repo,
+                codec_device=codec_device,
+            )
+            self._voice = self._tts.get_preset_voice()
         logger.info("VieNeu-TTS loaded.")
 
     def synthesize_stream(self, text: str, session_id: str | None = None, max_chars: int = 256) -> Iterator[bytes]:
@@ -101,9 +111,7 @@ class Synthesizer:
                     mỗi chunk là 1 np.ndarray float32 từ infer_stream() → convert sang int16 bytes
         """
         if self._tts is None:
-            with self._load_lock:
-                if self._tts is None:
-                    self.load_model()
+            self.load_model()
 
         session_key = session_id or "default"
         with self._cancel_lock:
