@@ -1,0 +1,90 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="Xu ly giong noi" id="speech1">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="780" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="grp-in" value="Chiều nhận dạng giọng nói" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0f6ff;strokeColor=#2563eb;dashed=1;verticalAlign=top;align=left;spacingLeft=14;spacingTop=8;fontStyle=2;fontColor=#2563eb;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="20" y="30" width="1330" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="grp-out" value="Chiều tổng hợp giọng nói" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1fbf4;strokeColor=#16a34a;dashed=1;verticalAlign=top;align=left;spacingLeft=14;spacingTop=8;fontStyle=2;fontColor=#16a34a;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="20" y="370" width="1330" height="360" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s-mic" value="Microphone" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontColor=#172554;" vertex="1" parent="1">
+          <mxGeometry x="40" y="185" width="110" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s-cap" value="Thu âm tại trình duyệt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontColor=#172554;" vertex="1" parent="1">
+          <mxGeometry x="175" y="180" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s-conv" value="PCM 16-bit, đơn kênh, 16 kHz&#10;Gửi mỗi 100 ms" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontColor=#172554;" vertex="1" parent="1">
+          <mxGeometry x="320" y="165" width="175" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="s-vad" value="Silero VAD chạy trên CPU&#10;Window 32 ms, khoảng lặng 500 ms" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontColor=#172554;" vertex="1" parent="1">
+          <mxGeometry x="520" y="165" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="s-start" value="Sự kiện speech_start" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontColor=#172554;" vertex="1" parent="1">
+          <mxGeometry x="555" y="65" width="160" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="s-seg" value="Đoạn tiếng nói hoàn chỉnh" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontColor=#172554;" vertex="1" parent="1">
+          <mxGeometry x="740" y="180" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s-zip" value="Zipformer–RNN-T&#10;Nhận dạng offline theo đoạn" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontColor=#451a03;" vertex="1" parent="1">
+          <mxGeometry x="930" y="165" width="180" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="s-trans" value="Transcript" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontColor=#172554;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="180" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="se1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="s-mic" target="s-cap"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="se2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="s-cap" target="s-conv"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="se3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="s-conv" target="s-vad"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="se4" value="Bắt đầu nói" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;dashed=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="s-vad" target="s-start"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="se5" value="Kết thúc khoảng lặng&#10;và đoạn nói ≥250 ms" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="s-vad" target="s-seg"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="se6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="s-seg" target="s-zip"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="se7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="s-zip" target="s-trans"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="o-text" value="Luồng văn bản từ Qwen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" vertex="1" parent="1">
+          <mxGeometry x="40" y="500" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="o-clean" value="Làm sạch văn bản" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" vertex="1" parent="1">
+          <mxGeometry x="215" y="505" width="130" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="o-seg" value="Chia đoạn theo dấu câu&#10;và ranh giới từ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" vertex="1" parent="1">
+          <mxGeometry x="370" y="485" width="170" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="o-vieneu" value="VieNeu-TTS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontColor=#451a03;" vertex="1" parent="1">
+          <mxGeometry x="565" y="505" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="o-pcm" value="PCM 24 kHz" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" vertex="1" parent="1">
+          <mxGeometry x="730" y="505" width="120" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="o-buf" value="Bộ đệm phát nối tiếp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" vertex="1" parent="1">
+          <mxGeometry x="875" y="500" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="o-spk" value="Loa người dùng" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="505" width="130" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="o-gwc" value="Gateway hủy task hiện tại&#10;và gọi yêu cầu hủy TTS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" vertex="1" parent="1">
+          <mxGeometry x="555" y="630" width="210" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="o-reset" value="Sự kiện bot_interrupted&#10;xóa audio đã lập lịch" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" vertex="1" parent="1">
+          <mxGeometry x="840" y="630" width="195" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="oe1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="o-text" target="o-clean"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="oe2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="o-clean" target="o-seg"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="oe3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="o-seg" target="o-vieneu"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="oe4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="o-vieneu" target="o-pcm"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="oe5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="o-pcm" target="o-buf"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="oe6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="o-buf" target="o-spk"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="oe7" value="Barge-in" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#db2777;endArrow=block;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="s-start" target="o-gwc"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="oe8" value="Dừng infer_stream theo session" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;dashed=1;exitX=0.25;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="o-gwc" target="o-vieneu"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="oe9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;dashed=1;" edge="1" parent="1" source="o-gwc" target="o-reset"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="oe10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;dashed=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="o-reset" target="o-buf"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

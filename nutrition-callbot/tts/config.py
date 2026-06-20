@@ -26,6 +26,12 @@ class TTSConfig:
     codec_device: str = os.getenv("TTS_CODEC_DEVICE", "").strip().lower()
     require_cuda: bool = os.getenv("TTS_REQUIRE_CUDA", "false").strip().lower() in {"1", "true", "yes", "on"}
     preload_model: bool = os.getenv("TTS_PRELOAD_MODEL", "true").strip().lower() in {"1", "true", "yes", "on"}
+    redis_url: str = os.getenv("REDIS_URL", "redis://redis:6379")
+    cache_enabled: bool = os.getenv("TTS_CACHE_ENABLED", "true").strip().lower() in {"1", "true", "yes", "on"}
+    cache_required: bool = os.getenv("TTS_CACHE_REQUIRED", "false").strip().lower() in {"1", "true", "yes", "on"}
+    cache_ttl_seconds: int = int(os.getenv("TTS_CACHE_TTL_SECONDS", "604800"))
+    cache_max_bytes: int = int(os.getenv("TTS_CACHE_MAX_BYTES", "8000000"))
+    cache_version: str = os.getenv("TTS_CACHE_VERSION", "v1")
 
 
 config = TTSConfig()

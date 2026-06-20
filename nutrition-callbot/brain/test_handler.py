@@ -10,7 +10,11 @@ from grpc_handler import BrainServiceHandler
 
 async def test():
     print("1. Khởi tạo LLMClient & RAGPipeline...")
-    llm = LLMClient(api_key=config.gemini_api_key, model=config.gemini_model)
+    llm = LLMClient(
+        api_key=config.llm_api_key,
+        model=config.llm_model,
+        base_url=config.llm_base_url,
+    )
     rag = RAGPipeline(
         qdrant_url=config.qdrant_url,
         qdrant_api_key=config.qdrant_api_key,
@@ -20,7 +24,7 @@ async def test():
     print("2. Khởi tạo BrainServiceHandler...")
     handler = BrainServiceHandler(llm=llm, rag=rag)
     
-    query = "Nghỉ phép năm bao nhiêu ngày?"
+    query = "Người bị tiểu đường nên ưu tiên thực phẩm nào?"
     print(f"\n3. Gửi query: {query}")
     print("-" * 50)
     

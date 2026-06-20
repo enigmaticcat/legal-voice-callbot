@@ -5,14 +5,14 @@
 ## Kiến Trúc
 
 ```
-Client (Web) → WebSocket → Gateway (FastAPI) → gRPC → ASR / Brain / TTS
+Client (Web) → WebSocket → Gateway (FastAPI) → ASR / Brain / TTS
 ```
 
 | Service | Port | Mô tả |
 |:--------|:-----|:-------|
 | **Gateway** | 8000 | API Gateway + WebSocket Orchestrator |
-| **ASR** | 50051 | Nhận diện giọng nói (Faster-Whisper) |
-| **Brain** | 50052 | Suy luận dinh dưỡng (Gemini + RAG) |
+| **ASR** | 50051 | Nhận dạng giọng nói (Zipformer-RNNT) |
+| **Brain** | 50052 | Qwen3-4B-Instruct-2507 local + RAG |
 | **TTS** | 50053 | Tổng hợp giọng nói (VieNeu-TTS) |
 | **Web** | 3000 | Giao diện cuộc gọi (React) |
 

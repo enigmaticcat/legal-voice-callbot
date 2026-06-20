@@ -10,7 +10,7 @@ import os
 import re
 import threading
 
-from core.synthesizer import Synthesizer
+from core.synthesizer import Synthesizer, SynthesisCancelled
 
 logger = logging.getLogger("tts.grpc_handler")
 
@@ -51,6 +51,9 @@ class TTSServiceHandler:
                 try:
                     for frame in self.synthesizer.synthesize_stream(c, session_id=s, max_chars=_CHUNK_MAX_CHARS):
                         loop.call_soon_threadsafe(q.put_nowait, frame)
+                except SynthesisCancelled as e:
+                    logger.info("TTS synthesis cancelled: %s", s)
+                    loop.call_soon_threadsafe(q.put_nowait, e)
                 except Exception as e:
                     logger.exception("TTS synthesis error")
                     loop.call_soon_threadsafe(q.put_nowait, e)
@@ -64,6 +67,8 @@ class TTSServiceHandler:
                     frame = await q.get()
                     if frame is None:
                         break
+                    if isinstance(frame, SynthesisCancelled):
+                        raise frame
                     if isinstance(frame, Exception):
                         raise RuntimeError("TTS synthesis failed") from frame
                     yield frame

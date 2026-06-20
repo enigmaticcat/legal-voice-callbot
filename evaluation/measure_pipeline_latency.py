@@ -8,10 +8,9 @@ Metrics:
   e2e_ttfa_ms  : tổng hai cái trên (thời gian người dùng thực sự chờ)
   total_ms     : toàn bộ pipeline chạy xong
 
-LLM providers:
-  --llm gemini      → Gemini API (cần GEMINI_API_KEY)
-  --llm openai      → OpenAI-compatible self-hosted (vLLM, Ollama, LM Studio)
-                      cần --llm-url và --llm-model
+LLM:
+  OpenAI-compatible self-hosted (vLLM, Ollama, LM Studio).
+  Mặc định sử dụng Qwen/Qwen3-4B-Instruct-2507 tại localhost.
 
 Nguồn câu hỏi:
   --qa thucuc       → đọc thucuc_qa.jsonl (255 câu)
@@ -19,20 +18,17 @@ Nguồn câu hỏi:
   --query "..."     → 1 câu cụ thể
 
 Ví dụ:
-  # Gemini, 5 câu mặc định, 3 lần mỗi câu
-  python measure_pipeline_latency.py --llm gemini
-
-  # Gemini, toàn bộ thucuc_qa.jsonl, 1 lần mỗi câu
-  python measure_pipeline_latency.py --llm gemini --qa thucuc --n 1
+  # Qwen chạy cục bộ, 5 câu mặc định, 3 lần mỗi câu
+  python measure_pipeline_latency.py --n 3
 
   # vLLM self-hosted, 50 câu đầu từ thucuc_qa, lưu kết quả
-  python measure_pipeline_latency.py --llm openai \\
+  python measure_pipeline_latency.py \\
       --llm-url http://localhost:8000/v1 \\
-      --llm-model Qwen/Qwen2.5-1.5B-Instruct \\
+      --llm-model Qwen/Qwen3-4B-Instruct-2507 \\
       --qa thucuc --limit 50 --out latency_results.jsonl
 
   # Ollama local
-  python measure_pipeline_latency.py --llm openai \\
+  python measure_pipeline_latency.py \\
       --llm-url http://localhost:11434/v1 \\
       --llm-model qwen2.5:1.5b-instruct \\
       --qa thucuc --n 1
@@ -51,7 +47,9 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent / "nutrition-callbot" / ".env")
 
-GEMINI_MODEL        = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+LOCAL_LLM_MODEL     = os.getenv("LLM_MODEL", "Qwen/Qwen3-4B-Instruct-2507")
+LOCAL_LLM_URL       = os.getenv("LLM_BASE_URL", "http://localhost:8000/v1")
+LOCAL_LLM_API_KEY   = os.getenv("LLM_API_KEY", "local")
 BACKBONE_REPO       = "pnnbao-ump/VieNeu-TTS-0.3B-q4-gguf"
 CODEC_REPO          = "neuphonic/distill-neucodec"
 SENTENCE_DELIMITERS = ".!?;:"
@@ -91,7 +89,7 @@ WARMUP_QUERIES = [
 ]
 
 
-# ── Sentence splitter (dùng chung cho mọi LLM provider) ──────────────────────
+# ── Sentence splitter ────────────────────────────────────────────────────────
 
 def _split_into_sentences(token_stream):
     """
@@ -117,29 +115,7 @@ def _split_into_sentences(token_stream):
         yield buffer.strip()
 
 
-# ── LLM providers ─────────────────────────────────────────────────────────────
-
-def llm_gemini(query: str, api_key: str):
-    """Gemini API streaming → yield từng câu."""
-    from google import genai
-    from google.genai import types
-
-    client = genai.Client(api_key=api_key)
-    response = client.models.generate_content_stream(
-        model=GEMINI_MODEL,
-        contents=query,
-        config=types.GenerateContentConfig(
-            system_instruction=SYS_PROMPT,
-            temperature=0.7,
-        ),
-    )
-
-    def tokens():
-        for chunk in response:
-            if chunk.text:
-                yield chunk.text
-
-    yield from _split_into_sentences(tokens())
+# ── Local LLM ────────────────────────────────────────────────────────────────
 
 
 def llm_openai_compatible(query: str, base_url: str, model: str, api_key: str = "dummy"):
@@ -369,16 +345,13 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
-    # LLM
-    parser.add_argument("--llm",       default="gemini",
-                        choices=["gemini", "openai"],
-                        help="LLM provider (default: gemini)")
-    parser.add_argument("--llm-url",   default="http://localhost:8000/v1",
-                        help="Base URL cho OpenAI-compatible server")
-    parser.add_argument("--llm-model", default=None,
-                        help="Tên model (bắt buộc với --llm openai)")
-    parser.add_argument("--llm-key",   default=None,
-                        help="API key (default: GEMINI_API_KEY từ env)")
+    # Local LLM
+    parser.add_argument("--llm-url",   default=LOCAL_LLM_URL,
+                        help="Base URL của máy chủ OpenAI-compatible chạy cục bộ")
+    parser.add_argument("--llm-model", default=LOCAL_LLM_MODEL,
+                        help="Tên mô hình được phục vụ bởi máy chủ cục bộ")
+    parser.add_argument("--llm-key",   default=LOCAL_LLM_API_KEY,
+                        help="Khóa giả dùng cho API OpenAI-compatible cục bộ")
 
     # Câu hỏi
     parser.add_argument("--qa",        default="default",
@@ -405,18 +378,14 @@ def main():
 
     args = parser.parse_args()
 
-    # ── Chọn LLM function ────────────────────────────────────────────────────
-    if args.llm == "gemini":
-        api_key = args.llm_key or os.environ.get("GEMINI_API_KEY") or input("GEMINI_API_KEY: ").strip()
-        llm_fn = lambda q: llm_gemini(q, api_key)
-        provider_label = f"Gemini/{GEMINI_MODEL}"
-
-    else:  # openai-compatible
-        if not args.llm_model:
-            parser.error("--llm openai yêu cầu --llm-model <tên model>")
-        api_key = args.llm_key or os.environ.get("OPENAI_API_KEY", "dummy")
-        llm_fn = lambda q: llm_openai_compatible(q, args.llm_url, args.llm_model, api_key)
-        provider_label = f"OpenAI-compat/{args.llm_model} @ {args.llm_url}"
+    # ── Local OpenAI-compatible LLM ─────────────────────────────────────────
+    llm_fn = lambda q: llm_openai_compatible(
+        q,
+        args.llm_url,
+        args.llm_model,
+        args.llm_key,
+    )
+    provider_label = f"Local/{args.llm_model} @ {args.llm_url}"
 
     print(f"LLM: {provider_label}")
 

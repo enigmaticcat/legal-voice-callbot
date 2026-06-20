@@ -1,0 +1,127 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="Streaming pipeline" id="stream1">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1720" pageHeight="780" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="g-seq" value="Pipeline tuần tự" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef2f2;strokeColor=#dc2626;dashed=1;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontStyle=2;fontColor=#dc2626;" vertex="1" parent="1">
+          <mxGeometry x="20" y="30" width="860" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="g-str" value="Pipeline streaming song song" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1fbf4;strokeColor=#16a34a;dashed=1;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontStyle=2;fontColor=#16a34a;" vertex="1" parent="1">
+          <mxGeometry x="20" y="210" width="1350" height="310" as="geometry" />
+        </mxCell>
+        <mxCell id="g-barge" value="Luồng barge-in" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf2f8;strokeColor=#db2777;dashed=1;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontStyle=2;fontColor=#db2777;" vertex="1" parent="1">
+          <mxGeometry x="20" y="560" width="1350" height="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t-llm" value="LLM sinh toàn bộ&#10;câu trả lời" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee2e2;strokeColor=#dc2626;fontColor=#450a0a;" vertex="1" parent="1">
+          <mxGeometry x="60" y="80" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="t-full" value="Văn bản hoàn chỉnh" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee2e2;strokeColor=#dc2626;fontColor=#450a0a;" vertex="1" parent="1">
+          <mxGeometry x="260" y="85" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="t-tts" value="TTS tổng hợp văn bản" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee2e2;strokeColor=#dc2626;fontColor=#450a0a;" vertex="1" parent="1">
+          <mxGeometry x="460" y="85" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="t-audio" value="Âm thanh đầu tiên" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee2e2;strokeColor=#dc2626;fontColor=#450a0a;" vertex="1" parent="1">
+          <mxGeometry x="660" y="80" width="160" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s-qwen" value="Qwen sinh token&#10;theo luồng" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" vertex="1" parent="1">
+          <mxGeometry x="60" y="270" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s-brain" value="Brain gom token thành text chunk&#10;ngưỡng xử lý 40 ký tự" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" vertex="1" parent="1">
+          <mxGeometry x="240" y="260" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="s-buf" value="Gateway cộng dồn&#10;text chunk" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" vertex="1" parent="1">
+          <mxGeometry x="490" y="270" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s-split" value="Gặp dấu câu sau 40 ký tự&#10;hoặc buffer đạt 200 ký tự?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontColor=#451a03;" vertex="1" parent="1">
+          <mxGeometry x="690" y="250" width="220" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="s-wait" value="Tiếp tục tích lũy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" vertex="1" parent="1">
+          <mxGeometry x="500" y="400" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s-seg" value="Làm sạch đoạn văn bản" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" vertex="1" parent="1">
+          <mxGeometry x="960" y="270" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s-queue" value="Hàng đợi TTS&#10;tối đa 4 phần tử" style="shape=process;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="265" width="170" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="s-ttsv" value="VieNeu-TTS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" vertex="1" parent="1">
+          <mxGeometry x="1175" y="390" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s-pcm" value="PCM int16 24 kHz&#10;theo frame" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" vertex="1" parent="1">
+          <mxGeometry x="960" y="385" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s-evq" value="Hàng đợi sự kiện" style="shape=process;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" vertex="1" parent="1">
+          <mxGeometry x="730" y="390" width="160" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="s-browser" value="Trình duyệt lập lịch&#10;phát nối tiếp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" vertex="1" parent="1">
+          <mxGeometry x="500" y="385" width="180" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="b-user" value="Người dùng bắt đầu nói" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fce7f3;strokeColor=#db2777;fontColor=#500724;" vertex="1" parent="1">
+          <mxGeometry x="60" y="630" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="b-vad" value="Silero VAD phát hiện&#10;speech_start" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fce7f3;strokeColor=#db2777;fontColor=#500724;" vertex="1" parent="1">
+          <mxGeometry x="260" y="620" width="170" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="b-gwc" value="Gateway hủy task&#10;phản hồi hiện tại" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fce7f3;strokeColor=#db2777;fontColor=#500724;" vertex="1" parent="1">
+          <mxGeometry x="470" y="625" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="b-cancel" value="Gửi yêu cầu hủy TTS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fce7f3;strokeColor=#db2777;fontColor=#500724;" vertex="1" parent="1">
+          <mxGeometry x="690" y="595" width="170" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="b-int" value="Gửi sự kiện bot_interrupted" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fce7f3;strokeColor=#db2777;fontColor=#500724;" vertex="1" parent="1">
+          <mxGeometry x="690" y="670" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="b-clear" value="Trình duyệt dừng các nguồn&#10;audio đã lập lịch" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fce7f3;strokeColor=#db2777;fontColor=#500724;" vertex="1" parent="1">
+          <mxGeometry x="920" y="660" width="200" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="b-newturn" value="Thu nhận lượt nói mới" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fce7f3;strokeColor=#db2777;fontColor=#500724;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="665" width="170" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="c-compare" value="So sánh thời gian&#10;đến âm thanh đầu tiên" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontColor=#451a03;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="90" width="210" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="c-result" value="Streaming giảm TTFA vì không phải&#10;chờ sinh toàn bộ câu trả lời" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontColor=#172554;" vertex="1" parent="1">
+          <mxGeometry x="1440" y="300" width="240" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="te1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="t-llm" target="t-full"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="te2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="t-full" target="t-tts"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="te3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="t-tts" target="t-audio"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="se1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="s-qwen" target="s-brain"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="se2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="s-brain" target="s-buf"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="se3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="s-buf" target="s-split"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="se4" value="Chưa đủ" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="s-split" target="s-wait"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="se5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="s-wait" target="s-buf"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="se6" value="Đủ điều kiện" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="s-split" target="s-seg"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="se7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="s-seg" target="s-queue"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="se8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="s-queue" target="s-ttsv"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="se9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="s-ttsv" target="s-pcm"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="se10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="s-pcm" target="s-evq"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="se11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="s-evq" target="s-browser"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="be1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#db2777;endArrow=block;" edge="1" parent="1" source="b-user" target="b-vad"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="be2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#db2777;endArrow=block;" edge="1" parent="1" source="b-vad" target="b-gwc"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="be3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#db2777;endArrow=block;exitX=1;exitY=0.3;exitDx=0;exitDy=0;" edge="1" parent="1" source="b-gwc" target="b-cancel"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="be4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#db2777;endArrow=block;exitX=1;exitY=0.7;exitDx=0;exitDy=0;" edge="1" parent="1" source="b-gwc" target="b-int"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="be5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#db2777;endArrow=block;" edge="1" parent="1" source="b-int" target="b-clear"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="be6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#db2777;endArrow=block;" edge="1" parent="1" source="b-clear" target="b-newturn"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="xe1" value="Dừng producer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#db2777;endArrow=block;dashed=1;exitX=0.25;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="b-gwc" target="s-qwen"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="xe2" value="Dừng consumer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#db2777;endArrow=block;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="b-cancel" target="s-ttsv"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="ce1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="t-audio" target="c-compare"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ce2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="s-browser" target="c-compare"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ce3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;" edge="1" parent="1" source="c-compare" target="c-result"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

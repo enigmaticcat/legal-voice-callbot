@@ -25,7 +25,11 @@ async def run_pipeline():
     asr_stream = asr.create_stream()
 
     print("[2] Đang khởi tạo Brain (LLM + RAG)...")
-    llm = LLMClient(api_key=brain_config.gemini_api_key, model=brain_config.gemini_model)
+    llm = LLMClient(
+        api_key=brain_config.llm_api_key,
+        model=brain_config.llm_model,
+        base_url=brain_config.llm_base_url,
+    )
     rag = RAGPipeline(
         qdrant_url=brain_config.qdrant_url,
         qdrant_api_key=brain_config.qdrant_api_key,

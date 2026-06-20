@@ -181,8 +181,9 @@ def init_brain():
 
     print("  [Brain] Đang khởi tạo LLM + RAG...")
     llm = LLMClient(
-        api_key=brain_config.gemini_api_key,
-        model=brain_config.gemini_model,
+        api_key=brain_config.llm_api_key,
+        model=brain_config.llm_model,
+        base_url=brain_config.llm_base_url,
     )
     rag = RAGPipeline(
         qdrant_url=brain_config.qdrant_url,

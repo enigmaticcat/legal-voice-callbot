@@ -11,6 +11,7 @@ import uvicorn
 from brain.config import config
 from brain.core.llm import LLMClient
 from brain.core.rag import RAGPipeline
+from brain.core.retrieval_cache import RetrievalCache
 from brain.core.chunker import chunk_llm_stream
 from brain.grpc_handler import BrainServiceHandler
 
@@ -20,7 +21,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger("brain")
 
-llm = LLMClient(api_key=config.gemini_api_key, model=config.gemini_model)
+llm = LLMClient(
+    api_key=config.llm_api_key,
+    model=config.llm_model,
+    base_url=config.llm_base_url,
+)
+retrieval_cache = RetrievalCache(
+    redis_url=config.redis_url,
+    enabled=config.retrieval_cache_enabled,
+    required=config.retrieval_cache_required,
+    ttl_seconds=config.retrieval_cache_ttl_seconds,
+    corpus_version=config.corpus_version,
+)
 qdrant_url = config.qdrant_url or f"http://{config.qdrant_host}:{config.qdrant_port}"
 rag = RAGPipeline(
     qdrant_url=qdrant_url,
@@ -32,6 +44,7 @@ rag = RAGPipeline(
     qdrant_snapshot_timeout_s=config.qdrant_snapshot_timeout_s,
     qdrant_snapshot_priority=config.qdrant_snapshot_priority,
     llm_client=llm,
+    retrieval_cache=retrieval_cache,
 )
 handler = BrainServiceHandler(
     llm=llm, rag=rag,
@@ -44,9 +57,33 @@ handler = BrainServiceHandler(
 app = FastAPI(title="Brain Worker", version="0.2.0")
 
 
+@app.on_event("startup")
+async def startup():
+    await retrieval_cache.connect()
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    await retrieval_cache.close()
+
+
 @app.get("/health")
 async def health():
-    return {"status": "healthy", "service": "brain"}
+    return {
+        "status": "healthy",
+        "service": "brain",
+        "retrieval_cache_connected": retrieval_cache.connected,
+    }
+
+
+@app.get("/cache/stats")
+async def cache_stats():
+    return await retrieval_cache.stats()
+
+
+@app.delete("/cache")
+async def clear_cache():
+    return {"deleted_keys": await retrieval_cache.clear()}
 
 
 @app.get("/")
@@ -55,7 +92,8 @@ async def root():
         "status": "ok",
         "service": "brain",
         "version": "0.2.0",
-        "mode": "gemini-streaming",
+        "mode": "local-qwen-streaming",
+        "model": config.llm_model,
     }
 
 
@@ -69,6 +107,7 @@ async def think(request: Request):
     full_text = []
     timing = {}
     contexts = []
+    retrieval_cache_meta = {}
     async for chunk in handler.think(query, session_id, history):
         if chunk["text"]:
             full_text.append(chunk["text"])
@@ -76,11 +115,14 @@ async def think(request: Request):
             timing.update(chunk["timing"])
         if "contexts" in chunk:
             contexts = chunk["contexts"]
+        if "retrieval_cache" in chunk:
+            retrieval_cache_meta = chunk["retrieval_cache"]
 
     return {
         "text": " ".join(full_text),
         "timing": timing,
         "contexts": contexts,
+        "retrieval_cache": retrieval_cache_meta,
     }
 
 

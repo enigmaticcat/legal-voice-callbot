@@ -21,7 +21,8 @@ import uvicorn
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from config import config
-from core.synthesizer import Synthesizer
+from core.synthesizer import Synthesizer, SynthesisCancelled
+from core.tts_cache import TTSCache
 from grpc_handler import TTSServiceHandler
 
 logging.basicConfig(
@@ -35,14 +36,24 @@ synthesizer = Synthesizer(
     codec_repo=config.codec_repo,
 )
 handler = TTSServiceHandler(synthesizer=synthesizer)
+tts_cache = TTSCache(
+    redis_url=config.redis_url,
+    enabled=config.cache_enabled,
+    required=config.cache_required,
+    ttl_seconds=config.cache_ttl_seconds,
+    max_bytes=config.cache_max_bytes,
+    version=config.cache_version,
+)
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    await tts_cache.connect()
     if config.preload_model:
         logger.info("Preloading VieNeu-TTS before accepting requests...")
         await asyncio.to_thread(synthesizer.load_model)
     yield
+    await tts_cache.close()
     await asyncio.to_thread(synthesizer.close)
 
 
@@ -55,7 +66,18 @@ async def health():
         "status": "healthy",
         "service": "tts",
         "model_loaded": synthesizer.is_loaded,
+        "cache_connected": tts_cache.connected,
     }
+
+
+@app.get("/cache/stats")
+async def cache_stats():
+    return await tts_cache.stats()
+
+
+@app.delete("/cache")
+async def clear_cache():
+    return {"deleted_keys": await tts_cache.clear()}
 
 
 @app.get("/")
@@ -115,6 +137,30 @@ async def speak_stream(request: Request):
     if not text:
         raise HTTPException(status_code=400, detail="text is required")
 
+    cache_key = tts_cache.build_key(
+        text=text,
+        backbone_repo=config.backbone_repo,
+        codec_repo=config.codec_repo,
+        sample_rate=synthesizer.sample_rate,
+    )
+    cached_pcm, cache_meta = await tts_cache.get(cache_key)
+    if cached_pcm is not None:
+        async def generate_cached():
+            for offset in range(0, len(cached_pcm), 4800):
+                yield cached_pcm[offset:offset + 4800]
+
+        return StreamingResponse(
+            generate_cached(),
+            media_type="audio/pcm",
+            headers={
+                "X-Sample-Rate": str(synthesizer.sample_rate),
+                "X-TTS-Cache": "HIT",
+                "X-TTS-Cache-Key": cache_meta["key"],
+                "X-TTS-Estimated-Saved-ms": str(cache_meta.get("estimated_saved_ms", 0)),
+            },
+        )
+
+    started = time.perf_counter()
     stream = handler.speak(text, session_id=session_id)
 
     try:
@@ -126,20 +172,33 @@ async def speak_stream(request: Request):
         raise HTTPException(status_code=502, detail=f"TTS stream failed: {e}")
 
     async def generate():
-        # Emit chunk dau tien da preflight de dam bao response khong bi chunked read loi.
-        yield first_chunk
+        pcm_parts = [first_chunk]
+        completed = False
         try:
+            yield first_chunk
             async for chunk in stream:
+                pcm_parts.append(chunk)
                 yield chunk
+            completed = True
+        except SynthesisCancelled:
+            logger.info("TTS stream cancelled; skip cache write for session=%s", session_id)
+            return
         except Exception:
-            # Da bat dau stream thi khong duoc raise tiep; chi log va dong stream sach.
             logger.exception("TTS stream interrupted after first chunk")
             return
+        finally:
+            if completed:
+                compute_ms = (time.perf_counter() - started) * 1000
+                await tts_cache.set(cache_key, b"".join(pcm_parts), compute_ms)
 
     return StreamingResponse(
         generate(),
         media_type="audio/pcm",
-        headers={"X-Sample-Rate": str(synthesizer.sample_rate)},
+        headers={
+            "X-Sample-Rate": str(synthesizer.sample_rate),
+            "X-TTS-Cache": "MISS",
+            "X-TTS-Cache-Key": cache_meta["key"],
+        },
     )
 
 

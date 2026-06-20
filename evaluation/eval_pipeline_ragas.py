@@ -1,7 +1,7 @@
 """
 Part 2: ASR → LLM Pipeline Evaluation với RAGAS
 =================================================
-Đánh giá toàn bộ pipeline: audio WAV → Sherpa-Onnx ASR → RAG + Gemini → câu trả lời.
+Đánh giá toàn bộ pipeline: audio WAV → Sherpa-Onnx ASR → RAG + Qwen local → câu trả lời.
 
 Mục đích chính:
   1. ASR quality  — WER/CER giữa transcript và câu hỏi gốc
@@ -128,11 +128,11 @@ async def init_brain():
     from core.llm import LLMClient
     from core.rag import RAGPipeline
 
-    if not brain_config.gemini_api_key:
-        print("ERROR: GEMINI_API_KEY not set. Check nutrition-callbot/.env")
-        sys.exit(1)
-
-    llm = LLMClient(api_key=brain_config.gemini_api_key, model=brain_config.gemini_model)
+    llm = LLMClient(
+        api_key=brain_config.llm_api_key,
+        model=brain_config.llm_model,
+        base_url=brain_config.llm_base_url,
+    )
 
     qdrant_kwargs = {}
     if brain_config.qdrant_path:
@@ -330,7 +330,14 @@ async def main():
             try:
                 # Evaluate using original question (not ASR transcript) so scores are
                 # comparable with eval_llm_ragas.py results.
-                summary = run_ragas(llm_results, brain_config.gemini_api_key, question_key="question")
+                summary = run_ragas(
+                    llm_results,
+                    question_key="question",
+                    model=brain_config.llm_model,
+                    base_url=brain_config.llm_base_url,
+                    api_key=brain_config.llm_api_key,
+                    embedding_model=brain_config.embedding_model,
+                )
 
                 print("\n=== RAGAS Scores (pipeline — LLM sees ASR text) ===")
                 for metric, score in summary.items():
@@ -389,7 +396,7 @@ async def main():
 
             except ImportError as e:
                 print(f"\nRAGAS not installed: {e}")
-                print("Install:  pip install ragas>=0.2.0 langchain-google-genai langchain")
+                print("Install:  pip install ragas>=0.2.0 langchain-openai langchain-huggingface langchain")
 
 
 if __name__ == "__main__":

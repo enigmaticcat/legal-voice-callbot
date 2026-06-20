@@ -1,7 +1,7 @@
 """
 Part 1: LLM + RAG Evaluation với RAGAS
 =======================================
-Đánh giá chất lượng Brain service (RAG + Gemini) trực tiếp từ câu hỏi text.
+Đánh giá chất lượng Brain service (RAG + Qwen local) trực tiếp từ câu hỏi text.
 
 Metrics:
   answer_relevancy    — câu trả lời có liên quan câu hỏi không?
@@ -11,7 +11,7 @@ Metrics:
 
 Latency:
   rag_ms              — thời gian retrieve context từ Qdrant
-  llm_ttft_ms         — time to first token từ Gemini
+  llm_ttft_ms         — time to first token từ Qwen local
   total_ms            — tổng thời gian từ câu hỏi đến câu trả lời hoàn chỉnh
 
 Cách dùng:
@@ -60,11 +60,11 @@ async def init_brain():
     from core.llm import LLMClient
     from core.rag import RAGPipeline
 
-    if not brain_config.gemini_api_key:
-        print("ERROR: GEMINI_API_KEY not set. Check nutrition-callbot/.env")
-        sys.exit(1)
-
-    llm = LLMClient(api_key=brain_config.gemini_api_key, model=brain_config.gemini_model)
+    llm = LLMClient(
+        api_key=brain_config.llm_api_key,
+        model=brain_config.llm_model,
+        base_url=brain_config.llm_base_url,
+    )
 
     qdrant_kwargs = {}
     if brain_config.qdrant_path:
@@ -207,7 +207,14 @@ async def main():
 
     print("\n=== Running RAGAS Evaluation (this may take a few minutes) ===")
     try:
-        summary = run_ragas(all_results, brain_config.gemini_api_key, question_key="question")
+        summary = run_ragas(
+            all_results,
+            question_key="question",
+            model=brain_config.llm_model,
+            base_url=brain_config.llm_base_url,
+            api_key=brain_config.llm_api_key,
+            embedding_model=brain_config.embedding_model,
+        )
 
         print("\n=== RAGAS Scores ===")
         for metric, score in summary.items():
@@ -230,7 +237,7 @@ async def main():
 
     except ImportError as e:
         print(f"\nRAGAS not installed: {e}")
-        print("Install with:  pip install ragas>=0.2.0 langchain-google-genai langchain")
+        print("Install with:  pip install ragas>=0.2.0 langchain-openai langchain-huggingface langchain")
 
 
 if __name__ == "__main__":

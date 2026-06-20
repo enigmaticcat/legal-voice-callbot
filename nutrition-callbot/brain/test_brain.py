@@ -1,6 +1,6 @@
 """
 Test Brain Service — Step 1 Checkpoint
-Chạy: GEMINI_API_KEY=xxx python test_brain.py
+Yêu cầu Qwen local đang chạy tại LLM_BASE_URL.
 
 Test cases:
   1. LLM streaming hoạt động
@@ -137,20 +137,18 @@ def test_prompt_building():
     return passed == len(checks)
 
 
-# ─── Test 4: LLM Streaming (cần API key) ────────────────
+# ─── Test 4: Local LLM Streaming ────────────────────────
 async def test_llm_streaming():
     print("\n" + "=" * 60)
-    print("Test 4: LLM Streaming (Gemini API)")
+    print("Test 4: LLM Streaming (Qwen local)")
     print("=" * 60)
 
-    api_key = os.getenv("GEMINI_API_KEY", "")
-    if not api_key:
-        print("  GEMINI_API_KEY chưa set. Bỏ qua test này.")
-        print("  Chạy: GEMINI_API_KEY=xxx python test_brain.py")
-        return None
-
     try:
-        llm = LLMClient(api_key=api_key)
+        llm = LLMClient(
+            api_key=os.getenv("LLM_API_KEY", "local"),
+            model=os.getenv("LLM_MODEL", "Qwen/Qwen3-4B-Instruct-2507"),
+            base_url=os.getenv("LLM_BASE_URL", "http://localhost:8000/v1"),
+        )
     except Exception as e:
         print(f"  Không tạo được LLMClient: {e}")
         return False

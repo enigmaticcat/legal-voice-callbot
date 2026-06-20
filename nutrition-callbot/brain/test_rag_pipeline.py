@@ -1,5 +1,5 @@
 """
-Test RAG Pipeline — Nutrition collection + Gemini.
+Test RAG Pipeline — Nutrition collection + local Qwen.
 
 Chạy:
   python test_rag_pipeline.py
@@ -29,10 +29,16 @@ async def main():
     )
     qdrant_api_key = os.getenv("QDRANT_API_KEY", "")
     collection = os.getenv("QDRANT_COLLECTION", "nutrition_articles")
-    gemini_api_key = os.getenv("GEMINI_API_KEY", "")
+    llm_base_url = os.getenv("LLM_BASE_URL", "http://localhost:8000/v1")
+    llm_model = os.getenv("LLM_MODEL", "Qwen/Qwen3-4B-Instruct-2507")
+    llm_api_key = os.getenv("LLM_API_KEY", "local")
 
     print("1. Khởi tạo LLM + RAG...")
-    llm = LLMClient(api_key=gemini_api_key)
+    llm = LLMClient(
+        api_key=llm_api_key,
+        model=llm_model,
+        base_url=llm_base_url,
+    )
     rag = RAGPipeline(
         qdrant_url=qdrant_url,
         qdrant_api_key=qdrant_api_key,
@@ -62,7 +68,7 @@ async def main():
     )
     prompt = build_prompt(query=query, nutrition_context=nutrition_context)
 
-    print("\n3. Gọi Gemini suy luận...")
+    print("\n3. Gọi Qwen local suy luận...")
     print("-" * 50)
     async for chunk in llm.generate_stream(
         prompt=prompt,

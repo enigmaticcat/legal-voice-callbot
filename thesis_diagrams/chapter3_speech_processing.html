@@ -1,0 +1,96 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Xử lý giọng nói</title>
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; padding: 24px; background:#ffffff;
+         font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+  h1 { font-size: 18px; font-weight: 600; color:#111827; margin:0 0 16px; }
+  #diagram { width: 100%; overflow-x:auto; }
+  .mermaid { font-size: 14px; }
+  .mermaid .edgePath path { stroke-width: 1.6px; }
+  .mermaid .edgeLabel { background:#ffffff; }
+  .toolbar { margin-bottom:14px; }
+  button { font:inherit; padding:6px 12px; border:1px solid #d1d5db; border-radius:6px;
+           background:#f9fafb; cursor:pointer; }
+  button:hover { background:#f3f4f6; }
+</style>
+<h1>Pipeline xử lý giọng nói (ASR và TTS)</h1>
+<div class="toolbar"><button onclick="downloadSVG()">Tải SVG</button></div>
+<div id="diagram">
+<pre class="mermaid">
+flowchart TB
+    subgraph Input["Chiều nhận dạng giọng nói"]
+        direction LR
+        Microphone["Microphone"]
+        Capture["Thu âm tại trình duyệt"]
+        Convert16["PCM 16-bit, đơn kênh, 16 kHz<br/>Gửi mỗi 100 ms"]
+        VAD["Silero VAD chạy trên CPU<br/>Window 32 ms, khoảng lặng 500 ms"]
+        SpeechStart["Sự kiện speech_start"]
+        SpeechSegment["Đoạn tiếng nói hoàn chỉnh"]
+        Zipformer["Zipformer–RNN-T<br/>Nhận dạng offline theo đoạn"]
+        Transcript["Transcript"]
+
+        Microphone --> Capture
+        Capture --> Convert16
+        Convert16 --> VAD
+        VAD -.->|"Bắt đầu nói"| SpeechStart
+        VAD -->|"Kết thúc khoảng lặng<br/>và đoạn nói ≥250 ms"| SpeechSegment
+        SpeechSegment --> Zipformer
+        Zipformer --> Transcript
+    end
+
+    subgraph Output["Chiều tổng hợp giọng nói"]
+        direction LR
+        TextStream["Luồng văn bản từ Qwen"]
+        Clean["Làm sạch văn bản"]
+        Segment["Chia đoạn theo dấu câu<br/>và ranh giới từ"]
+        VieNeu["VieNeu-TTS"]
+        PCM24["PCM 24 kHz"]
+        AudioBuffer["Bộ đệm phát nối tiếp"]
+        Speaker["Loa người dùng"]
+        GatewayCancel["Gateway hủy task hiện tại<br/>và gọi yêu cầu hủy TTS"]
+        BrowserReset["Sự kiện bot_interrupted<br/>xóa audio đã lập lịch"]
+
+        TextStream --> Clean
+        Clean --> Segment
+        Segment --> VieNeu
+        VieNeu --> PCM24
+        PCM24 --> AudioBuffer
+        AudioBuffer --> Speaker
+        SpeechStart -.->|"Barge-in"| GatewayCancel
+        GatewayCancel -.->|"Dừng infer_stream theo session"| VieNeu
+        GatewayCancel -.-> BrowserReset
+        BrowserReset -.-> AudioBuffer
+    end
+
+    classDef input fill:#dbeafe,stroke:#2563eb,color:#172554;
+    classDef output fill:#dcfce7,stroke:#16a34a,color:#052e16;
+    classDef model fill:#fef3c7,stroke:#d97706,color:#451a03;
+
+    class Microphone,Capture,Convert16,VAD,SpeechStart,SpeechSegment,Transcript input;
+    class TextStream,Clean,Segment,PCM24,AudioBuffer,Speaker,GatewayCancel,BrowserReset output;
+    class Zipformer,VieNeu model;
+</pre>
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.7/dist/mermaid-layout-elk.esm.min.mjs';
+  mermaid.registerLayoutLoaders(elkLayouts);
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    layout: 'elk',
+    elk: { nodePlacementStrategy: 'BRANDES_KOEPF', mergeEdges: false },
+    flowchart: { curve: 'linear', htmlLabels: true, padding: 14, nodeSpacing: 60, rankSpacing: 80 },
+    themeVariables: { fontSize: '14px', lineColor: '#475569' }
+  });
+  window.downloadSVG = () => {
+    const svg = document.querySelector('#diagram svg');
+    if(!svg) return;
+    const blob = new Blob([new XMLSerializer().serializeToString(svg)], {type:'image/svg+xml'});
+    const a = Object.assign(document.createElement('a'), {href: URL.createObjectURL(blob), download: document.title + '.svg'});
+    a.click();
+  };
+</script>

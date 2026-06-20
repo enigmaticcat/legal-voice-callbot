@@ -118,7 +118,7 @@ def build_ragas_dataset(results: List[Dict], question_key: str = "question"):
     except ImportError:
         raise ImportError(
             "RAGAS not installed. Run:\n"
-            "  pip install ragas>=0.2.0 langchain-google-genai langchain"
+            "  pip install ragas>=0.2.0 langchain-openai langchain-huggingface langchain"
         )
 
     samples = [
@@ -134,24 +134,44 @@ def build_ragas_dataset(results: List[Dict], question_key: str = "question"):
     return EvaluationDataset(samples=samples)
 
 
-def get_ragas_judge(api_key: str, model: str = "gemini-2.0-flash"):
-    """Return RAGAS-wrapped LLM + embeddings using Gemini."""
+def get_ragas_judge(
+    model: str = "Qwen/Qwen3-4B-Instruct-2507",
+    base_url: str = "http://localhost:8000/v1",
+    api_key: str = "local",
+    embedding_model: str = "AITeamVN/Vietnamese_Embedding",
+):
+    """Return RAGAS-wrapped local Qwen judge and local embeddings."""
     from ragas.llms import LangchainLLMWrapper
     from ragas.embeddings import LangchainEmbeddingsWrapper
-    from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+    from langchain_openai import ChatOpenAI
+    from langchain_huggingface import HuggingFaceEmbeddings
 
     llm = LangchainLLMWrapper(
-        ChatGoogleGenerativeAI(model=model, google_api_key=api_key, temperature=0)
+        ChatOpenAI(
+            model=model,
+            base_url=base_url,
+            api_key=api_key,
+            temperature=0,
+        )
     )
     embeddings = LangchainEmbeddingsWrapper(
-        GoogleGenerativeAIEmbeddings(
-            model="models/text-embedding-004", google_api_key=api_key
+        HuggingFaceEmbeddings(
+            model_name=embedding_model,
+            model_kwargs={"device": "cpu"},
+            encode_kwargs={"normalize_embeddings": True},
         )
     )
     return llm, embeddings
 
 
-def run_ragas(results: List[Dict], api_key: str, question_key: str = "question") -> Dict:
+def run_ragas(
+    results: List[Dict],
+    question_key: str = "question",
+    model: str = "Qwen/Qwen3-4B-Instruct-2507",
+    base_url: str = "http://localhost:8000/v1",
+    api_key: str = "local",
+    embedding_model: str = "AITeamVN/Vietnamese_Embedding",
+) -> Dict:
     """
     Run RAGAS evaluation. Returns dict of metric → score.
     Metrics: answer_relevancy, faithfulness, context_precision, context_recall
@@ -160,7 +180,12 @@ def run_ragas(results: List[Dict], api_key: str, question_key: str = "question")
     from ragas.metrics import AnswerRelevancy, Faithfulness, ContextPrecision, ContextRecall
 
     dataset = build_ragas_dataset(results, question_key=question_key)
-    llm, embeddings = get_ragas_judge(api_key)
+    llm, embeddings = get_ragas_judge(
+        model=model,
+        base_url=base_url,
+        api_key=api_key,
+        embedding_model=embedding_model,
+    )
 
     metrics = [
         AnswerRelevancy(llm=llm, embeddings=embeddings),

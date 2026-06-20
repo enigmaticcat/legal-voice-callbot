@@ -52,12 +52,14 @@ class RAGPipeline:
         qdrant_snapshot_timeout_s: int = 600,
         qdrant_snapshot_priority: str = "snapshot",
         llm_client=None,
+        retrieval_cache=None,
     ):
         self.collection = collection
         self.qdrant_path = qdrant_path
         self.qdrant_url = qdrant_url
         self.qdrant_api_key = qdrant_api_key
         self.llm_client = llm_client
+        self.retrieval_cache = retrieval_cache
 
         if qdrant_path:
             logger.info(f"Initializing Local QdrantClient at: {qdrant_path}")
@@ -193,6 +195,58 @@ class RAGPipeline:
     async def search(self, query: str, filters: dict = None,
                      top_k: int = 5, fetch_k: int = 8,
                      use_hyde: bool = False) -> List[Dict]:
+        documents, _ = await self.search_with_meta(
+            query=query,
+            filters=filters,
+            top_k=top_k,
+            fetch_k=fetch_k,
+            use_hyde=use_hyde,
+        )
+        return documents
+
+    async def search_with_meta(
+        self,
+        query: str,
+        filters: dict = None,
+        top_k: int = 5,
+        fetch_k: int = 8,
+        use_hyde: bool = False,
+    ) -> tuple[List[Dict], dict]:
+        cache_key = None
+        if self.retrieval_cache is not None and not filters:
+            cache_key = self.retrieval_cache.build_key(
+                query=query,
+                embedding_model=MODEL_NAME,
+                reranker_model=RERANKER_MODEL,
+                fetch_k=fetch_k,
+                top_k=top_k,
+                use_hyde=use_hyde,
+            )
+            cached_documents, cache_meta = await self.retrieval_cache.get(cache_key)
+            if cached_documents is not None:
+                return cached_documents, cache_meta
+        else:
+            cache_meta = {"status": "bypass", "reason": "filters" if filters else "not_configured"}
+
+        started = time.perf_counter()
+        documents = await self._search_uncached(
+            query=query,
+            filters=filters,
+            top_k=top_k,
+            fetch_k=fetch_k,
+            use_hyde=use_hyde,
+        )
+        compute_ms = (time.perf_counter() - started) * 1000
+
+        if cache_key is not None:
+            await self.retrieval_cache.set(cache_key, documents, compute_ms)
+            cache_meta["compute_ms"] = round(compute_ms, 1)
+
+        return documents, cache_meta
+
+    async def _search_uncached(self, query: str, filters: dict = None,
+                               top_k: int = 5, fetch_k: int = 8,
+                               use_hyde: bool = False) -> List[Dict]:
         logger.debug(f"RAG search: {query[:80]}...")
 
         embed_text = query

@@ -44,6 +44,7 @@ class BrainServiceHandler:
         start_time = time.time()
         logger.info(f"[{session_id}] Think: {query[:80]}...")
         contexts = []
+        retrieval_cache = {"status": "not_checked"}
         expand_ms = 0.0
         rag_ms = 0.0
 
@@ -81,7 +82,7 @@ class BrainServiceHandler:
             expand_ms = (time.time() - t0) * 1000
 
             t0 = time.time()
-            docs = await self.rag.search(
+            docs, retrieval_cache = await self.rag.search_with_meta(
                 expanded,
                 top_k=self.rag_top_k,
                 fetch_k=self.rag_fetch_k,
@@ -108,6 +109,7 @@ class BrainServiceHandler:
                 yield {
                     "text": message,
                     "is_final": False,
+                    "retrieval_cache": retrieval_cache,
                     "evidence": {
                         "sufficient": False,
                         "reason": evidence.reason,
@@ -119,6 +121,7 @@ class BrainServiceHandler:
                     "text": "",
                     "is_final": True,
                     "contexts": contexts,
+                    "retrieval_cache": retrieval_cache,
                     "evidence": {
                         "sufficient": False,
                         "reason": evidence.reason,
@@ -180,6 +183,7 @@ class BrainServiceHandler:
                         "llm_full_ms": round(llm_full_ms, 1),
                         "first_chunk_total_ms": round(first_chunk_total_ms, 1),
                     }
+                    result["retrieval_cache"] = retrieval_cache
                     first_chunk = False
                 yield result
 
@@ -221,6 +225,7 @@ class BrainServiceHandler:
             "text": "",
             "is_final": True,
             "contexts": contexts,
+            "retrieval_cache": retrieval_cache,
             "evidence": {
                 "sufficient": True,
                 "reason": "sufficient",

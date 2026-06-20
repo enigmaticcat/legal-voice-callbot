@@ -10,6 +10,7 @@ Covers:
 """
 import sys
 import os
+import asyncio
 import importlib.util
 
 # Thêm paths để import được các module
@@ -31,6 +32,7 @@ from core.safe_rag import (
     clean_voice_output,
     missing_disclaimer_suffix,
 )
+from core.retrieval_cache import RetrievalCache
 
 
 class TestExpandQuery:
@@ -138,6 +140,83 @@ class TestSafeRAG:
 
 
 # ─────────────────────────────────────────────
+# 1d. cache key isolation
+# ─────────────────────────────────────────────
+class TestRetrievalCacheKey:
+
+    def test_same_inputs_produce_same_key(self):
+        cache = RetrievalCache("redis://localhost:6379", corpus_version="nutrition-v1")
+        params = {
+            "query": "Người bị tiểu đường nên ăn gì?",
+            "embedding_model": "AITeamVN/Vietnamese_Embedding",
+            "reranker_model": "thanhtantran/Vietnamese_Reranker",
+            "fetch_k": 15,
+            "top_k": 5,
+            "use_hyde": False,
+        }
+        assert cache.build_key(**params) == cache.build_key(**params)
+
+    def test_query_is_normalized_for_cache_key(self):
+        cache = RetrievalCache("redis://localhost:6379", corpus_version="nutrition-v1")
+        common = {
+            "embedding_model": "AITeamVN/Vietnamese_Embedding",
+            "reranker_model": "thanhtantran/Vietnamese_Reranker",
+            "fetch_k": 15,
+            "top_k": 5,
+            "use_hyde": False,
+        }
+        first = cache.build_key(query="  TIỂU   ĐƯỜNG nên ăn gì? ", **common)
+        second = cache.build_key(query="tiểu đường nên ăn gì?", **common)
+        assert first == second
+
+    def test_corpus_version_changes_key(self):
+        first = RetrievalCache("redis://localhost:6379", corpus_version="nutrition-v1")
+        second = RetrievalCache("redis://localhost:6379", corpus_version="nutrition-v2")
+        params = {
+            "query": "Bổ sung canxi thế nào?",
+            "embedding_model": "AITeamVN/Vietnamese_Embedding",
+            "reranker_model": "thanhtantran/Vietnamese_Reranker",
+            "fetch_k": 15,
+            "top_k": 5,
+            "use_hyde": False,
+        }
+        assert first.build_key(**params) != second.build_key(**params)
+
+    def test_cache_miss_then_hit_with_fake_redis(self):
+        class FakeRedis:
+            def __init__(self):
+                self.values = {}
+                self.stats = {}
+
+            async def get(self, key):
+                return self.values.get(key)
+
+            async def setex(self, key, _ttl, value):
+                self.values[key] = value
+
+            async def hincrby(self, _key, field, amount):
+                self.stats[field] = self.stats.get(field, 0) + amount
+
+            async def hincrbyfloat(self, _key, field, amount):
+                self.stats[field] = self.stats.get(field, 0.0) + amount
+
+        async def scenario():
+            cache = RetrievalCache("redis://unused")
+            cache._redis = FakeRedis()
+            key = "cache:retrieval:v1:test"
+            documents, first_meta = await cache.get(key)
+            assert documents is None
+            assert first_meta["status"] == "miss"
+            await cache.set(key, [{"content": "Canxi có trong sữa."}], 123.4)
+            documents, second_meta = await cache.get(key)
+            assert documents[0]["content"] == "Canxi có trong sữa."
+            assert second_meta["status"] == "hit"
+            assert second_meta["estimated_saved_ms"] == 123.4
+
+        asyncio.run(scenario())
+
+
+# ─────────────────────────────────────────────
 # 2. TTS chunker
 # ─────────────────────────────────────────────
 _tts_chunker_spec = importlib.util.spec_from_file_location(
@@ -147,6 +226,14 @@ _tts_chunker_spec = importlib.util.spec_from_file_location(
 _tts_chunker = importlib.util.module_from_spec(_tts_chunker_spec)
 _tts_chunker_spec.loader.exec_module(_tts_chunker)
 chunk_text = _tts_chunker.chunk_text
+
+_tts_cache_spec = importlib.util.spec_from_file_location(
+    "tts_cache",
+    os.path.join(TTS_ROOT, "core", "tts_cache.py"),
+)
+_tts_cache = importlib.util.module_from_spec(_tts_cache_spec)
+_tts_cache_spec.loader.exec_module(_tts_cache)
+TTSCache = _tts_cache.TTSCache
 
 
 class TestChunkText:
@@ -177,6 +264,78 @@ class TestChunkText:
         text = "Canxi, sắt, kẽm là các khoáng chất quan trọng cho sức khỏe."
         chunks = chunk_text(text, min_size=5)
         assert len(chunks) == 1
+
+
+class TestTTSCacheKey:
+
+    def test_same_text_and_voice_config_produce_same_key(self):
+        cache = TTSCache("redis://localhost:6379", version="v1")
+        params = {
+            "text": "Chào bạn, hãy ăn đủ rau xanh.",
+            "backbone_repo": "pnnbao-ump/VieNeu-TTS-0.3B-q4-gguf",
+            "codec_repo": "neuphonic/distill-neucodec",
+            "sample_rate": 24000,
+        }
+        assert cache.build_key(**params) == cache.build_key(**params)
+
+    def test_whitespace_is_normalized(self):
+        cache = TTSCache("redis://localhost:6379", version="v1")
+        common = {
+            "backbone_repo": "pnnbao-ump/VieNeu-TTS-0.3B-q4-gguf",
+            "codec_repo": "neuphonic/distill-neucodec",
+            "sample_rate": 24000,
+        }
+        first = cache.build_key(text="Chào bạn,   hãy ăn rau.", **common)
+        second = cache.build_key(text="Chào bạn, hãy ăn rau.", **common)
+        assert first == second
+
+    def test_model_or_cache_version_changes_key(self):
+        first = TTSCache("redis://localhost:6379", version="v1")
+        second = TTSCache("redis://localhost:6379", version="v2")
+        params = {
+            "text": "Chào bạn.",
+            "backbone_repo": "pnnbao-ump/VieNeu-TTS-0.3B-q4-gguf",
+            "codec_repo": "neuphonic/distill-neucodec",
+            "sample_rate": 24000,
+        }
+        assert first.build_key(**params) != second.build_key(**params)
+
+    def test_cache_miss_then_hit_with_fake_redis(self):
+        class FakeRedis:
+            def __init__(self):
+                self.hashes = {}
+                self.stats = {}
+
+            async def hmget(self, key, *fields):
+                values = self.hashes.get(key, {})
+                return [values.get(field) for field in fields]
+
+            async def hset(self, key, mapping):
+                self.hashes[key] = mapping
+
+            async def expire(self, _key, _ttl):
+                return True
+
+            async def hincrby(self, _key, field, amount):
+                self.stats[field] = self.stats.get(field, 0) + amount
+
+            async def hincrbyfloat(self, _key, field, amount):
+                self.stats[field] = self.stats.get(field, 0.0) + amount
+
+        async def scenario():
+            cache = TTSCache("redis://unused")
+            cache._redis = FakeRedis()
+            key = "cache:tts:v1:test"
+            pcm, first_meta = await cache.get(key)
+            assert pcm is None
+            assert first_meta["status"] == "miss"
+            assert await cache.set(key, b"\x00\x01" * 100, 456.7) is True
+            pcm, second_meta = await cache.get(key)
+            assert len(pcm) == 200
+            assert second_meta["status"] == "hit"
+            assert second_meta["estimated_saved_ms"] == 456.7
+
+        asyncio.run(scenario())
 
     def test_min_size_respected(self):
         # Chunk đầu tiên phải >= min_size trước khi split (trừ chunk cuối)

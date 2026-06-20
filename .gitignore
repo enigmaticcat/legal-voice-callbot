@@ -39,10 +39,42 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
 
 # Môi trường và keys
 .env
+.env.*
+!.env.example
+!**/.env.example
 secret*.json
+
+# File sinh tự động bởi LaTeX
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.lot
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*.xdv
+
+# Dữ liệu runtime Redis
+dump.rdb
+appendonly.aof
+appendonlydir/
+
+# Cache tải model và công cụ
+.cache/
+.huggingface/
 
 *.snapshot
 snapshots/*

@@ -1,0 +1,120 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Streaming pipeline</title>
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; padding: 24px; background:#ffffff;
+         font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+  h1 { font-size: 18px; font-weight: 600; color:#111827; margin:0 0 16px; }
+  #diagram { width: 100%; overflow-x:auto; }
+  .mermaid { font-size: 14px; }
+  .mermaid .edgePath path { stroke-width: 1.6px; }
+  .mermaid .edgeLabel { background:#ffffff; }
+  .toolbar { margin-bottom:14px; }
+  button { font:inherit; padding:6px 12px; border:1px solid #d1d5db; border-radius:6px;
+           background:#f9fafb; cursor:pointer; }
+  button:hover { background:#f3f4f6; }
+</style>
+<h1>So sánh pipeline tuần tự và streaming song song</h1>
+<div class="toolbar"><button onclick="downloadSVG()">Tải SVG</button></div>
+<div id="diagram">
+<pre class="mermaid">
+flowchart TB
+    subgraph Sequential["Pipeline tuần tự"]
+        direction LR
+        SeqLLM["LLM sinh toàn bộ<br/>câu trả lời"]
+        SeqFull["Văn bản hoàn chỉnh"]
+        SeqTTS["TTS tổng hợp văn bản"]
+        SeqAudio["Âm thanh đầu tiên"]
+
+        SeqLLM --> SeqFull
+        SeqFull --> SeqTTS
+        SeqTTS --> SeqAudio
+    end
+
+    subgraph Streaming["Pipeline streaming song song"]
+        direction LR
+        Qwen["Qwen sinh token<br/>theo luồng"]
+        BrainChunk["Brain gom token thành text chunk<br/>ngưỡng xử lý 40 ký tự"]
+        GatewayBuffer["Gateway cộng dồn<br/>text chunk"]
+        Split{"Gặp dấu câu sau 40 ký tự<br/>hoặc buffer đạt 200 ký tự?"}
+        Wait["Tiếp tục tích lũy"]
+        Segment["Làm sạch đoạn văn bản"]
+        Queue[["Hàng đợi TTS<br/>tối đa 4 phần tử"]]
+        TTS["VieNeu-TTS"]
+        PCM["PCM int16 24 kHz<br/>theo frame"]
+        EventQueue[["Hàng đợi sự kiện"]]
+        Browser["Trình duyệt lập lịch<br/>phát nối tiếp"]
+
+        Qwen --> BrainChunk
+        BrainChunk --> GatewayBuffer
+        GatewayBuffer --> Split
+        Split -->|"Chưa đủ"| Wait
+        Wait --> GatewayBuffer
+        Split -->|"Đủ điều kiện"| Segment
+        Segment --> Queue
+        Queue --> TTS
+        TTS --> PCM
+        PCM --> EventQueue
+        EventQueue --> Browser
+    end
+
+    subgraph BargeIn["Luồng barge-in"]
+        direction LR
+        UserSpeech["Người dùng bắt đầu nói"]
+        VAD["Silero VAD phát hiện<br/>speech_start"]
+        GatewayCancel["Gateway hủy task<br/>phản hồi hiện tại"]
+        CancelTTS["Gửi yêu cầu hủy TTS"]
+        InterruptedEvent["Gửi sự kiện bot_interrupted"]
+        ClearPlayback["Trình duyệt dừng các nguồn<br/>audio đã lập lịch"]
+        NewTurn["Thu nhận lượt nói mới"]
+
+        UserSpeech --> VAD
+        VAD --> GatewayCancel
+        GatewayCancel --> CancelTTS
+        GatewayCancel --> InterruptedEvent
+        InterruptedEvent --> ClearPlayback
+        ClearPlayback --> NewTurn
+    end
+
+    GatewayCancel -.->|"Dừng producer"| Qwen
+    CancelTTS -.->|"Dừng consumer"| TTS
+
+    SeqAudio --> Compare{"So sánh thời gian<br/>đến âm thanh đầu tiên"}
+    Browser --> Compare
+    Compare --> Result["Streaming giảm TTFA vì không phải<br/>chờ sinh toàn bộ câu trả lời"]
+
+    classDef sequential fill:#fee2e2,stroke:#dc2626,color:#450a0a;
+    classDef streaming fill:#dcfce7,stroke:#16a34a,color:#052e16;
+    classDef decision fill:#fef3c7,stroke:#d97706,color:#451a03;
+    classDef result fill:#dbeafe,stroke:#2563eb,color:#172554;
+    classDef interrupt fill:#fce7f3,stroke:#db2777,color:#500724;
+
+    class SeqLLM,SeqFull,SeqTTS,SeqAudio sequential;
+    class Qwen,BrainChunk,GatewayBuffer,Wait,Segment,Queue,TTS,PCM,EventQueue,Browser streaming;
+    class Split,Compare decision;
+    class Result result;
+    class UserSpeech,VAD,GatewayCancel,CancelTTS,InterruptedEvent,ClearPlayback,NewTurn interrupt;
+</pre>
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.7/dist/mermaid-layout-elk.esm.min.mjs';
+  mermaid.registerLayoutLoaders(elkLayouts);
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    layout: 'elk',
+    elk: { nodePlacementStrategy: 'BRANDES_KOEPF', mergeEdges: false },
+    flowchart: { curve: 'linear', htmlLabels: true, padding: 14, nodeSpacing: 55, rankSpacing: 70 },
+    themeVariables: { fontSize: '14px', lineColor: '#475569' }
+  });
+  window.downloadSVG = () => {
+    const svg = document.querySelector('#diagram svg');
+    if(!svg) return;
+    const blob = new Blob([new XMLSerializer().serializeToString(svg)], {type:'image/svg+xml'});
+    const a = Object.assign(document.createElement('a'), {href: URL.createObjectURL(blob), download: document.title + '.svg'});
+    a.click();
+  };
+</script>

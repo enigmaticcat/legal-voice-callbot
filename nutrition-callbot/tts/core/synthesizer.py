@@ -19,6 +19,10 @@ logger = logging.getLogger("tts.core.synthesizer")
 SAMPLE_RATE = 24_000
 
 
+class SynthesisCancelled(Exception):
+    pass
+
+
 class Synthesizer:
 
     def __init__(self, backbone_repo: str, codec_repo: str):
@@ -131,7 +135,7 @@ class Synthesizer:
             ):
                 if cancel_event.is_set():
                     logger.info("TTS synthesis cancelled mid-stream")
-                    return
+                    raise SynthesisCancelled(f"TTS synthesis cancelled for session {session_key}")
                 # audio_chunk: np.ndarray float32, shape (N,)
                 audio_i16 = (audio_chunk * 32767).clip(-32768, 32767).astype(np.int16)
                 yield audio_i16.tobytes()

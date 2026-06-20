@@ -184,6 +184,7 @@ class Orchestrator:
                             "session_id": session_id,
                             "text": text,
                             "is_final": False,
+                            "retrieval_cache": brain_chunk.get("retrieval_cache"),
                         })
                         buffer += text
 

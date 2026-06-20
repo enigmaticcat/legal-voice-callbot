@@ -1,6 +1,6 @@
 """
 gen_synthetic_qa.py
-Sinh câu hỏi + câu trả lời tham chiếu từ full_docs.jsonl dùng Gemini API.
+Sinh câu hỏi + câu trả lời tham chiếu từ full_docs.jsonl bằng Qwen local.
 
 Input : evaluation/full_docs.jsonl  (6,001 bài đã lọc)
 Output: evaluation/synthetic_qa.jsonl
@@ -54,8 +54,10 @@ DEFAULT_N_PER_SOURCE = {
     "suckhoedoisong": 80,
 }
 
-VERTEX_MODEL  = "gemini-2.5-flash"
-PAUSE_SEC     = 1.0   # Vertex AI: ~1000 RPM
+LLM_MODEL     = os.getenv("LLM_MODEL", "Qwen/Qwen3-4B-Instruct-2507")
+LLM_BASE_URL  = os.getenv("LLM_BASE_URL", "http://localhost:8000/v1")
+LLM_API_KEY   = os.getenv("LLM_API_KEY", "local")
+PAUSE_SEC     = 0.1
 MAX_RETRIES   = 4
 CONTEXT_CHARS = 5000
 
@@ -138,38 +140,29 @@ def validate_qa(qa: dict) -> tuple[bool, str]:
     return True, ""
 
 
-# ── Vertex AI call ────────────────────────────────────────────────────────────
+# ── Local Qwen call ───────────────────────────────────────────────────────────
 
-def call_vertex(doc: dict) -> dict:
-    from google import genai
-    from google.genai import types
+def call_local_llm(doc: dict) -> dict:
+    from openai import OpenAI
 
-    project  = os.getenv("GOOGLE_CLOUD_PROJECT", "")
-    location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
-    if not project:
-        raise ValueError("GOOGLE_CLOUD_PROJECT chua set trong .env")
-
-    client = genai.Client(vertexai=True, project=project, location=location)
-
+    client = OpenAI(base_url=LLM_BASE_URL, api_key=LLM_API_KEY)
     prompt = USER_PROMPT_TEMPLATE.format(
         title=doc["title"],
         source=doc["source"],
         text=doc["text"][:CONTEXT_CHARS],
     )
 
-    resp = client.models.generate_content(
-        model=VERTEX_MODEL,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
-            temperature=0.7,
-            max_output_tokens=1024,
-            response_mime_type="application/json",
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
-        ),
+    response = client.chat.completions.create(
+        model=LLM_MODEL,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.7,
+        max_tokens=1024,
+        response_format={"type": "json_object"},
     )
-
-    raw = resp.text.strip()
+    raw = response.choices[0].message.content.strip()
 
     if raw.startswith("```"):
         lines = raw.splitlines()
@@ -342,7 +335,7 @@ def main():
             last_err = ""
             for attempt in range(1, MAX_RETRIES + 1):
                 try:
-                    qa = call_vertex(doc)
+                    qa = call_local_llm(doc)
                     break
                 except json.JSONDecodeError as e:
                     last_err = f"JSON parse error: {e}"
@@ -350,7 +343,7 @@ def main():
                     last_err = str(e)
                     err_lower = str(e).lower()
                     if any(k in err_lower for k in ("quota", "rate_limit", "resource_exhausted", "429")):
-                        wait = PAUSE_SEC * (3 ** attempt)  # 13s -> 40s -> 121s
+                        wait = PAUSE_SEC * (3 ** attempt)
                         print(f"\n  RATE LIMIT (attempt {attempt}) - cho {wait:.0f}s ...", end="", flush=True)
                         time.sleep(wait)
                     elif attempt < MAX_RETRIES:

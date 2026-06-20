@@ -112,11 +112,15 @@ services:
       - "${BRAIN_PORT:-50052}:50052"
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - LLM_BACKEND=${LLM_BACKEND:-gemini}
       - LLM_BASE_URL=${LLM_BASE_URL:-http://llm:8000/v1}
       - LLM_MODEL=${LLM_MODEL:-Qwen/Qwen3-4B-Instruct-2507}
+      - LLM_API_KEY=${LLM_API_KEY:-local}
       - QDRANT_HOST=qdrant
-      - REDIS_HOST=redis
+      - REDIS_URL=redis://redis:6379
+      - RETRIEVAL_CACHE_ENABLED=${RETRIEVAL_CACHE_ENABLED:-true}
+      - RETRIEVAL_CACHE_REQUIRED=${RETRIEVAL_CACHE_REQUIRED:-true}
+      - RETRIEVAL_CACHE_TTL_SECONDS=${RETRIEVAL_CACHE_TTL_SECONDS:-86400}
+      - CORPUS_VERSION=${CORPUS_VERSION:-nutrition-v1}
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-AITeamVN/Vietnamese_Embedding}
       - RERANKER_MODEL=${RERANKER_MODEL:-thanhtantran/Vietnamese_Reranker}
     depends_on:
@@ -145,6 +149,15 @@ services:
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - TTS_PRELOAD_MODEL=${TTS_PRELOAD_MODEL:-true}
+      - REDIS_URL=redis://redis:6379
+      - TTS_CACHE_ENABLED=${TTS_CACHE_ENABLED:-true}
+      - TTS_CACHE_REQUIRED=${TTS_CACHE_REQUIRED:-true}
+      - TTS_CACHE_TTL_SECONDS=${TTS_CACHE_TTL_SECONDS:-604800}
+      - TTS_CACHE_MAX_BYTES=${TTS_CACHE_MAX_BYTES:-8000000}
+      - TTS_CACHE_VERSION=${TTS_CACHE_VERSION:-v1}
+    depends_on:
+      redis:
+        condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://0.0.0.0:50053/health || exit 1" ]
       interval: 15s

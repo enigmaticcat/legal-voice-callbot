@@ -29,9 +29,15 @@ class BrainConfig:
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
     port: int = int(os.getenv("BRAIN_PORT", "50052"))
 
-    gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
-    gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-    llm_temperature: float = 0.3  
+    llm_base_url: str = os.getenv("LLM_BASE_URL", "http://llm:8000/v1")
+    llm_model: str = os.getenv("LLM_MODEL", "Qwen/Qwen3-4B-Instruct-2507")
+    llm_api_key: str = os.getenv("LLM_API_KEY", "local")
+    llm_temperature: float = float(os.getenv("LLM_TEMPERATURE", "0.3"))
+    redis_url: str = os.getenv("REDIS_URL", "redis://redis:6379")
+    retrieval_cache_enabled: bool = os.getenv("RETRIEVAL_CACHE_ENABLED", "true").strip().lower() in {"1", "true", "yes", "on"}
+    retrieval_cache_required: bool = os.getenv("RETRIEVAL_CACHE_REQUIRED", "false").strip().lower() in {"1", "true", "yes", "on"}
+    retrieval_cache_ttl_seconds: int = int(os.getenv("RETRIEVAL_CACHE_TTL_SECONDS", "86400"))
+    corpus_version: str = os.getenv("CORPUS_VERSION", "nutrition-v1")
     qdrant_host: str = os.getenv("QDRANT_HOST", "qdrant")
     qdrant_port: int = int(os.getenv("QDRANT_PORT", "6333"))
     qdrant_url: str = os.getenv("QDRANT_URL", "")

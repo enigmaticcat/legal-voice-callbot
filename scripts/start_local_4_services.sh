@@ -50,9 +50,9 @@ set -a
 source "$ENV_FILE"
 set +a
 
-if [[ -z "${GEMINI_API_KEY:-}" ]]; then
-  echo "[WARN] GEMINI_API_KEY trống — Brain cần key này nếu dùng Gemini backend"
-fi
+export LLM_BASE_URL="${LLM_BASE_URL:-http://localhost:8000/v1}"
+export LLM_MODEL="${LLM_MODEL:-Qwen/Qwen3-4B-Instruct-2507}"
+export LLM_API_KEY="${LLM_API_KEY:-local}"
 
 # ── Kiểm tra PID file ──────────────────────────────────────────────────
 if [[ -f "$PID_FILE" ]]; then

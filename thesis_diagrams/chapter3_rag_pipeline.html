@@ -1,0 +1,131 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>RAG pipeline</title>
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; padding: 24px; background:#ffffff;
+         font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+  h1 { font-size: 18px; font-weight: 600; color:#111827; margin:0 0 16px; }
+  #diagram { width: 100%; overflow-x:auto; }
+  .mermaid { font-size: 14px; }
+  .mermaid .edgePath path { stroke-width: 1.6px; }
+  .mermaid .edgeLabel { background:#ffffff; }
+  .toolbar { margin-bottom:14px; }
+  button { font:inherit; padding:6px 12px; border:1px solid #d1d5db; border-radius:6px;
+           background:#f9fafb; cursor:pointer; }
+  button:hover { background:#f3f4f6; }
+</style>
+<h1>Pipeline xử lý hội thoại RAG</h1>
+<div class="toolbar"><button onclick="downloadSVG()">Tải SVG</button></div>
+<div id="diagram">
+<pre class="mermaid">
+flowchart TB
+    Transcript["Transcript từ ASR"]
+    InputSafety{"Guardrail đầu vào<br/>dựa trên luật"}
+    SafetyReply["Phản hồi cố định:<br/>khẩn cấp, quyết định lâm sàng<br/>hoặc ngoài phạm vi"]
+
+    subgraph Preprocess["Tiền xử lý truy vấn"]
+        Expand["Query expansion<br/>dựa trên từ điển"]
+        HyDE{"Kích hoạt HyDE?"}
+        GenerateHyDE["Qwen sinh đoạn văn giả định"]
+        Original["Sử dụng truy vấn đã chuẩn hóa"]
+    end
+
+    subgraph Retrieval["Retrieval"]
+        Embedding["AITeamVN/<br/>Vietnamese_Embedding"]
+        Qdrant[("Qdrant")]
+        Candidates["15 đoạn văn bản ứng viên"]
+        Reranker["thanhtantran/<br/>Vietnamese_Reranker"]
+        TopDocs["5 đoạn phù hợp nhất"]
+        Evidence{"Đủ bằng chứng?<br/>≥1 đoạn và ≥120 ký tự"}
+        Insufficient["Phản hồi chưa đủ tài liệu"]
+        CleanContext["Loại URL, source tag<br/>và dòng có dấu hiệu prompt injection"]
+    end
+
+    subgraph Augmentation["Augmentation"]
+        Instruction["Chỉ dẫn hệ thống"]
+        Examples["Hai ví dụ few-shot"]
+        Context["Ngữ cảnh đã làm sạch"]
+        History["Tóm tắt và các lượt hội thoại gần nhất"]
+        Question["Câu hỏi đã mở rộng"]
+        Prompt["Prompt hoàn chỉnh<br/>có context"]
+    end
+
+    subgraph Generation["Generation"]
+        Qwen["Qwen3-4B-Instruct-2507<br/>Chạy cục bộ"]
+        BrainChunk["Chia luồng văn bản<br/>theo dấu câu và ngưỡng ký tự"]
+        CleanOutput["Loại URL và chuẩn hóa<br/>đầu ra cho kênh thoại"]
+        OutputSafety{"Thiếu disclaimer hoặc<br/>có phát biểu không an toàn?"}
+        Disclaimer["Bổ sung khuyến nghị<br/>gặp bác sĩ dinh dưỡng"]
+        Stream["Text stream gửi Gateway"]
+    end
+
+    Transcript --> InputSafety
+    InputSafety -->|"Kích hoạt"| SafetyReply
+    InputSafety -->|"Bình thường"| Expand
+    Expand --> HyDE
+    HyDE -->|"Có"| GenerateHyDE
+    HyDE -->|"Không"| Original
+
+    GenerateHyDE --> Embedding
+    Original --> Embedding
+    Embedding -->|"Vector truy vấn"| Qdrant
+    Qdrant --> Candidates
+    Candidates --> Reranker
+    Reranker --> TopDocs
+    TopDocs --> Evidence
+    Evidence -->|"Không"| Insufficient
+    Evidence -->|"Có"| CleanContext
+
+    CleanContext --> Context
+    Instruction --> Prompt
+    Examples --> Prompt
+    Context --> Prompt
+    History --> Prompt
+    Expand --> Question
+    Question --> Prompt
+
+    Prompt --> Qwen
+    Qwen --> BrainChunk
+    BrainChunk --> CleanOutput
+    CleanOutput --> OutputSafety
+    OutputSafety -->|"Có"| Disclaimer
+    OutputSafety -->|"Không"| Stream
+    Disclaimer --> Stream
+    SafetyReply --> Stream
+    Insufficient --> Stream
+
+    classDef preprocess fill:#fef3c7,stroke:#d97706,color:#451a03;
+    classDef retrieval fill:#ede9fe,stroke:#7c3aed,color:#2e1065;
+    classDef augmentation fill:#dbeafe,stroke:#2563eb,color:#172554;
+    classDef generation fill:#dcfce7,stroke:#16a34a,color:#052e16;
+    classDef database fill:#f3e8ff,stroke:#7c3aed,color:#3b0764;
+
+    class Transcript,InputSafety,SafetyReply,Expand,HyDE,GenerateHyDE,Original preprocess;
+    class Embedding,Candidates,Reranker,TopDocs,Evidence,Insufficient,CleanContext retrieval;
+    class Qdrant database;
+    class Instruction,Examples,Context,History,Question,Prompt augmentation;
+    class Qwen,BrainChunk,CleanOutput,OutputSafety,Disclaimer,Stream generation;
+</pre>
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.7/dist/mermaid-layout-elk.esm.min.mjs';
+  mermaid.registerLayoutLoaders(elkLayouts);
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    layout: 'elk',
+    elk: { nodePlacementStrategy: 'BRANDES_KOEPF', mergeEdges: false },
+    flowchart: { curve: 'linear', htmlLabels: true, padding: 14, nodeSpacing: 55, rankSpacing: 70 },
+    themeVariables: { fontSize: '14px', lineColor: '#475569' }
+  });
+  window.downloadSVG = () => {
+    const svg = document.querySelector('#diagram svg');
+    if(!svg) return;
+    const blob = new Blob([new XMLSerializer().serializeToString(svg)], {type:'image/svg+xml'});
+    const a = Object.assign(document.createElement('a'), {href: URL.createObjectURL(blob), download: document.title + '.svg'});
+    a.click();
+  };
+</script>

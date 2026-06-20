@@ -1,123 +1,10 @@
-"""
-LLM Wrapper — Gemini API hoặc OpenAI-compatible (vLLM, Ollama)
-
-Chọn backend qua env LLM_BACKEND:
-  LLM_BACKEND=gemini   → GeminiLLMClient  (default)
-  LLM_BACKEND=openai   → OpenAILLMClient  (vLLM / Ollama / LM Studio)
-
-LLMClient = factory function trả về đúng client theo config.
-"""
-import asyncio
+"""Local LLM client using an OpenAI-compatible inference server."""
 import logging
 import time
 from typing import AsyncGenerator
 
 logger = logging.getLogger("brain.core.llm")
 
-
-# ── Gemini ────────────────────────────────────────────────────────────────────
-
-class GeminiLLMClient:
-
-    def __init__(self, api_key: str, model: str = "gemini-2.5-flash"):
-        if not api_key:
-            raise ValueError("GEMINI_API_KEY is required. Set env GEMINI_API_KEY.")
-
-        try:
-            from google import genai
-            from google.genai import types as genai_types
-        except ImportError as e:
-            raise ImportError("google-genai is required for Gemini backend.") from e
-
-        self.model = model
-        self.client = genai.Client(api_key=api_key)
-        self._genai_types = genai_types
-        logger.info(f"LLM client initialized (model: {model})")
-
-    async def generate_stream(
-        self,
-        prompt: str,
-        system_instruction: str = "",
-        temperature: float = 0.3,
-        max_output_tokens: int = 4096,
-    ) -> AsyncGenerator[dict, None]:
-        start_time = time.time()
-        first_token = True
-
-        logger.debug(f"Generating response for: {prompt[:80]}...")
-
-        config = self._genai_types.GenerateContentConfig(
-            temperature=temperature,
-            max_output_tokens=max_output_tokens,
-            thinking_config=self._genai_types.ThinkingConfig(thinking_budget=0),  # Tắt thinking để giảm latency
-        )
-        if system_instruction:
-            config.system_instruction = system_instruction
-
-        try:
-            response = await self.client.aio.models.generate_content_stream(
-                model=self.model,
-                contents=prompt,
-                config=config,
-            )
-
-            ttfc_ms = None
-            t0 = time.time()
-            CHUNK_TIMEOUT = 15.0  # timeout chờ chunk tiếp theo, tránh treo giữa stream
-            aiter = response.__aiter__()
-
-            while True:
-                try:
-                    chunk = await asyncio.wait_for(aiter.__anext__(), timeout=CHUNK_TIMEOUT)
-                except StopAsyncIteration:
-                    break
-                if chunk.text:
-                    if ttfc_ms is None:
-                        ttfc_ms = (time.time() - t0) * 1000
-                        logger.info(f"LLM TTFC (first chunk from Gemini): {ttfc_ms:.0f}ms")
-
-                    result = {"text": chunk.text, "is_final": False}
-                    if first_token:
-                        ttft = (time.time() - start_time) * 1000
-                        result["ttft_ms"] = ttft
-                        result["ttfc_ms"] = ttfc_ms
-                        logger.info(f"LLM TTFT: {ttft:.0f}ms | TTFC: {ttfc_ms:.0f}ms")
-                        first_token = False
-                    yield result
-
-        except asyncio.TimeoutError:
-            logger.error("Gemini API timeout (no chunk received in time)")
-            yield {
-                "text": "Xin lỗi, hệ thống phản hồi quá chậm. Vui lòng thử lại sau.",
-                "is_final": True,
-                "error": True,
-            }
-            return
-        except Exception as e:
-            logger.error(f"Gemini API error: {e}")
-            yield {
-                "text": "Xin lỗi, hệ thống đang gặp sự cố. Vui lòng thử lại sau.",
-                "is_final": True,
-                "error": True,
-            }
-
-    async def generate(
-        self,
-        prompt: str,
-        system_instruction: str = "",
-        temperature: float = 0.3,
-    ) -> str:
-        full_text = []
-        async for chunk in self.generate_stream(
-            prompt=prompt,
-            system_instruction=system_instruction,
-            temperature=temperature,
-        ):
-            full_text.append(chunk["text"])
-        return "".join(full_text)
-
-
-# ── OpenAI-compatible (vLLM / Ollama) ────────────────────────────────────────
 
 class OpenAILLMClient:
 
@@ -150,7 +37,6 @@ class OpenAILLMClient:
                 temperature=temperature,
                 max_tokens=max_output_tokens,
                 stream=True,
-                extra_body={"chat_template_kwargs": {"enable_thinking": False}},
             )
 
             async for chunk in stream:
@@ -182,20 +68,14 @@ class OpenAILLMClient:
         return "".join(full_text)
 
 
-# ── Factory ───────────────────────────────────────────────────────────────────
-
-def LLMClient(api_key: str = "", model: str = "gemini-2.5-flash",
-              backend: str = None, base_url: str = None):
-    """
-    Factory: trả GeminiLLMClient hoặc OpenAILLMClient tuỳ LLM_BACKEND env.
-      LLM_BACKEND=gemini  (default)
-      LLM_BACKEND=openai  + LLM_BASE_URL + LLM_MODEL
-    """
+def LLMClient(
+    api_key: str = "local",
+    model: str = "Qwen/Qwen3-4B-Instruct-2507",
+    base_url: str = None,
+):
+    """Create a client for the locally hosted Qwen inference server."""
     import os
-    b = backend or os.getenv("LLM_BACKEND", "gemini")
-    if b == "openai":
-        url   = base_url or os.getenv("LLM_BASE_URL", "http://localhost:8000/v1")
-        mdl   = os.getenv("LLM_MODEL", model)
-        key   = os.getenv("OPENAI_API_KEY", "dummy")
-        return OpenAILLMClient(base_url=url, model=mdl, api_key=key)
-    return GeminiLLMClient(api_key=api_key, model=model)
+    url = base_url or os.getenv("LLM_BASE_URL", "http://localhost:8000/v1")
+    model_name = os.getenv("LLM_MODEL", model)
+    local_key = os.getenv("LLM_API_KEY", api_key)
+    return OpenAILLMClient(base_url=url, model=model_name, api_key=local_key)

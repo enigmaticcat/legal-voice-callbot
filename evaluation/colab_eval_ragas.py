@@ -2,18 +2,11 @@
 # CELL 1: Cài dependencies
 # ==============================================================
 # !pip install -q vllm qdrant-client sentence-transformers \
-#              ragas langchain-google-vertexai langchain langchain-core
+#              ragas langchain-openai langchain langchain-core
 
 
 # ==============================================================
-# CELL 2: Xac thuc GCP — chay cell nay TRUOC, accept ALL permissions
-# ==============================================================
-from google.colab import auth
-auth.authenticate_user(project_id=GCP_PROJECT)
-
-
-# ==============================================================
-# CELL 3 (phu): Mount Google Drive
+# CELL 2: Mount Google Drive de doc du lieu
 # ==============================================================
 from google.colab import drive
 drive.mount('/content/drive')
@@ -23,14 +16,11 @@ drive.mount('/content/drive')
 # CELL 3: CONFIG
 # ==============================================================
 
-# Vertex AI (judge cho RAGAS)
-GCP_PROJECT     = "your-gcp-project-id"
-GCP_LOCATION    = "us-central1"
-GEMINI_MODEL    = "gemini-2.5-pro"
-
-# vLLM (generate answers)
+# vLLM local (generate answers va lam judge cho RAGAS)
 VLLM_MODEL      = "Qwen/Qwen3-4B-Instruct-2507"
 VLLM_PORT       = 8000
+VLLM_BASE_URL   = f"http://localhost:{VLLM_PORT}/v1"
+VLLM_API_KEY    = "local"
 
 # Qdrant (subprocess, for rag_ms measurement)
 SNAPSHOT_PATH   = "/content/drive/MyDrive/Nutrition data/nutrition_articles-2744933042503761-2026-03-30-08-11-07.snapshot"
@@ -311,7 +301,7 @@ print(f"\nDone. {total_written} answers -> {ANSWERS_FILE}")
 
 
 # ==============================================================
-# CELL 9: RAGAS Evaluation — judge bang Gemini, embed bang e5 (da load san)
+# CELL 9: RAGAS Evaluation — judge bang Qwen local, embed bang model da load
 # ==============================================================
 import json
 from ragas import evaluate
@@ -321,13 +311,16 @@ from ragas.embeddings import LangchainEmbeddingsWrapper
 from ragas import SingleTurnSample, EvaluationDataset
 from ragas.run_config import RunConfig
 from langchain_core.embeddings import Embeddings
-from langchain_google_vertexai import ChatVertexAI
-
-vertexai.init(project=GCP_PROJECT, location=GCP_LOCATION)
+from langchain_openai import ChatOpenAI
 
 # Judge LLM
 judge_llm = LangchainLLMWrapper(
-    ChatVertexAI(model=GEMINI_MODEL, project=GCP_PROJECT, location=GCP_LOCATION, temperature=0)
+    ChatOpenAI(
+        model=VLLM_MODEL,
+        base_url=VLLM_BASE_URL,
+        api_key=VLLM_API_KEY,
+        temperature=0,
+    )
 )
 
 # Reuse embed_model tu Cell 6 — khong load lai, nhat quan voi retrieval
@@ -429,7 +422,7 @@ summary_data = {
     "corpus_coverage"  : round(len(df_answerable) / len(df), 4),
     "gap_threshold"    : CORPUS_GAP_THRESHOLD,
     "gen_model"        : VLLM_MODEL,
-    "judge_model"      : f"vertexai/{GEMINI_MODEL}",
+    "judge_model"      : f"local/{VLLM_MODEL}",
     "embed_model"      : EMBED_MODEL,
     "ragas_all"        : summary,
     "ragas_answerable" : summary_answerable,
@@ -451,11 +444,16 @@ from ragas.metrics import ContextRecall
 from ragas.llms import LangchainLLMWrapper
 from ragas import SingleTurnSample, EvaluationDataset
 from ragas.run_config import RunConfig
-from langchain_google_vertexai import ChatVertexAI
+from langchain_openai import ChatOpenAI
 
 # Judge LLM (embeddings không cần cho ContextRecall)
 _judge_llm = LangchainLLMWrapper(
-    ChatVertexAI(model=GEMINI_MODEL, project=GCP_PROJECT, location=GCP_LOCATION, temperature=0)
+    ChatOpenAI(
+        model=VLLM_MODEL,
+        base_url=VLLM_BASE_URL,
+        api_key=VLLM_API_KEY,
+        temperature=0,
+    )
 )
 
 # Load answers

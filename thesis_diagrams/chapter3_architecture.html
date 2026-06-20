@@ -1,0 +1,80 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Kiến trúc hệ thống</title>
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; padding: 24px; background:#ffffff;
+         font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+  h1 { font-size: 18px; font-weight: 600; color:#111827; margin:0 0 16px; }
+  #diagram { width: 100%; overflow-x:auto; }
+  .mermaid { font-size: 14px; }
+  .mermaid .edgePath path { stroke-width: 1.6px; }
+  .mermaid .edgeLabel { background:#ffffff; }
+  .toolbar { margin-bottom:14px; }
+  button { font:inherit; padding:6px 12px; border:1px solid #d1d5db; border-radius:6px;
+           background:#f9fafb; cursor:pointer; }
+  button:hover { background:#f3f4f6; }
+</style>
+<h1>Kiến trúc tổng thể hệ thống callbot</h1>
+<div class="toolbar"><button onclick="downloadSVG()">Tải SVG</button></div>
+<div id="diagram">
+<pre class="mermaid">
+flowchart LR
+    User["Người dùng"]
+    Client["Giao diện Web<br/>Thu và phát âm thanh"]
+    Gateway["Gateway<br/>Điều phối phiên hội thoại"]
+    ASR["Mô-đun ASR<br/>Silero VAD + Zipformer–RNN-T"]
+    Dialogue["Mô-đun xử lý hội thoại<br/>RAG + LLM"]
+    TTS["Mô-đun TTS<br/>Văn bản → Giọng nói"]
+    Qdrant[("Qdrant<br/>Kho vector tri thức")]
+    Redis[("Redis nếu khả dụng<br/>Lịch sử hội thoại")]
+
+    User -->|"Giọng nói"| Client
+    Client -->|"PCM 16 kHz<br/>mỗi 100 ms"| Gateway
+    Gateway -->|"Âm thanh"| ASR
+    ASR -->|"Transcript"| Gateway
+    ASR -.->|"speech_start"| Gateway
+    Gateway -->|"Câu hỏi"| Dialogue
+
+    Dialogue <-->|"Truy xuất tài liệu"| Qdrant
+    Gateway <-->|"Trạng thái phiên"| Redis
+
+    Dialogue -->|"Text stream"| Gateway
+    Gateway -->|"Text chunk"| TTS
+    Gateway -.->|"Hủy TTS khi barge-in"| TTS
+    TTS -->|"PCM 24 kHz"| Gateway
+    Gateway -->|"Audio stream"| Client
+    Client -->|"Phản hồi giọng nói"| User
+
+    classDef client fill:#dbeafe,stroke:#2563eb,color:#172554;
+    classDef gateway fill:#e5e7eb,stroke:#4b5563,color:#111827;
+    classDef module fill:#dcfce7,stroke:#16a34a,color:#052e16;
+    classDef database fill:#f3e8ff,stroke:#7c3aed,color:#3b0764;
+
+    class User,Client client;
+    class Gateway gateway;
+    class ASR,Dialogue,TTS module;
+    class Qdrant,Redis database;
+</pre>
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.1.7/dist/mermaid-layout-elk.esm.min.mjs';
+  mermaid.registerLayoutLoaders(elkLayouts);
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    layout: 'elk',
+    elk: { nodePlacementStrategy: 'BRANDES_KOEPF', mergeEdges: false },
+    flowchart: { curve: 'linear', htmlLabels: true, padding: 14, nodeSpacing: 60, rankSpacing: 80 },
+    themeVariables: { fontSize: '14px', lineColor: '#475569' }
+  });
+  window.downloadSVG = () => {
+    const svg = document.querySelector('#diagram svg');
+    if(!svg) return;
+    const blob = new Blob([new XMLSerializer().serializeToString(svg)], {type:'image/svg+xml'});
+    const a = Object.assign(document.createElement('a'), {href: URL.createObjectURL(blob), download: document.title + '.svg'});
+    a.click();
+  };
+</script>

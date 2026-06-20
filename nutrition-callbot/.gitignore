@@ -18,6 +18,15 @@ web/dist/
 # Docker
 .docker/
 
+# Redis runtime persistence
+dump.rdb
+appendonly.aof
+appendonlydir/
+
+# Model/tool caches
+.cache/
+.huggingface/
+
 # IDE
 .vscode/
 .idea/
