@@ -38,6 +38,10 @@ class BrainConfig:
     retrieval_cache_required: bool = os.getenv("RETRIEVAL_CACHE_REQUIRED", "false").strip().lower() in {"1", "true", "yes", "on"}
     retrieval_cache_ttl_seconds: int = int(os.getenv("RETRIEVAL_CACHE_TTL_SECONDS", "86400"))
     corpus_version: str = os.getenv("CORPUS_VERSION", "nutrition-v1")
+    semantic_cache_enabled: bool = os.getenv("SEMANTIC_CACHE_ENABLED", "true").strip().lower() in {"1", "true", "yes", "on"}
+    semantic_cache_collection: str = os.getenv("SEMANTIC_CACHE_COLLECTION", "nutrition_retrieval_cache")
+    semantic_cache_threshold: float = float(os.getenv("SEMANTIC_CACHE_THRESHOLD", "0.90"))
+    semantic_cache_ttl_seconds: int = int(os.getenv("SEMANTIC_CACHE_TTL_SECONDS", "604800"))
     qdrant_host: str = os.getenv("QDRANT_HOST", "qdrant")
     qdrant_port: int = int(os.getenv("QDRANT_PORT", "6333"))
     qdrant_url: str = os.getenv("QDRANT_URL", "")

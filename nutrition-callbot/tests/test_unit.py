@@ -33,6 +33,7 @@ from core.safe_rag import (
     missing_disclaimer_suffix,
 )
 from core.retrieval_cache import RetrievalCache
+from core.semantic_signature import semantic_signature, signature_key
 
 
 class TestExpandQuery:
@@ -214,6 +215,28 @@ class TestRetrievalCacheKey:
             assert second_meta["estimated_saved_ms"] == 123.4
 
         asyncio.run(scenario())
+
+
+class TestSemanticSignature:
+
+    def test_paraphrases_share_signature(self):
+        first = semantic_signature(
+            "Người bị đái tháo đường nên lựa chọn thực phẩm như thế nào?"
+        )
+        second = semantic_signature(
+            "Bệnh nhân đái tháo đường nên lựa chọn thực phẩm nào?"
+        )
+        assert signature_key(first) == signature_key(second)
+
+    def test_child_and_adult_do_not_share_signature(self):
+        adult = semantic_signature("Người bị đái tháo đường nên ăn gì?")
+        child = semantic_signature("Trẻ em bị đái tháo đường nên ăn gì?")
+        assert signature_key(adult) != signature_key(child)
+
+    def test_recommended_and_avoid_intents_do_not_share_signature(self):
+        recommended = semantic_signature("Người tiểu đường nên ăn gì?")
+        avoid = semantic_signature("Người tiểu đường cần tránh thực phẩm nào?")
+        assert signature_key(recommended) != signature_key(avoid)
 
 
 # ─────────────────────────────────────────────

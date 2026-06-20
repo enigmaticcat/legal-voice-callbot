@@ -55,6 +55,10 @@ def main() -> None:
         default="Người bị tiểu đường nên lựa chọn thực phẩm như thế nào?",
     )
     parser.add_argument(
+        "--semantic-query",
+        default="Bệnh nhân đái tháo đường nên lựa chọn thực phẩm nào?",
+    )
+    parser.add_argument(
         "--tts-text",
         default="Chào bạn, để được tư vấn chính xác, bạn nên gặp bác sĩ dinh dưỡng.",
     )
@@ -76,6 +80,14 @@ def main() -> None:
     brain_second = request_json(
         f"{args.brain_url}/think", method="POST", payload=brain_payload
     )
+    semantic_payload = {
+        **brain_payload,
+        "query": args.semantic_query,
+        "session_id": "semantic-cache-verification",
+    }
+    brain_semantic = request_json(
+        f"{args.brain_url}/think", method="POST", payload=semantic_payload
+    )
 
     tts_first = request_pcm(f"{args.tts_url}/speak/stream", args.tts_text)
     tts_second = request_pcm(f"{args.tts_url}/speak/stream", args.tts_text)
@@ -92,6 +104,11 @@ def main() -> None:
                 "request_ms": brain_second.get("_request_ms"),
                 "rag_ms": brain_second.get("timing", {}).get("rag_ms"),
             },
+            "semantic": {
+                **brain_semantic.get("retrieval_cache", {}),
+                "request_ms": brain_semantic.get("_request_ms"),
+                "rag_ms": brain_semantic.get("timing", {}).get("rag_ms"),
+            },
             "stats": request_json(f"{args.brain_url}/cache/stats"),
         },
         "tts": {
@@ -106,11 +123,14 @@ def main() -> None:
         result["retrieval"]["first"].get("status") == "miss"
         and result["retrieval"]["second"].get("status") == "hit"
     )
+    semantic_ok = (
+        result["retrieval"]["semantic"].get("status") == "semantic_hit"
+    )
     tts_ok = (
         result["tts"]["first"].get("status") == "MISS"
         and result["tts"]["second"].get("status") == "HIT"
     )
-    if not retrieval_ok or not tts_ok:
+    if not retrieval_ok or not semantic_ok or not tts_ok:
         raise SystemExit("Cache verification failed")
 
 

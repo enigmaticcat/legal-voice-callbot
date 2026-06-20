@@ -7,7 +7,7 @@ torch>=2.0.0
 transformers<4.52.0
 
 # ── Vector DB ──
-qdrant-client>=1.7.0
+qdrant-client>=1.12.0
 
 # ── API Server ──
 fastapi>=0.115.0

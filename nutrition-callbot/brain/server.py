@@ -45,6 +45,10 @@ rag = RAGPipeline(
     qdrant_snapshot_priority=config.qdrant_snapshot_priority,
     llm_client=llm,
     retrieval_cache=retrieval_cache,
+    semantic_cache_enabled=config.semantic_cache_enabled,
+    semantic_cache_collection=config.semantic_cache_collection,
+    semantic_cache_threshold=config.semantic_cache_threshold,
+    semantic_cache_ttl_seconds=config.semantic_cache_ttl_seconds,
 )
 handler = BrainServiceHandler(
     llm=llm, rag=rag,
@@ -78,12 +82,18 @@ async def health():
 
 @app.get("/cache/stats")
 async def cache_stats():
-    return await retrieval_cache.stats()
+    return {
+        "exact": await retrieval_cache.stats(),
+        "semantic": await rag.semantic_cache_stats(),
+    }
 
 
 @app.delete("/cache")
 async def clear_cache():
-    return {"deleted_keys": await retrieval_cache.clear()}
+    return {
+        "exact_deleted_keys": await retrieval_cache.clear(),
+        "semantic_recreated": await rag.clear_semantic_cache(),
+    }
 
 
 @app.get("/")

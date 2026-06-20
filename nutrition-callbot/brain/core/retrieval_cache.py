@@ -162,6 +162,12 @@ class RetrievalCache:
             "estimated_saved_ms": round(
                 float(values.get("estimated_saved_ms", 0)), 1
             ),
+            "semantic_hits": int(float(values.get("semantic_hits", 0))),
+            "semantic_misses": int(float(values.get("semantic_misses", 0))),
+            "semantic_writes": int(float(values.get("semantic_writes", 0))),
+            "semantic_estimated_saved_ms": round(
+                float(values.get("semantic_estimated_saved_ms", 0)), 1
+            ),
             "hit_rate": round(hits / total, 4) if total else 0.0,
         }
 
@@ -172,6 +178,25 @@ class RetrievalCache:
         async for key in self._redis.scan_iter(match=f"{self._prefix}:*"):
             deleted += await self._redis.delete(key)
         return deleted
+
+    async def record_semantic(
+        self,
+        status: str,
+        estimated_saved_ms: float = 0,
+    ) -> None:
+        if self._redis is None:
+            return
+        try:
+            stats_key = f"{self._prefix}:stats"
+            await self._redis.hincrby(stats_key, f"semantic_{status}", 1)
+            if status == "hits" and estimated_saved_ms > 0:
+                await self._redis.hincrbyfloat(
+                    stats_key,
+                    "semantic_estimated_saved_ms",
+                    estimated_saved_ms,
+                )
+        except Exception:
+            await self._record_error()
 
     async def _record_error(self) -> None:
         if self._redis is not None:

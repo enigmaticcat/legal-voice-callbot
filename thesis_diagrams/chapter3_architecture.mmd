@@ -4,9 +4,11 @@ flowchart LR
     Gateway["Gateway<br/>Điều phối phiên và luồng dữ liệu"]
     ASR["Mô-đun ASR<br/>Silero VAD + Zipformer–RNN-T"]
     Dialogue["Mô-đun xử lý hội thoại<br/>Guardrail + RAG"]
+    FixedReply["Phản hồi cố định<br/>Guardrail hoặc thiếu bằng chứng"]
     LLM["Máy chủ suy luận Qwen<br/>Chạy cục bộ"]
     TTS["Mô-đun TTS<br/>VieNeu-TTS"]
-    Qdrant[("Qdrant<br/>Kho vector tri thức")]
+    Corpus[("Qdrant<br/>Kho vector tri thức")]
+    Semantic[("Qdrant collection riêng<br/>Semantic retrieval cache")]
     Redis[("Redis<br/>Trạng thái phiên và cache")]
 
     User -->|"Giọng nói"| Client
@@ -16,14 +18,17 @@ flowchart LR
     ASR -.->|"speech_start"| Gateway
     Gateway -->|"Câu hỏi + lịch sử"| Dialogue
 
-    Dialogue <-->|"Vector search<br/>khi cache miss"| Qdrant
-    Dialogue <-->|"Retrieval cache<br/>5 đoạn đã rerank"| Redis
+    Dialogue <-->|"L1 exact retrieval cache<br/>5 đoạn đã rerank"| Redis
+    Dialogue <-->|"L2 semantic cache<br/>câu hỏi gần nghĩa"| Semantic
+    Dialogue <-->|"Truy xuất đầy đủ<br/>khi L1 và L2 miss"| Corpus
+    Dialogue -->|"Câu hỏi bị chặn hoặc<br/>không đủ bằng chứng"| FixedReply
     Dialogue -->|"Prompt có context"| LLM
     LLM -->|"Text stream"| Dialogue
 
     Dialogue -->|"Text stream"| Gateway
+    FixedReply -->|"Không gọi Qwen"| Gateway
     Gateway -->|"Text segment"| TTS
-    TTS <-->|"PCM cache"| Redis
+    TTS <-->|"Exact PCM cache<br/>theo văn bản cuối"| Redis
     Gateway -.->|"Hủy theo session<br/>khi barge-in"| TTS
     TTS -->|"PCM 24 kHz"| Gateway
 
@@ -36,10 +41,12 @@ flowchart LR
     classDef gateway fill:#e5e7eb,stroke:#4b5563,color:#111827;
     classDef module fill:#dcfce7,stroke:#16a34a,color:#052e16;
     classDef model fill:#fef3c7,stroke:#d97706,color:#451a03;
+    classDef fixed fill:#fce7f3,stroke:#db2777,color:#500724;
     classDef database fill:#f3e8ff,stroke:#7c3aed,color:#3b0764;
 
     class User,Client client;
     class Gateway gateway;
     class ASR,Dialogue,TTS module;
     class LLM model;
-    class Qdrant,Redis database;
+    class FixedReply fixed;
+    class Corpus,Semantic,Redis database;

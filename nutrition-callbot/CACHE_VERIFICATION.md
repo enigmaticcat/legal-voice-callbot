@@ -3,6 +3,7 @@
 The system exposes evidence for both caches:
 
 - Brain response field `retrieval_cache.status`: `miss`, then `hit`.
+- A paraphrased query should return `retrieval_cache.status = semantic_hit`.
 - TTS response header `X-TTS-Cache`: `MISS`, then `HIT`.
 - Persistent counters at `GET /cache/stats`.
 - Redis keys under `cache:retrieval:*` and `cache:tts:*`.
@@ -18,6 +19,7 @@ Expected result:
 ```text
 retrieval.first.status = miss
 retrieval.second.status = hit
+retrieval.semantic.status = semantic_hit
 tts.first.status = MISS
 tts.second.status = HIT
 ```
@@ -51,3 +53,9 @@ curl -X DELETE http://localhost:50053/cache
 The retrieval cache reports estimated time saved from the original embedding,
 Qdrant search and reranking duration. The TTS cache reports estimated synthesis
 time saved and the number of PCM bytes served from Redis.
+
+The TTS cache is keyed by the final text segment, not by the user query.
+Therefore, normal RAG answers still require Qwen to generate text before the TTS
+cache can be checked. Fixed guardrail and insufficient-evidence responses bypass
+Qwen; these responses can go directly to TTS and benefit immediately from the
+PCM cache.
