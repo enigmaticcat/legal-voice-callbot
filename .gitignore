@@ -79,3 +79,14 @@ appendonlydir/
 *.snapshot
 snapshots/*
 !snapshots/.gitkeep
+
+# Ảnh, PDF, zip, mmd thừa (không commit vào repo)
+*.png
+*.jpg
+*.jpeg
+*.pdf
+*.zip
+*.mmd
+# Ngoại trừ ảnh template thesis và chữ ký
+!SOICT_DATN_Research_VIE_Template/Hinh_ve/*.png
+!downl-removebg-preview.png
