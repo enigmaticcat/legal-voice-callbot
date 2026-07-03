@@ -1,0 +1,64 @@
+flowchart TD
+    A([Transcript + lịch sử phiên])
+    B[Mô-đun xử lý hội thoại]
+    C[Guardrail kiểm tra phạm vi]
+    D{Câu hỏi hợp lệ?}
+    E[Phản hồi cố định]
+    F[Chuẩn hóa truy vấn]
+    G{Exact cache hit?}
+    H[Lấy ngữ cảnh từ exact cache]
+    I[Tạo embedding]
+    J{Semantic cache hit?}
+    K[Lấy ngữ cảnh từ semantic cache]
+    L[Truy xuất đoạn ứng viên từ kho vector]
+    M[Reranker chọn các đoạn tốt nhất]
+    N[Ngữ cảnh được chọn]
+    O{Đủ bằng chứng?}
+    P[Xây dựng prompt gồm context, lịch sử và câu hỏi]
+    Q[LLM sinh câu trả lời theo luồng]
+    R[Bộ điều phối nhận text stream]
+    S[Làm sạch và chia text segment]
+    T[Mô-đun TTS tổng hợp từng segment]
+    U[Bộ điều phối nhận audio stream]
+    V[Giao diện phát âm thanh]
+    W[Lưu lượt hội thoại và cập nhật cache]
+
+    A --> B
+    B --> C
+    C --> D
+    D -->|Không| E
+    D -->|Có| F
+    F --> G
+    G -->|Có| H
+    G -->|Không| I
+    I --> J
+    J -->|Có| K
+    J -->|Không| L
+    L --> M
+    M --> N
+    H --> N
+    K --> N
+    N --> O
+    O -->|Không| E
+    O -->|Có| P
+    P --> Q
+    Q --> R
+    E --> R
+    R --> S
+    S --> T
+    T -->|PCM audio stream| U
+    U --> V
+    V --> W
+
+    classDef start fill:#dcfce7,stroke:#16a34a,color:#111827;
+    classDef process fill:#e8eefc,stroke:#64748b,color:#111827;
+    classDef decision fill:#fef3c7,stroke:#ca8a04,color:#111827;
+    classDef cache fill:#ede9fe,stroke:#7c3aed,color:#111827;
+    classDef fixed fill:#fee2e2,stroke:#dc2626,color:#111827;
+    classDef endnode fill:#dbeafe,stroke:#2563eb,color:#111827;
+
+    class A start;
+    class B,C,F,I,L,M,N,P,Q,R,S,T,U,V,W process;
+    class D,G,J,O decision;
+    class H,K cache;
+    class E fixed;

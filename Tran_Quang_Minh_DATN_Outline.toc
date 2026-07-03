@@ -1,54 +1,63 @@
 \babel@toc {vietnamese}{}\relax 
-\contentsline {chapter}{TÓM TẮT NỘI DUNG ĐỒ ÁN}{i}{chapter*.1}%
+\contentsline {chapter}{LỜI CẢM ƠN}{i}{chapter*.1}%
+\contentsline {chapter}{TÓM TẮT NỘI DUNG ĐỒ ÁN}{ii}{chapter*.2}%
+\contentsline {chapter}{DANH MỤC THUẬT NGỮ VÀ TỪ VIẾT TẮT}{ix}{chapter*.6}%
 \contentsline {chapter}{\numberline {1}GIỚI THIỆU BÀI TOÁN}{1}{chapter.1}%
 \contentsline {section}{\numberline {1.1}Đặt vấn đề}{1}{section.1.1}%
-\contentsline {section}{\numberline {1.2}Mục tiêu và phạm vi}{4}{section.1.2}%
-\contentsline {section}{\numberline {1.3}Định hướng giải pháp}{6}{section.1.3}%
-\contentsline {section}{\numberline {1.4}Cấu trúc đồ án}{8}{section.1.4}%
-\contentsline {chapter}{\numberline {2}CƠ SỞ LÝ THUYẾT}{10}{chapter.2}%
-\contentsline {section}{\numberline {2.1}Tổng quan pipeline hội thoại bằng giọng nói}{10}{section.2.1}%
-\contentsline {section}{\numberline {2.2}Nhận dạng giọng nói tự động}{10}{section.2.2}%
-\contentsline {subsection}{\numberline {2.2.1}Bài toán và biểu diễn tín hiệu}{10}{subsection.2.2.1}%
-\contentsline {subsection}{\numberline {2.2.2}RNN-Transducer}{11}{subsection.2.2.2}%
-\contentsline {subsection}{\numberline {2.2.3}Conformer và Zipformer}{12}{subsection.2.2.3}%
-\contentsline {subsection}{\numberline {2.2.4}Các chỉ số đánh giá ASR}{13}{subsection.2.2.4}%
-\contentsline {section}{\numberline {2.3}Mô hình ngôn ngữ lớn}{14}{section.2.3}%
-\contentsline {section}{\numberline {2.4}Retrieval-Augmented Generation}{15}{section.2.4}%
-\contentsline {subsection}{\numberline {2.4.1}Chuẩn hóa và mở rộng truy vấn}{15}{subsection.2.4.1}%
-\contentsline {section}{\numberline {2.5}Truy xuất ngữ nghĩa và reranking}{16}{section.2.5}%
-\contentsline {subsection}{\numberline {2.5.1}Embedding và bi-encoder}{16}{subsection.2.5.1}%
-\contentsline {subsection}{\numberline {2.5.2}Vector database và HNSW}{16}{subsection.2.5.2}%
-\contentsline {subsection}{\numberline {2.5.3}Cross-encoder và truy xuất hai bước}{17}{subsection.2.5.3}%
-\contentsline {section}{\numberline {2.6}Tổng hợp giọng nói}{17}{section.2.6}%
-\contentsline {subsection}{\numberline {2.6.1}Chuẩn hóa và biểu diễn văn bản}{18}{subsection.2.6.1}%
-\contentsline {subsection}{\numberline {2.6.2}Neural audio codec}{18}{subsection.2.6.2}%
-\contentsline {subsection}{\numberline {2.6.3}Mô hình ngôn ngữ sinh token tiếng nói}{19}{subsection.2.6.3}%
-\contentsline {subsection}{\numberline {2.6.4}Sinh âm thanh theo luồng}{19}{subsection.2.6.4}%
-\contentsline {section}{\numberline {2.7}Streaming và xử lý bất đồng bộ}{20}{section.2.7}%
-\contentsline {section}{\numberline {2.8}Các phương pháp đánh giá}{21}{section.2.8}%
-\contentsline {subsection}{\numberline {2.8.1}Đánh giá hệ thống RAG}{21}{subsection.2.8.1}%
-\contentsline {subsection}{\numberline {2.8.2}Đánh giá độ trễ}{21}{subsection.2.8.2}%
-\contentsline {chapter}{\numberline {3}GIẢI PHÁP ĐỀ XUẤT}{23}{chapter.3}%
-\contentsline {section}{\numberline {3.1}Kiến trúc tổng quan}{23}{section.3.1}%
-\contentsline {section}{\numberline {3.2}Mô-đun xử lý tiếng nói}{24}{section.3.2}%
-\contentsline {subsection}{\numberline {3.2.1}Nhận dạng giọng nói}{24}{subsection.3.2.1}%
-\contentsline {subsection}{\numberline {3.2.2}Tổng hợp giọng nói}{25}{subsection.3.2.2}%
-\contentsline {section}{\numberline {3.3}Mô-đun xử lý hội thoại}{25}{section.3.3}%
-\contentsline {subsection}{\numberline {3.3.1}Tiền xử lý truy vấn}{25}{subsection.3.3.1}%
-\contentsline {subsection}{\numberline {3.3.2}Retrieval}{26}{subsection.3.3.2}%
-\contentsline {subsection}{\numberline {3.3.3}Augmentation}{27}{subsection.3.3.3}%
-\contentsline {subsection}{\numberline {3.3.4}Generation}{27}{subsection.3.3.4}%
-\contentsline {section}{\numberline {3.4}Chiến thuật streaming}{28}{section.3.4}%
-\contentsline {chapter}{\numberline {4}PHÁT TRIỂN HỆ THỐNG, THỰC NGHIỆM VÀ ĐÁNH GIÁ}{30}{chapter.4}%
-\contentsline {section}{\numberline {4.1}Xây dựng kho tri thức}{30}{section.4.1}%
-\contentsline {section}{\numberline {4.2}Phát triển hệ thống}{31}{section.4.2}%
-\contentsline {subsection}{\numberline {4.2.1}Thiết kế hệ thống}{31}{subsection.4.2.1}%
-\contentsline {subsection}{\numberline {4.2.2}Xây dựng hệ thống}{33}{subsection.4.2.2}%
-\contentsline {section}{\numberline {4.3}Thiết lập thực nghiệm}{34}{section.4.3}%
-\contentsline {section}{\numberline {4.4}Đánh giá chất lượng RAG}{35}{section.4.4}%
-\contentsline {section}{\numberline {4.5}Đánh giá độ trễ}{38}{section.4.5}%
-\contentsline {chapter}{\numberline {5}KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN}{41}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Kết luận}{41}{section.5.1}%
-\contentsline {section}{\numberline {5.2}Hạn chế}{42}{section.5.2}%
-\contentsline {section}{\numberline {5.3}Hướng phát triển}{43}{section.5.3}%
+\contentsline {section}{\numberline {1.2}Mục tiêu và phạm vi}{3}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Định hướng giải pháp}{4}{section.1.3}%
+\contentsline {section}{\numberline {1.4}Cấu trúc đồ án}{5}{section.1.4}%
+\contentsline {chapter}{\numberline {2}CƠ SỞ LÝ THUYẾT}{6}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Nhận dạng tiếng nói tự động}{6}{section.2.1}%
+\contentsline {subsection}{\numberline {2.1.1}Bài toán và biểu diễn tín hiệu}{6}{subsection.2.1.1}%
+\contentsline {subsection}{\numberline {2.1.2}RNN-Transducer}{6}{subsection.2.1.2}%
+\contentsline {subsection}{\numberline {2.1.3}Conformer và Zipformer}{8}{subsection.2.1.3}%
+\contentsline {section}{\numberline {2.2}Retrieval-Augmented Generation}{11}{section.2.2}%
+\contentsline {subsection}{\numberline {2.2.1}Retrieval: truy xuất tài liệu}{11}{subsection.2.2.1}%
+\contentsline {subsection}{\numberline {2.2.2}Augmentation: xây dựng ngữ cảnh cho mô hình sinh}{13}{subsection.2.2.2}%
+\contentsline {subsection}{\numberline {2.2.3}Generation: sinh câu trả lời bằng mô hình ngôn ngữ lớn}{14}{subsection.2.2.3}%
+\contentsline {section}{\numberline {2.3}Tổng hợp tiếng nói}{16}{section.2.3}%
+\contentsline {subsection}{\numberline {2.3.1}Chuẩn hóa văn bản và biểu diễn phát âm}{16}{subsection.2.3.1}%
+\contentsline {subsection}{\numberline {2.3.2}Neural audio codec}{16}{subsection.2.3.2}%
+\contentsline {subsection}{\numberline {2.3.3}Mô hình ngôn ngữ sinh token tiếng nói}{17}{subsection.2.3.3}%
+\contentsline {subsection}{\numberline {2.3.4}Kiến trúc của VieNeu-TTS}{18}{subsection.2.3.4}%
+\contentsline {chapter}{\numberline {3}GIẢI PHÁP ĐỀ XUẤT}{20}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Kiến trúc hệ thống}{20}{section.3.1}%
+\contentsline {subsection}{\numberline {3.1.1}Hai luồng xử lý chính}{22}{subsection.3.1.1}%
+\contentsline {section}{\numberline {3.2}Thiết kế các mô-đun}{23}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}Giao diện và bộ điều phối phiên}{23}{subsection.3.2.1}%
+\contentsline {subsection}{\numberline {3.2.2}Mô-đun nhận dạng tiếng nói}{25}{subsection.3.2.2}%
+\contentsline {subsection}{\numberline {3.2.3}Mô-đun xử lý hội thoại}{27}{subsection.3.2.3}%
+\contentsline {subsection}{\numberline {3.2.4}Mô-đun TTS}{29}{subsection.3.2.4}%
+\contentsline {subsection}{\numberline {3.2.5}Kho tri thức và bộ nhớ phiên}{30}{subsection.3.2.5}%
+\contentsline {section}{\numberline {3.3}Chiến thuật streaming và tối ưu độ trễ}{33}{section.3.3}%
+\contentsline {chapter}{\numberline {4}PHÁT TRIỂN HỆ THỐNG VOICEBOT TƯ VẤN DINH DƯỠNG}{35}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Kiến trúc hệ thống voicebot}{35}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Thiết kế chi tiết}{37}{section.4.2}%
+\contentsline {subsection}{\numberline {4.2.1}Giao diện}{37}{subsection.4.2.1}%
+\contentsline {subsection}{\numberline {4.2.2}Gateway và điều phối phiên}{39}{subsection.4.2.2}%
+\contentsline {subsection}{\numberline {4.2.3}Mô-đun nhận dạng tiếng nói}{40}{subsection.4.2.3}%
+\contentsline {subsection}{\numberline {4.2.4}Mô-đun xử lý hội thoại}{41}{subsection.4.2.4}%
+\contentsline {subsection}{\numberline {4.2.5}Mô-đun TTS}{45}{subsection.4.2.5}%
+\contentsline {subsection}{\numberline {4.2.6}Cơ sở dữ liệu, cache và dữ liệu phiên}{48}{subsection.4.2.6}%
+\contentsline {section}{\numberline {4.3}Xây dựng hệ thống}{51}{section.4.3}%
+\contentsline {subsection}{\numberline {4.3.1}Hiện thực luồng giao tiếp và điều phối phiên}{51}{subsection.4.3.1}%
+\contentsline {subsection}{\numberline {4.3.2}Hiện thực các mô-đun xử lý AI}{51}{subsection.4.3.2}%
+\contentsline {subsection}{\numberline {4.3.3}Đóng gói, cấu hình và kiểm thử chức năng}{52}{subsection.4.3.3}%
+\contentsline {chapter}{\numberline {5}THỰC NGHIỆM VÀ ĐÁNH GIÁ}{54}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Xây dựng kho tri thức và tập dữ liệu}{54}{section.5.1}%
+\contentsline {subsection}{\numberline {5.1.1}Thu thập và tổ chức dữ liệu nguồn}{54}{subsection.5.1.1}%
+\contentsline {subsection}{\numberline {5.1.2}Làm sạch và chuẩn hóa văn bản}{55}{subsection.5.1.2}%
+\contentsline {subsection}{\numberline {5.1.3}Phân đoạn tài liệu}{56}{subsection.5.1.3}%
+\contentsline {subsection}{\numberline {5.1.4}Mã hóa và lưu trữ trong Qdrant}{57}{subsection.5.1.4}%
+\contentsline {subsection}{\numberline {5.1.5}Lưu trữ và tái lập kho tri thức}{57}{subsection.5.1.5}%
+\contentsline {section}{\numberline {5.2}Thiết lập thực nghiệm}{58}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Độ đo}{59}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Đánh giá TTS}{59}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Đánh giá RAG}{61}{section.5.5}%
+\contentsline {section}{\numberline {5.6}Đánh giá ASR}{66}{section.5.6}%
+\contentsline {chapter}{\numberline {6}KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN}{68}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Đóng góp chính của đồ án}{68}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Kết luận}{69}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Hướng phát triển}{70}{section.6.3}%
 \contentsfinish 

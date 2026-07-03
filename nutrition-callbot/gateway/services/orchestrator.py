@@ -163,7 +163,7 @@ class Orchestrator:
         }
 
         # str = text segment for TTS, None = sentinel (done)
-        tts_queue: asyncio.Queue = asyncio.Queue(maxsize=4)
+        tts_queue: asyncio.Queue = asyncio.Queue(maxsize=16)
         # dict = event to yield, None = sentinel (all done)
         event_queue: asyncio.Queue = asyncio.Queue()
         saw_any_brain_chunk = False
@@ -261,6 +261,12 @@ class Orchestrator:
         finally:
             producer_task.cancel()
             consumer_task.cancel()
+            # Drain tts_queue để producer không bị blocked tại put() khi bị cancel
+            while not tts_queue.empty():
+                tts_queue.get_nowait()
+            # Unblock consumer nếu đang chờ tts_queue.get()
+            with contextlib.suppress(Exception):
+                tts_queue.put_nowait(None)
             with contextlib.suppress(asyncio.CancelledError):
                 await asyncio.gather(producer_task, consumer_task, return_exceptions=True)
 

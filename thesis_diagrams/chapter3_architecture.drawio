@@ -1,99 +1,103 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/24.7.17 Chrome/128.0.6613.36 Electron/32.0.1 Safari/537.36" version="24.7.17">
-  <diagram name="Kien truc he thong" id="arch1">
-    <mxGraphModel dx="2572" dy="711" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1450" pageHeight="820" math="0" shadow="0">
+  <diagram name="Kien truc tong quan" id="arch1">
+    <mxGraphModel dx="1272" dy="805" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1320" pageHeight="780" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="a-user" value="Người dùng" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontColor=#172554;" parent="1" vertex="1">
-          <mxGeometry x="-94" y="315" width="120" height="50" as="geometry" />
+          <mxGeometry x="185" y="536" width="120" height="50" as="geometry" />
         </mxCell>
-        <mxCell id="a-client" value="Giao diện Web&#xa;Thu và phát âm thanh" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontColor=#172554;" parent="1" vertex="1">
-          <mxGeometry x="133" y="305" width="180" height="70" as="geometry" />
+        <mxCell id="a-client" value="Giao diện" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontColor=#172554;" parent="1" vertex="1">
+          <mxGeometry x="185" y="290" width="170" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="a-gw" value="Gateway&#xa;Điều phối phiên và luồng dữ liệu" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e5e7eb;strokeColor=#4b5563;fontColor=#111827;" parent="1" vertex="1">
-          <mxGeometry x="450" y="300" width="190" height="85" as="geometry" />
+        <mxCell id="a-gw" value="Mô-đun điều phối" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e5e7eb;strokeColor=#4b5563;fontColor=#111827;" parent="1" vertex="1">
+          <mxGeometry x="440" y="285" width="190" height="85" as="geometry" />
         </mxCell>
-        <mxCell id="a-asr" value="Mô-đun ASR&#xa;Silero VAD + Zipformer–RNN-T" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" parent="1" vertex="1">
-          <mxGeometry x="730" y="90" width="230" height="70" as="geometry" />
+        <mxCell id="a-asr" value="&lt;div&gt;&lt;br&gt;&lt;/div&gt;Mô-đun ASR&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" parent="1" vertex="1">
+          <mxGeometry x="720" y="160" width="100" height="54" as="geometry" />
         </mxCell>
-        <mxCell id="a-dlg" value="Mô-đun xử lý hội thoại&#xa;Guardrail + RAG" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" parent="1" vertex="1">
-          <mxGeometry x="730" y="300" width="210" height="75" as="geometry" />
+        <mxCell id="a-dlg" value="&lt;div&gt;&lt;br&gt;&lt;/div&gt;Mô-đun xử lý hội thoại&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" parent="1" vertex="1">
+          <mxGeometry x="720" y="285" width="121" height="71" as="geometry" />
         </mxCell>
-        <mxCell id="a-tts" value="Mô-đun TTS&#xa;VieNeu-TTS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" parent="1" vertex="1">
-          <mxGeometry x="730" y="520" width="210" height="75" as="geometry" />
+        <mxCell id="a-tts" value="&lt;div&gt;&lt;br&gt;&lt;/div&gt;Mô-đun TTS streaming&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#052e16;" parent="1" vertex="1">
+          <mxGeometry x="685" y="481" width="133" height="59" as="geometry" />
         </mxCell>
-        <mxCell id="a-llm" value="Qwen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontColor=#451a03;" parent="1" vertex="1">
-          <mxGeometry x="1050" y="205" width="200" height="70" as="geometry" />
+        <mxCell id="a-llm" value="LLM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffedd5;strokeColor=#ea580c;fontColor=#431407;" parent="1" vertex="1">
+          <mxGeometry x="872" y="202" width="87" height="38" as="geometry" />
         </mxCell>
-        <mxCell id="a-qdr" value="Qdrant&#xa;Kho vector tri thức" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f3e8ff;strokeColor=#7c3aed;fontColor=#3b0764;" parent="1" vertex="1">
-          <mxGeometry x="1131" y="305" width="170" height="90" as="geometry" />
+        <mxCell id="a-qdr" value="Database" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f3e8ff;strokeColor=#7c3aed;fontColor=#3b0764;" parent="1" vertex="1">
+          <mxGeometry x="943" y="299" width="139" height="63" as="geometry" />
         </mxCell>
-        <mxCell id="a-redis" value="Redis&#xa;Trạng thái phiên và cache" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f3e8ff;strokeColor=#7c3aed;fontColor=#3b0764;" parent="1" vertex="1">
-          <mxGeometry x="440" y="650" width="210" height="90" as="geometry" />
+        <mxCell id="a-redis" value="Bộ nhớ phiên" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f3e8ff;strokeColor=#7c3aed;fontColor=#3b0764;" parent="1" vertex="1">
+          <mxGeometry x="431" y="536" width="169" height="67" as="geometry" />
         </mxCell>
-        <mxCell id="e1" value="Giọng nói" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=1;exitY=0.35;exitDx=0;exitDy=0;entryX=0;entryY=0.35;entryDx=0;entryDy=0;" parent="1" source="a-user" target="a-client" edge="1">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="e1" value="Giọng nói" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=0.965;exitY=0.04;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.682;entryY=0.979;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="a-user" target="a-client" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="381.52" y="511.61" as="sourcePoint" />
+            <mxPoint x="302" y="401" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="301" y="537" />
+              <mxPoint x="301" y="538" />
+              <mxPoint x="301" y="538" />
+            </Array>
+          </mxGeometry>
         </mxCell>
-        <mxCell id="e2" value="Phản hồi giọng nói" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=0;exitY=0.7;exitDx=0;exitDy=0;entryX=1;entryY=0.7;entryDx=0;entryDy=0;" parent="1" source="a-client" target="a-user" edge="1">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="e2" value="Phản hồi" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=0.111;exitY=0.979;exitDx=0;exitDy=0;exitPerimeter=0;" parent="1" source="a-client" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="203" y="537" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="204" y="537" />
+            </Array>
+          </mxGeometry>
         </mxCell>
-        <mxCell id="e3" value="PCM 16 kHz mỗi 100 ms" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=1;exitY=0.3;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" parent="1" source="a-client" target="a-gw" edge="1">
+        <mxCell id="e3" value="PCM 16 kHz" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=1;exitY=0.35;exitDx=0;exitDy=0;entryX=0;entryY=0.35;entryDx=0;entryDy=0;" parent="1" source="a-client" target="a-gw" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e4" value="Audio stream" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=0;exitY=0.65;exitDx=0;exitDy=0;entryX=1;entryY=0.65;entryDx=0;entryDy=0;" parent="1" source="a-gw" target="a-client" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e5" value="bot_interrupted" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;dashed=1;exitX=0;exitY=0.9;exitDx=0;exitDy=0;entryX=1;entryY=0.9;entryDx=0;entryDy=0;" parent="1" source="a-gw" target="a-client" edge="1">
+        <mxCell id="e5" value="Audio stream" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=1;exitY=0.2;exitDx=0;exitDy=0;entryX=0;entryY=0.6;entryDx=0;entryDy=0;" parent="1" source="a-gw" target="a-asr" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e6" value="Audio stream" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=1;exitY=0.2;exitDx=0;exitDy=0;entryX=0;entryY=0.6;entryDx=0;entryDy=0;" parent="1" source="a-gw" target="a-asr" edge="1">
+        <mxCell id="e6" value="Transcript" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=0;exitY=0.45;exitDx=0;exitDy=0;entryX=0.95;entryY=0;entryDx=0;entryDy=0;" parent="1" source="a-asr" target="a-gw" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e7" value="Transcript cuối" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=0;exitY=0.45;exitDx=0;exitDy=0;entryX=0.9;entryY=0;entryDx=0;entryDy=0;" parent="1" source="a-asr" target="a-gw" edge="1">
+        <mxCell id="e7" value="Câu hỏi + lịch sử" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=1;exitY=0.4;exitDx=0;exitDy=0;entryX=0;entryY=0.35;entryDx=0;entryDy=0;" parent="1" source="a-gw" target="a-dlg" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e8" value="speech_start" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;dashed=1;exitX=0;exitY=0.8;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="a-asr" target="a-gw" edge="1">
+        <mxCell id="e8" value="Text stream" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.75;entryDx=0;entryDy=0;" parent="1" source="a-dlg" target="a-gw" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e9" value="Câu hỏi + lịch sử" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=1;exitY=0.4;exitDx=0;exitDy=0;entryX=0;entryY=0.4;entryDx=0;entryDy=0;" parent="1" source="a-gw" target="a-dlg" edge="1">
+        <mxCell id="e9" value="Prompt / Text stream" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;startArrow=block;endArrow=block;exitX=1;exitY=0.15;exitDx=0;exitDy=0;entryX=0;entryY=0.6;entryDx=0;entryDy=0;" parent="1" source="a-dlg" target="a-llm" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e10" value="Text stream" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.75;entryDx=0;entryDy=0;" parent="1" source="a-dlg" target="a-gw" edge="1">
+        <mxCell id="e10" value="Vector search" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;startArrow=block;endArrow=block;exitX=1;exitY=0.6;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="a-dlg" target="a-qdr" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e11" value="Vector search khi cache miss" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;startArrow=block;endArrow=block;exitX=1;exitY=0.65;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="a-dlg" target="a-qdr" edge="1">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e12" value="Prompt có context" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=1;exitY=0.15;exitDx=0;exitDy=0;entryX=0;entryY=0.55;entryDx=0;entryDy=0;" parent="1" source="a-dlg" target="a-llm" edge="1">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e13" value="Text stream" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=0;exitY=0.85;exitDx=0;exitDy=0;entryX=0.995;entryY=0.371;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="a-llm" target="a-dlg" edge="1">
-          <mxGeometry relative="1" as="geometry">
+        <mxCell id="e11" value="Retrieval cache" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;startArrow=block;endArrow=block;exitX=1.006;exitY=0.886;exitDx=0;exitDy=0;entryX=1;entryY=0.25;entryDx=0;entryDy=0;exitPerimeter=0;" parent="1" source="a-dlg" target="a-redis" edge="1">
+          <mxGeometry x="-0.1611" y="27" relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="1016" y="265" />
-              <mxPoint x="1016" y="328" />
+              <mxPoint x="842" y="355" />
+              <mxPoint x="856" y="355" />
+              <mxPoint x="856" y="553" />
             </Array>
-          </mxGeometry>
-        </mxCell>
-        <mxCell id="e14" value="Retrieval cache 5 đoạn đã rerank" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;startArrow=block;endArrow=block;exitX=0.095;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.3;entryDx=0;entryDy=0;exitPerimeter=0;" parent="1" source="a-dlg" target="a-redis" edge="1">
-          <mxGeometry x="0.2288" y="-9" relative="1" as="geometry">
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="e15" value="Lịch sử và tóm tắt theo session" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;startArrow=block;endArrow=block;exitX=0.2;exitY=1;exitDx=0;exitDy=0;entryX=0.229;entryY=0.011;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="a-gw" target="a-redis" edge="1">
+        <mxCell id="e12" value="Text segment" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=0.8;exitY=1;exitDx=0;exitDy=0;entryX=0.143;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="a-gw" target="a-tts" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e16" value="Text segment" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=0.85;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;" parent="1" source="a-gw" target="a-tts" edge="1">
+        <mxCell id="e13" value="PCM 24 kHz" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=0;exitY=0.6;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" parent="1" source="a-tts" target="a-gw" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e17" value="Hủy theo session khi barge-in" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;dashed=1;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" parent="1" source="a-gw" target="a-tts" edge="1">
+        <mxCell id="e14" value="Hủy khi barge-in" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;dashed=1;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" parent="1" source="a-gw" target="a-tts" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e18" value="PCM 24 kHz" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;endArrow=block;exitX=0;exitY=0.55;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" parent="1" source="a-tts" target="a-gw" edge="1">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e19" value="PCM cache" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;startArrow=block;endArrow=block;exitX=0.2;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.7;entryDx=0;entryDy=0;" parent="1" source="a-tts" target="a-redis" edge="1">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="e16" value="Lịch sử và tóm tắt theo session" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#475569;startArrow=block;endArrow=block;exitX=0.15;exitY=1;exitDx=0;exitDy=0;entryX=0.222;entryY=0.056;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="a-gw" target="a-redis" edge="1">
+          <mxGeometry x="0.0041" y="-17" relative="1" as="geometry">
+            <Array as="points" />
+            <mxPoint x="1" y="-4" as="offset" />
+          </mxGeometry>
         </mxCell>
       </root>
     </mxGraphModel>

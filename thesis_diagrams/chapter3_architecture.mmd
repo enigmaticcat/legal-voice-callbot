@@ -3,50 +3,78 @@ flowchart LR
     Client["Giao diện Web<br/>Thu và phát âm thanh"]
     Gateway["Gateway<br/>Điều phối phiên và luồng dữ liệu"]
     ASR["Mô-đun ASR<br/>Silero VAD + Zipformer–RNN-T"]
-    Dialogue["Mô-đun xử lý hội thoại<br/>Guardrail + RAG"]
-    FixedReply["Phản hồi cố định<br/>Guardrail hoặc thiếu bằng chứng"]
-    LLM["Máy chủ suy luận Qwen<br/>Chạy cục bộ"]
     TTS["Mô-đun TTS<br/>VieNeu-TTS"]
+
+    subgraph Dialogue["Mô-đun xử lý hội thoại"]
+        direction TB
+        Safety{"Guardrail<br/>đầu vào"}
+        Expand["Chuẩn hóa và<br/>query expansion"]
+        Exact{"L1 exact cache<br/>có kết quả?"}
+        Embed["Mã hóa câu hỏi<br/>thành vector"]
+        Semantic{"L2 semantic cache<br/>đủ điều kiện?"}
+        Search["Truy xuất 15 đoạn<br/>từ kho tri thức"]
+        Rerank["Reranker chọn<br/>5 đoạn tốt nhất"]
+        Evidence{"Đủ bằng chứng?"}
+        Prompt["Xây dựng prompt<br/>có context"]
+        Fixed["Phản hồi cố định"]
+
+        Safety -->|"Bình thường"| Expand
+        Safety -->|"Bị chặn"| Fixed
+        Expand --> Exact
+        Exact -->|"Miss"| Embed
+        Exact -->|"Hit"| Evidence
+        Embed --> Semantic
+        Semantic -->|"Miss"| Search
+        Semantic -->|"Hit"| Evidence
+        Search --> Rerank
+        Rerank --> Evidence
+        Evidence -->|"Đủ"| Prompt
+        Evidence -->|"Không đủ"| Fixed
+    end
+
+    LLM["Máy chủ suy luận Qwen<br/>Chạy cục bộ"]
     Corpus[("Qdrant<br/>Kho vector tri thức")]
-    Semantic[("Qdrant collection riêng<br/>Semantic retrieval cache")]
-    Redis[("Redis<br/>Trạng thái phiên và cache")]
+    SemanticStore[("Qdrant collection riêng<br/>Semantic retrieval cache")]
+    Redis[("Redis<br/>Session + exact retrieval cache")]
 
     User -->|"Giọng nói"| Client
     Client -->|"PCM 16 kHz<br/>mỗi 100 ms"| Gateway
     Gateway -->|"Audio stream"| ASR
     ASR -->|"Transcript cuối"| Gateway
     ASR -.->|"speech_start"| Gateway
-    Gateway -->|"Câu hỏi + lịch sử"| Dialogue
+    Gateway -->|"Câu hỏi + lịch sử"| Safety
 
-    Dialogue <-->|"L1 exact retrieval cache<br/>5 đoạn đã rerank"| Redis
-    Dialogue <-->|"L2 semantic cache<br/>câu hỏi gần nghĩa"| Semantic
-    Dialogue <-->|"Truy xuất đầy đủ<br/>khi L1 và L2 miss"| Corpus
-    Dialogue -->|"Câu hỏi bị chặn hoặc<br/>không đủ bằng chứng"| FixedReply
-    Dialogue -->|"Prompt có context"| LLM
-    LLM -->|"Text stream"| Dialogue
+    Exact <-->|"Tra cứu 5 đoạn<br/>đã rerank"| Redis
+    Semantic <-->|"Tìm câu hỏi gần nghĩa"| SemanticStore
+    Search <-->|"Vector search"| Corpus
+    Rerank -.->|"Ghi L1"| Redis
+    Rerank -.->|"Ghi L2"| SemanticStore
 
-    Dialogue -->|"Text stream"| Gateway
-    FixedReply -->|"Không gọi Qwen"| Gateway
+    Prompt -->|"Prompt có context"| LLM
+    LLM -->|"Text stream"| Gateway
+    Fixed -->|"Không gọi Qwen"| Gateway
+
     Gateway -->|"Text segment"| TTS
-    TTS <-->|"Exact PCM cache<br/>theo văn bản cuối"| Redis
-    Gateway -.->|"Hủy theo session<br/>khi barge-in"| TTS
     TTS -->|"PCM 24 kHz"| Gateway
+    Gateway -->|"Audio stream"| Client
+    Client -->|"Phản hồi giọng nói"| User
 
     Gateway <-->|"Lịch sử và tóm tắt<br/>theo session"| Redis
-    Gateway -->|"Audio stream"| Client
-    Gateway -.->|"bot_interrupted"| Client
-    Client -->|"Phản hồi giọng nói"| User
+    Gateway -.->|"Hủy theo session<br/>khi barge-in"| TTS
+    Gateway -.->|"bot_interrupted<br/>xóa audio đã lập lịch"| Client
 
     classDef client fill:#dbeafe,stroke:#2563eb,color:#172554;
     classDef gateway fill:#e5e7eb,stroke:#4b5563,color:#111827;
     classDef module fill:#dcfce7,stroke:#16a34a,color:#052e16;
-    classDef model fill:#fef3c7,stroke:#d97706,color:#451a03;
+    classDef decision fill:#fef3c7,stroke:#d97706,color:#451a03;
     classDef fixed fill:#fce7f3,stroke:#db2777,color:#500724;
+    classDef model fill:#ffedd5,stroke:#ea580c,color:#431407;
     classDef database fill:#f3e8ff,stroke:#7c3aed,color:#3b0764;
 
     class User,Client client;
     class Gateway gateway;
-    class ASR,Dialogue,TTS module;
+    class ASR,TTS,Expand,Embed,Search,Rerank,Prompt module;
+    class Safety,Exact,Semantic,Evidence decision;
+    class Fixed fixed;
     class LLM model;
-    class FixedReply fixed;
-    class Corpus,Semantic,Redis database;
+    class Corpus,SemanticStore,Redis database;
