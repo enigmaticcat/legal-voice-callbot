@@ -147,7 +147,9 @@ services:
 
   # ─── TTS Worker ────────────────────────────────────────
   tts:
-    build: ./tts
+    build:
+      context: .
+      dockerfile: tts/Dockerfile
     container_name: callbot-tts
     ports:
       - "${TTS_PORT:-50053}:50053"

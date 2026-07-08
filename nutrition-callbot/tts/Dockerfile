@@ -7,11 +7,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY tts/requirements.txt .
-# Cài torch + torchaudio CPU trước để tránh kéo bản CUDA
-RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu
-# llama-cpp-python: dùng pre-built wheel (nhanh hơn compile từ source)
+RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cu121
+# llama-cpp-python: CUDA 12.1 pre-built wheel
 RUN pip install --no-cache-dir llama-cpp-python \
-    --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+    --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu121
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY tts/ .
