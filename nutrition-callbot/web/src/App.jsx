@@ -4,15 +4,19 @@ import StatusBar from './components/StatusBar'
 import Transcript from './components/Transcript'
 import { useWebSocket } from './hooks/useWebSocket'
 import { useAudioSession } from './hooks/useAudioPlayer'
-import { getWebSocketUrl } from './services/api'
+import { getWebSocketUrl, getHttpUrl } from './services/api'
 
 function App() {
     const [callActive, setCallActive] = useState(false)
     const [status, setStatus] = useState('idle')
     const [messages, setMessages] = useState([])
+    const [uploadedDocs, setUploadedDocs] = useState([])
+    const [uploading, setUploading] = useState(false)
 
     const currentBotTextRef = useRef('')
     const fileInputRef = useRef(null)
+    const docInputRef = useRef(null)
+    const sessionIdRef = useRef(null)
     const vadStartedRef = useRef(false)
 
     const { startCapture, stopCapture, playPcm, resetPlayback, unlockPlayback } = useAudioSession()
@@ -60,6 +64,9 @@ function App() {
                 break
 
             case 'vad_ready':
+                if (event.session_id) {
+                    sessionIdRef.current = event.session_id
+                }
                 setStatus('listening')
                 break
 
@@ -100,14 +107,47 @@ function App() {
             setCallActive(false)
             setStatus('idle')
             setMessages([])
+            setUploadedDocs([])
             currentBotTextRef.current = ''
+            sessionIdRef.current = null
         } else {
             await unlockPlayback()
+            sessionIdRef.current = null
             setStatus('connecting')
             connect(getWebSocketUrl())
             setCallActive(true)
         }
     }, [callActive, connect, disconnect, stopCapture, send, unlockPlayback])
+
+    // ── Upload tài liệu người dùng ────────────────────────────────────
+    const handleDocUpload = useCallback(async (e) => {
+        const file = e.target.files?.[0]
+        if (!file || !sessionIdRef.current) return
+        e.target.value = ''
+
+        setUploading(true)
+        try {
+            const formData = new FormData()
+            formData.append('session_id', sessionIdRef.current)
+            formData.append('file', file)
+
+            const res = await fetch(`${getHttpUrl()}/upload`, {
+                method: 'POST',
+                body: formData,
+            })
+            if (!res.ok) {
+                const err = await res.json()
+                alert(`Lỗi upload: ${err.detail || 'Không xác định'}`)
+                return
+            }
+            const data = await res.json()
+            setUploadedDocs(prev => [...prev, { name: file.name, chunks: data.chunks }])
+        } catch (err) {
+            alert('Không thể upload tài liệu. Vui lòng thử lại.')
+        } finally {
+            setUploading(false)
+        }
+    }, [])
 
     // ── Audio file upload ─────────────────────────────────────────────
     const handleFileUpload = useCallback(async (e) => {
@@ -163,7 +203,7 @@ function App() {
                                 disabled={status === 'thinking' || status === 'speaking'}
                                 title="Gửi file audio (.wav, .mp3, ...)"
                             >
-                                📎
+                                🎵
                             </button>
 
                             <input
@@ -173,7 +213,34 @@ function App() {
                                 style={{ display: 'none' }}
                                 onChange={handleFileUpload}
                             />
+
+                            <button
+                                className="upload-button"
+                                onClick={() => docInputRef.current?.click()}
+                                disabled={uploading}
+                                title="Tải tài liệu dinh dưỡng (.pdf, .txt)"
+                            >
+                                {uploading ? '⏳' : '📄'}
+                            </button>
+
+                            <input
+                                ref={docInputRef}
+                                type="file"
+                                accept=".pdf,.txt,.md"
+                                style={{ display: 'none' }}
+                                onChange={handleDocUpload}
+                            />
                         </div>
+
+                        {uploadedDocs.length > 0 && (
+                            <div className="uploaded-docs">
+                                {uploadedDocs.map((doc, i) => (
+                                    <span key={i} className="doc-tag" title={`${doc.chunks} đoạn`}>
+                                        📄 {doc.name}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
                     </>
                 )}
 

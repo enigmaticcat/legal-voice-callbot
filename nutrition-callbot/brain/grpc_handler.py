@@ -88,6 +88,16 @@ class BrainServiceHandler:
                 fetch_k=self.rag_fetch_k,
                 use_hyde=self.use_hyde,
             )
+
+            user_docs = await self.rag.search_user_docs(
+                session_id=session_id,
+                query=expanded,
+                top_k=3,
+            )
+            if user_docs:
+                docs = user_docs + docs
+                logger.info("[%s] Merged %d user docs into context", session_id, len(user_docs))
+
             rag_ms = (time.time() - t0) * 1000
             contexts = [d.get("content", "") for d in docs]
 

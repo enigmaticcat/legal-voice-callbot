@@ -4,7 +4,7 @@ import asyncio
 import time
 
 import httpx
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, UploadFile, File, Form
 from fastapi.responses import StreamingResponse, JSONResponse
 import uvicorn
 
@@ -13,6 +13,7 @@ from brain.core.llm import LLMClient
 from brain.core.rag import RAGPipeline
 from brain.core.retrieval_cache import RetrievalCache
 from brain.core.chunker import chunk_llm_stream
+from brain.core.doc_parser import parse_document, DocParseError
 from brain.grpc_handler import BrainServiceHandler
 
 logging.basicConfig(
@@ -134,6 +135,32 @@ async def think(request: Request):
         "contexts": contexts,
         "retrieval_cache": retrieval_cache_meta,
     }
+
+
+@app.post("/documents/upload")
+async def upload_document(
+    session_id: str = Form(...),
+    file: UploadFile = File(...),
+):
+    content = await file.read()
+    if len(content) > 5 * 1024 * 1024:
+        return JSONResponse(status_code=400, content={"error": "File quá lớn (tối đa 5 MB)"})
+    try:
+        chunks = parse_document(file.filename or "upload", content)
+    except DocParseError as e:
+        return JSONResponse(status_code=400, content={"error": str(e)})
+
+    try:
+        n = await rag.upsert_user_docs(
+            session_id=session_id,
+            filename=file.filename or "upload",
+            chunks=chunks,
+        )
+    except Exception as e:
+        logger.exception("[%s] upsert_user_docs failed", session_id)
+        return JSONResponse(status_code=500, content={"error": "Không thể lưu tài liệu."})
+
+    return {"chunks": n, "filename": file.filename, "session_id": session_id}
 
 
 @app.post("/summarize")

@@ -606,3 +606,124 @@ class RAGPipeline:
         except Exception:
             logger.warning("Semantic cache clear failed", exc_info=True)
             return False
+
+    # ── User document upload ──────────────────────────────────────────
+
+    USER_DOCS_COLLECTION = "user_documents"
+    _user_docs_collection_exists: bool = False
+
+    def _ensure_user_docs_collection(self) -> None:
+        from qdrant_client import models as qm
+        try:
+            self.qdrant.get_collection(self.USER_DOCS_COLLECTION)
+            self._user_docs_collection_exists = True
+        except Exception:
+            vector_size = self.model.get_sentence_embedding_dimension()
+            self.qdrant.create_collection(
+                collection_name=self.USER_DOCS_COLLECTION,
+                vectors_config=qm.VectorParams(
+                    size=int(vector_size),
+                    distance=qm.Distance.COSINE,
+                ),
+            )
+            self._user_docs_collection_exists = True
+            logger.info("Created user_documents collection")
+
+    async def upsert_user_docs(
+        self,
+        session_id: str,
+        filename: str,
+        chunks: list[str],
+    ) -> int:
+        from qdrant_client import models as qm
+
+        await asyncio.to_thread(self._ensure_user_docs_collection)
+
+        vectors = await asyncio.to_thread(
+            self.model.encode,
+            chunks,
+            normalize_embeddings=True,
+        )
+
+        points = [
+            qm.PointStruct(
+                id=str(uuid.uuid4()),
+                vector=vectors[i].tolist(),
+                payload={
+                    "content": chunk,
+                    "session_id": session_id,
+                    "filename": filename,
+                    "source": "user_upload",
+                    "title": filename,
+                },
+            )
+            for i, chunk in enumerate(chunks)
+        ]
+
+        await asyncio.to_thread(
+            self.qdrant.upsert,
+            collection_name=self.USER_DOCS_COLLECTION,
+            points=points,
+            wait=True,
+        )
+        logger.info("Upserted %d chunks for session=%s file=%s", len(chunks), session_id, filename)
+        return len(chunks)
+
+    async def search_user_docs(
+        self,
+        session_id: str,
+        query: str,
+        top_k: int = 3,
+    ) -> list[dict]:
+        from qdrant_client import models as qm
+
+        if not self._user_docs_collection_exists:
+            return []
+
+        q_vec = await self._encode_query(query)
+        if q_vec is None:
+            return []
+
+        qfilter = qm.Filter(
+            must=[qm.FieldCondition(
+                key="session_id",
+                match=qm.MatchValue(value=session_id),
+            )]
+        )
+
+        try:
+            results = await asyncio.to_thread(
+                self.qdrant.query_points,
+                collection_name=self.USER_DOCS_COLLECTION,
+                query=q_vec,
+                limit=top_k * 2,
+                query_filter=qfilter,
+                with_payload=True,
+            )
+        except Exception:
+            logger.warning("User docs search failed", exc_info=True)
+            return []
+
+        docs = [
+            {
+                "title": p.payload.get("filename", "Tài liệu của bạn"),
+                "source": "user_upload",
+                "content": p.payload.get("content", ""),
+                "score": p.score,
+            }
+            for p in results.points
+        ]
+
+        if not docs:
+            return []
+
+        pairs = [[query, d["content"]] for d in docs]
+        try:
+            async with asyncio.timeout(15.0):
+                rerank_scores = await asyncio.to_thread(self.reranker.predict, pairs)
+            rerank_scores = [float(s) if s == s else -999.0 for s in rerank_scores]
+            docs = [d for _, d in sorted(zip(rerank_scores, docs), key=lambda x: -x[0])[:top_k]]
+        except Exception:
+            docs = docs[:top_k]
+
+        return docs

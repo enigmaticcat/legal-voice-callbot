@@ -1,4 +1,4 @@
-.PHONY: up down build logs dev restart clean ps health
+.PHONY: up down build logs dev restart clean ps health gpu-build gpu-up gpu-down gpu-logs
 
 # === Production ===
 up:
@@ -18,6 +18,19 @@ restart:
 
 ps:
 	docker compose ps
+
+# === GPU ===
+gpu-build:
+	docker compose -f docker-compose.yml -f docker-compose.gpu.yml build
+
+gpu-up:
+	docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+
+gpu-down:
+	docker compose -f docker-compose.yml -f docker-compose.gpu.yml down
+
+gpu-logs:
+	docker compose -f docker-compose.yml -f docker-compose.gpu.yml logs -f
 
 # === Development (with hot-reload) ===
 dev:

@@ -15,6 +15,10 @@ export async function getStatus() {
     return res.json()
 }
 
+export function getHttpUrl() {
+    return import.meta.env.VITE_GATEWAY_URL || `${window.location.protocol}//${window.location.host}`
+}
+
 export function getWebSocketUrl() {
     // Nếu VITE_GATEWAY_URL được set (local dev với Vite riêng) — dùng nó
     if (import.meta.env.VITE_GATEWAY_URL) {

@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from config import settings
 from routes.health import router as health_router
 from routes.websocket import router as ws_router, close_http_clients
+from routes.upload import router as upload_router
 import services.session_memory as session_memory
 
 # ─── Logging ─────────────────────────────────────────────
@@ -41,6 +42,7 @@ app.add_middleware(
 # ─── Routes ──────────────────────────────────────────────
 app.include_router(health_router)
 app.include_router(ws_router)
+app.include_router(upload_router)
 
 # ─── Static files — React frontend ───────────────────────
 # Serve web/dist nếu đã được build (Colab / production).

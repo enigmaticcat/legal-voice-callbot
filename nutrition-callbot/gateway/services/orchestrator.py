@@ -116,6 +116,15 @@ class Orchestrator:
         if not saw_audio:
             raise RuntimeError("TTS returned empty audio stream")
 
+    async def upload_document(self, session_id: str, filename: str, content: bytes) -> dict:
+        response = await self._client.post(
+            f"{self.brain_url}/documents/upload",
+            data={"session_id": session_id},
+            files={"file": (filename, content, "application/octet-stream")},
+        )
+        response.raise_for_status()
+        return response.json()
+
     async def cancel_tts(self, session_id: str) -> None:
         try:
             await self._client.post(
