@@ -1,35 +1,27 @@
-"""Parse uploaded documents (PDF/txt) into text chunks for embedding."""
+"""Parse uploaded documents (PDF/txt/md) into text chunks using LangChain."""
 from __future__ import annotations
 
 import io
-import re
+import tempfile
+import os
 from typing import List
+
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 MAX_FILE_BYTES = 5 * 1024 * 1024  # 5 MB
 MAX_CHUNKS = 50
 CHUNK_SIZE = 400
 CHUNK_OVERLAP = 50
 
+_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=CHUNK_SIZE,
+    chunk_overlap=CHUNK_OVERLAP,
+    separators=["\n\n", "\n", ".", " ", ""],
+)
+
 
 class DocParseError(ValueError):
     pass
-
-
-def _split_chunks(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) -> List[str]:
-    text = re.sub(r"\s+", " ", text).strip()
-    if not text:
-        return []
-
-    chunks: List[str] = []
-    start = 0
-    while start < len(text):
-        end = start + chunk_size
-        chunk = text[start:end]
-        if chunk.strip():
-            chunks.append(chunk.strip())
-        start += chunk_size - overlap
-
-    return chunks[:MAX_CHUNKS]
 
 
 def parse_txt(content: bytes) -> List[str]:
@@ -37,28 +29,38 @@ def parse_txt(content: bytes) -> List[str]:
         text = content.decode("utf-8", errors="replace")
     except Exception as e:
         raise DocParseError(f"Không đọc được file txt: {e}")
-    return _split_chunks(text)
+    docs = _splitter.create_documents([text])
+    return [d.page_content for d in docs][:MAX_CHUNKS]
 
 
 def parse_pdf(content: bytes) -> List[str]:
     try:
-        from pypdf import PdfReader
+        from langchain_community.document_loaders import PyPDFLoader
     except ImportError:
-        raise DocParseError("Thiếu thư viện pypdf. Cài bằng: pip install pypdf")
+        raise DocParseError("Thiếu thư viện langchain-community. Cài bằng: pip install langchain-community pypdf")
 
     try:
-        reader = PdfReader(io.BytesIO(content))
-        pages_text = [page.extract_text() or "" for page in reader.pages]
-        full_text = "\n".join(pages_text)
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+            tmp.write(content)
+            tmp_path = tmp.name
+
+        loader = PyPDFLoader(tmp_path)
+        pages = loader.load()
     except Exception as e:
         raise DocParseError(f"Không đọc được file PDF: {e}")
+    finally:
+        try:
+            os.unlink(tmp_path)
+        except Exception:
+            pass
 
-    return _split_chunks(full_text)
+    docs = _splitter.split_documents(pages)
+    return [d.page_content for d in docs if d.page_content.strip()][:MAX_CHUNKS]
 
 
 def parse_document(filename: str, content: bytes) -> List[str]:
     if len(content) > MAX_FILE_BYTES:
-        raise DocParseError(f"File quá lớn (tối đa 5 MB)")
+        raise DocParseError("File quá lớn (tối đa 5 MB)")
 
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     if ext == "pdf":
@@ -66,7 +68,7 @@ def parse_document(filename: str, content: bytes) -> List[str]:
     elif ext in ("txt", "md"):
         chunks = parse_txt(content)
     else:
-        raise DocParseError(f"Định dạng không hỗ trợ: .{ext} (chỉ nhận .pdf và .txt)")
+        raise DocParseError(f"Định dạng không hỗ trợ: .{ext} (chỉ nhận .pdf, .txt, .md)")
 
     if not chunks:
         raise DocParseError("Không trích xuất được nội dung từ file")
