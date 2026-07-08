@@ -162,16 +162,12 @@ services:
       - TTS_CACHE_TTL_SECONDS=${TTS_CACHE_TTL_SECONDS:-604800}
       - TTS_CACHE_MAX_BYTES=${TTS_CACHE_MAX_BYTES:-8000000}
       - TTS_CACHE_VERSION=${TTS_CACHE_VERSION:-v1}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    runtime: nvidia
     depends_on:
       redis:
         condition: service_healthy
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://0.0.0.0:50053/health || exit 1" ]
       interval: 15s
