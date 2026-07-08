@@ -18,7 +18,7 @@ services:
       --dtype half
       --quantization bitsandbytes
       --load-format bitsandbytes
-      --max-model-len 2048
+      --max-model-len 4096
       --gpu-memory-utilization 0.35
       --max-num-seqs 32
       --enable-prefix-caching
