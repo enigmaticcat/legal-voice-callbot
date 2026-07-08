@@ -62,13 +62,14 @@ services:
         curl -fsS -X POST "$${QDRANT_URL}/collections/$${QDRANT_COLLECTION}/snapshots/upload?priority=$${QDRANT_SNAPSHOT_PRIORITY}" \
           -F "snapshot=@$${SNAP}"
         i=0
-        until [ "$${i}" -ge 120 ]; do
+        until [ "$${i}" -ge 300 ]; do
           STATUS=$$(curl -fsS "$${QDRANT_URL}/collections/$${QDRANT_COLLECTION}" \
             | sed -n "s/.*\"status\":\"\\([^\"]*\\)\".*/\\1/p" | head -n 1 || true)
           if [ "$${STATUS}" = "green" ]; then
             echo "Snapshot restore completed."
             exit 0
           fi
+          echo "  status=$${STATUS:-unknown} (i=$${i})"
           i=$$((i+1))
           sleep 2
         done
@@ -162,6 +163,13 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     healthcheck:
       test: [ "CMD-SHELL", "curl -f http://0.0.0.0:50053/health || exit 1" ]
       interval: 15s
@@ -174,7 +182,7 @@ services:
 
   # ─── Vector Database (RAG) ────────────────────────────
   qdrant:
-    image: ${QDRANT_IMAGE:-qdrant/qdrant:latest}
+    image: ${QDRANT_IMAGE:-qdrant/qdrant:v1.12.0}
     container_name: callbot-qdrant
     ports:
       - "${QDRANT_PORT:-6333}:6333"
