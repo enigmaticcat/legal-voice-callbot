@@ -22,6 +22,8 @@ services:
       --gpu-memory-utilization 0.35
       --max-num-seqs 32
       --enable-prefix-caching
+    networks:
+      - callbot-net
     deploy:
       resources:
         reservations:
