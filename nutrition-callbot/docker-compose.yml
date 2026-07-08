@@ -181,10 +181,11 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
     healthcheck:
-      test: [ "CMD-SHELL", "wget -qO- http://0.0.0.0:6333/ > /dev/null || exit 1" ]
+      test: ["CMD", "/qdrant/qdrant", "--version"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
     networks:
       - callbot-net
     restart: unless-stopped
