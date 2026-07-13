@@ -17,15 +17,15 @@ Gói nộp không bao gồm file PDF, slide, ảnh báo cáo, dữ liệu lớn,
 ### Môi trường chung
 
 - Hệ điều hành Linux/macOS.
-- Docker và Docker Compose.
+- Docker và Docker Compose v2.
 - Tối thiểu 16 GB RAM để chạy các thành phần cơ bản.
 - Kết nối Internet ở lần chạy đầu để tải Docker image và model cần thiết.
 
 ### Nếu chạy GPU
 
-- GPU NVIDIA.
+- GPU NVIDIA (khuyến nghị VRAM >= 8 GB).
 - Driver NVIDIA đã cài trên host.
-- NVIDIA Container Toolkit.
+- NVIDIA Container Toolkit — xem hướng dẫn tại [https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).
 - Kiểm tra GPU trong Docker bằng lệnh:
 
 ```bash
@@ -42,90 +42,168 @@ cp .env.example .env
 
 Sau đó chỉnh `.env` nếu cần. Một số biến thường dùng:
 
-- `HF_TOKEN`: token Hugging Face nếu cần tải model gated.
-- `GATEWAY_PORT`: cổng Gateway, mặc định `8000`.
-- `WEB_PORT`: cổng giao diện, mặc định `3000`.
-- `QDRANT_COLLECTION`: tên collection Qdrant, mặc định `nutrition_articles`.
+| Biến | Mặc định | Mô tả |
+|------|----------|-------|
+| `HF_TOKEN` | _(trống)_ | Token Hugging Face nếu cần tải model gated |
+| `GATEWAY_PORT` | `8000` | Cổng API Gateway |
+| `WEB_PORT` | `3000` | Cổng giao diện web |
+| `QDRANT_COLLECTION` | `nutrition_articles` | Tên collection Qdrant |
+| `QDRANT_SNAPSHOT_FILE` | `nutrition_articles.snapshot` | Tên file snapshot khôi phục |
 
 File `.env` không được đưa vào zip để tránh lộ khóa hoặc cấu hình cá nhân.
 
-## 4. Chạy hệ thống bằng Docker CPU
+## 4. Chuẩn bị kho tri thức Qdrant
+
+Hệ thống dùng Qdrant để lưu vector của kho tri thức dinh dưỡng. Gói source code không kèm snapshot để giữ kích thước nhỏ.
+
+Nếu có file snapshot, đặt vào thư mục `snapshots/` ở **cùng cấp** với `nutrition-callbot/`:
 
 ```bash
-cd nutrition-callbot
-docker compose up --build -d
+mkdir -p snapshots
+cp /path/to/nutrition_articles.snapshot snapshots/
 ```
 
-Kiểm tra trạng thái:
-
-```bash
-docker compose ps
-docker compose logs -f
-```
-
-Kiểm tra Gateway:
-
-```bash
-curl http://localhost:8000/health
-```
-
-Mở giao diện:
+Cấu trúc thư mục:
 
 ```text
-http://localhost:3000
+Callbot/
+├── nutrition-callbot/   ← mã nguồn
+└── snapshots/
+    └── nutrition_articles.snapshot
 ```
 
-## 5. Chạy hệ thống bằng Docker GPU
+Khi khởi động, service `qdrant-restore` tự động khôi phục snapshot nếu collection chưa có dữ liệu. Quá trình này mất khoảng **3–5 phút** tùy kích thước file.
+
+## 5. Chạy hệ thống
+
+### Chế độ GPU (khuyến nghị)
 
 ```bash
 cd nutrition-callbot
-docker compose \
-  -f docker-compose.yml \
-  -f docker-compose.gpu.yml \
-  up --build -d
+make gpu-build   # Build images lần đầu hoặc sau khi thay đổi code
+make gpu-up      # Khởi động tất cả services
 ```
 
-Xem log theo từng service:
+Lần chạy đầu mất **5–10 phút** để tải image vLLM (~10 GB) và model Qwen3-4B (~3 GB). Các lần sau nhanh hơn do đã cache.
+
+Xem log theo dõi quá trình khởi động:
 
 ```bash
-docker compose \
-  -f docker-compose.yml \
-  -f docker-compose.gpu.yml \
-  logs -f gateway asr brain tts
+make gpu-logs
 ```
 
 Dừng hệ thống:
 
 ```bash
-docker compose \
-  -f docker-compose.yml \
-  -f docker-compose.gpu.yml \
-  down
+make gpu-down
 ```
 
-## 6. Lưu ý về kho tri thức Qdrant
-
-Hệ thống sử dụng Qdrant để lưu vector của kho tri thức dinh dưỡng. Gói source code không kèm snapshot hoặc dữ liệu vector lớn để giữ kích thước dưới 30 MB.
-
-Nếu có snapshot Qdrant, đặt file snapshot vào thư mục `snapshots/` ở cùng cấp với `nutrition-callbot/`, sau đó cấu hình:
+### Chế độ CPU
 
 ```bash
-QDRANT_SNAPSHOT_FILE=nutrition_articles.snapshot
-QDRANT_COLLECTION=nutrition_articles
+cd nutrition-callbot
+make build
+make up
 ```
 
-Khi khởi động, service `qdrant-restore` sẽ khôi phục snapshot nếu collection chưa có dữ liệu.
+> LLM sẽ chạy rất chậm ở chế độ CPU. Chỉ dùng để phát triển hoặc kiểm thử.
 
-## 7. Kiểm thử nhanh mã nguồn
+## 6. Kiểm tra sau khi khởi động
 
-Chạy kiểm tra Python:
+Thứ tự healthy khi khởi động:
+
+```
+redis → qdrant → qdrant-restore (exit 0) → asr / brain / tts → gateway
+llm (song song, mất ~3 phút để load model lên GPU)
+```
+
+Kiểm tra trạng thái tất cả services:
+
+```bash
+make health
+```
+
+Hoặc kiểm tra từng service:
+
+```bash
+curl http://localhost:8000/health   # Gateway
+curl http://localhost:50051/health  # ASR
+curl http://localhost:50052/health  # Brain
+curl http://localhost:50053/health  # TTS
+```
+
+Mở giao diện:
+
+```
+http://localhost:3000
+```
+
+Test pipeline Brain trực tiếp:
+
+```bash
+curl -s -X POST http://localhost:50052/think \
+  -H "Content-Type: application/json" \
+  -d '{"query": "vitamin C có trong thực phẩm nào?", "session_id": "test"}' \
+  | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+print('TEXT:', d['text'][:200])
+print('TIMING:', d['timing'])
+"
+```
+
+## 7. Tính năng upload tài liệu
+
+Trong phiên hội thoại, người dùng có thể upload tài liệu dinh dưỡng cá nhân (`.pdf`, `.txt`, `.md`, tối đa 5 MB) bằng nút 📄 trên giao diện. Hệ thống sẽ:
+
+1. Parse tài liệu bằng **LangChain** (`PyPDFLoader` cho PDF, `RecursiveCharacterTextSplitter` để chia chunk).
+2. Embed các chunk bằng model `AITeamVN/Vietnamese_Embedding`.
+3. Lưu vào Qdrant collection riêng `user_documents`, gắn `session_id` để cách ly giữa các phiên.
+4. Brain tự động tìm kiếm tài liệu này khi trả lời — song song với kho tri thức chính.
+
+Tài liệu chỉ tồn tại trong phạm vi phiên hội thoại hiện tại.
+
+## 8. Xử lý sự cố thường gặp
+
+**LLM không kết nối được (Brain báo connection error):**
+
+```bash
+# Kiểm tra LLM có trong đúng network không
+docker inspect nutrition-callbot-llm-1 \
+  --format '{{json .NetworkSettings.Networks}}' | python3 -m json.tool
+# Phải thấy "nutrition-callbot_callbot-net"
+
+# Nếu sai network, force recreate
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml \
+  up -d --force-recreate llm
+```
+
+**Qdrant restore timeout:**
+
+```bash
+# Kiểm tra trạng thái collection
+curl -s http://localhost:6333/collections/nutrition_articles | python3 -m json.tool
+# Nếu status=green nhưng qdrant-restore exit 1, start brain/gateway thủ công
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml \
+  up -d --no-deps brain gateway
+```
+
+**Port bị conflict với project khác:**
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml down
+```
+
+## 9. Kiểm thử mã nguồn
+
+Kiểm tra cú pháp Python:
 
 ```bash
 cd nutrition-callbot
 python3 -m compileall -q gateway brain asr tts tests test_pipeline.py test_full_pipeline.py
 ```
 
-Chạy unit test nếu đã cài dependency phát triển:
+Chạy unit test:
 
 ```bash
 python3 -m pip install -r requirements-dev.txt
@@ -139,17 +217,32 @@ npm --prefix web install
 npm --prefix web run build
 ```
 
-## 8. Cấu trúc chương trình chính
+## 10. Makefile — danh sách lệnh
+
+| Lệnh | Mô tả |
+|------|-------|
+| `make gpu-up` | Khởi động tất cả services với GPU |
+| `make gpu-down` | Dừng tất cả services (GPU mode) |
+| `make gpu-build` | Build lại Docker images (GPU mode) |
+| `make gpu-logs` | Xem logs real-time (GPU mode) |
+| `make up` | Khởi động (CPU mode) |
+| `make down` | Dừng (CPU mode) |
+| `make build` | Build images (CPU mode) |
+| `make health` | Health check tất cả services |
+| `make ps` | Xem trạng thái containers |
+| `make logs` | Xem logs real-time (CPU mode) |
+| `make clean` | Xóa containers + images + volumes |
+
+## 11. Cấu trúc chương trình chính
 
 ```text
 nutrition-callbot/
 ├── gateway/      Bộ điều phối phiên, WebSocket và luồng audio/text
 ├── asr/          Nhận dạng tiếng nói tiếng Việt
-├── brain/        Guardrail, RAG, cache, prompt và sinh câu trả lời
+├── brain/        Guardrail, RAG, upload tài liệu, cache, prompt và sinh câu trả lời
 ├── tts/          Tổng hợp tiếng nói và streaming PCM
 ├── web/          Giao diện người dùng React/Vite
 ├── tests/        Kiểm thử đơn vị
-├── scripts/      Script hỗ trợ kiểm tra cache
+├── scripts/      Script hỗ trợ kiểm tra cache và đo độ trễ
 └── docker-compose*.yml
 ```
-
