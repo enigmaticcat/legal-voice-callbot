@@ -2,6 +2,11 @@ CallBot_Implementation_Plan_v2.md
 CallBot_Execution_Roadmap.md
 CLAUDE.md
 
+# Thư mục làm việc tạm thời (export/integration packages, không phải code nguồn)
+TTS_Dictionary/
+asr-itn-integration/
+asr-tts-export/
+
 # Môi trường ảo (Virtual Env)
 venv/
 .venv/

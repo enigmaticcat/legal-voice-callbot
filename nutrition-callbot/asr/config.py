@@ -41,9 +41,9 @@ class ASRConfig:
         "ASR_VAD_MODEL_PATH",
         os.path.join(_data_dir, "silero_vad.onnx"),
     )
-    vad_threshold: float = float(os.getenv("ASR_VAD_THRESHOLD", "0.5"))
-    vad_min_silence_ms: int = int(os.getenv("ASR_VAD_MIN_SILENCE_MS", "500"))
-    vad_min_speech_ms: int = int(os.getenv("ASR_VAD_MIN_SPEECH_MS", "250"))
+    vad_threshold: float = float(os.getenv("ASR_VAD_THRESHOLD", "0.65"))
+    vad_min_silence_ms: int = int(os.getenv("ASR_VAD_MIN_SILENCE_MS", "800"))
+    vad_min_speech_ms: int = int(os.getenv("ASR_VAD_MIN_SPEECH_MS", "400"))
 
 
 config = ASRConfig()
